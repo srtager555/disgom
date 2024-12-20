@@ -42,3 +42,8 @@ next-env.d.ts
 
 # sdk credetials 
 disgom-app-firebase-adminsdk-*
+
+# firebase
+.firebase
+firebase-debug.log
+firestore-debug.log

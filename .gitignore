@@ -47,3 +47,4 @@ disgom-app-firebase-adminsdk-*
 .firebase
 firebase-debug.log
 firestore-debug.log
+emulator-data/

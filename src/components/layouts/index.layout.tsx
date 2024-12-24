@@ -1,5 +1,10 @@
 import { InitApp } from "@/firebase/InitApp";
+import { NavLayout } from "./nav.layout";
 
 export function Layout({ children }: { children: children }) {
-  return <InitApp>{children}</InitApp>;
+  return (
+    <InitApp>
+      <NavLayout>{children}</NavLayout>
+    </InitApp>
+  );
 }

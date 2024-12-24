@@ -40,7 +40,7 @@ export const Form = forwardRef(function awa(
           transition: "200ms",
         }}
       >
-        <Loader />
+        {/* <Loader /> */}
       </Container>
       <form
         style={{

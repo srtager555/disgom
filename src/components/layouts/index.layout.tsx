@@ -6,7 +6,7 @@ export function Layout({ children }: { children: children }) {
   return (
     <InitApp>
       <NavLayout>
-        <Container styles={{ padding: "25px" }}>{children}</Container>
+        <Container styles={{ padding: "1% 2.5%" }}>{children}</Container>
       </NavLayout>
     </InitApp>
   );

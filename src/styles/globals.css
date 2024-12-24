@@ -39,6 +39,10 @@ a {
   text-decoration: none;
 }
 
+p {
+  margin-bottom: 10px;
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;

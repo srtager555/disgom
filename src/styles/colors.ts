@@ -1,4 +1,4 @@
 export const globalCSSVars = {
-  "--background": "--background",
-  "--foreground": "--foreground",
+  "--background": "var(--background)",
+  "--foreground": "var(--foreground)",
 };

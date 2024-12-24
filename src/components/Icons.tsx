@@ -24,6 +24,6 @@ export const Icon = (props: I) => {
   };
 
   return (
-    <Image height={30} width={30} {...props} src={src[props.iconType]} alt="" />
+    <Image height={25} width={25} {...props} src={src[props.iconType]} alt="" />
   );
 };

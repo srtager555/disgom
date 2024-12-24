@@ -49,10 +49,6 @@ export function NavLayout({ children }: { children: children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asPath]);
 
-  useEffect(() => {
-    console.log(url);
-  }, [url]);
-
   return (
     <NavContainer $deployNav={false}>
       <Container>

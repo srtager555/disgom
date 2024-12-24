@@ -1,5 +1,6 @@
 import Link from "next/link";
 import styled from "styled-components";
+import { globalCSSVars } from "./colors";
 
 export const Nav = styled.nav`
   display: grid;
@@ -9,7 +10,8 @@ export const Nav = styled.nav`
   left: 0;
   width: 100%;
   height: 100%;
-  background: #ccc;
+  background: ${globalCSSVars["--background"]};
+  border-right: 1px ${globalCSSVars["--foreground"]} solid;
 `;
 
 export const NavAnchor = styled(Link)`

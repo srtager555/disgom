@@ -50,7 +50,7 @@ export const NavAnchor = styled(Link)<{ $active?: boolean }>`
 
 export const NavContainer = styled.div<{ $deployNav: boolean }>`
   display: grid;
-  grid-template-columns: ${({ $deployNav }) => ($deployNav ? "200px" : "60px")} 1fr;
+  grid-template-columns: ${({ $deployNav }) => ($deployNav ? "200px" : "60px")} 1fr 60px;
   width: 100%;
   height: 100vh;
   overflow: scroll;

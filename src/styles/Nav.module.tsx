@@ -11,7 +11,7 @@ export const Nav = styled.nav`
   width: 100%;
   height: 100%;
   background: ${globalCSSVars["--background"]};
-  border-right: 1px ${globalCSSVars["--foreground"]} solid;
+  border-right: 2px ${globalCSSVars["--foreground"]} solid;
 `;
 
 export const NavAnchor = styled(Link)`
@@ -24,6 +24,7 @@ export const NavAnchor = styled(Link)`
 
   &:hover {
     transform: scale(1.2);
+    background-color: #fff2;
   }
   &:active {
     transform: scale(0.8);
@@ -32,7 +33,7 @@ export const NavAnchor = styled(Link)`
 
 export const NavContainer = styled.div<{ deployNav: boolean }>`
   display: grid;
-  grid-template-columns: ${({ deployNav }) => (deployNav ? "200px" : "50px")} 1fr;
+  grid-template-columns: ${({ deployNav }) => (deployNav ? "200px" : "60px")} 1fr;
   width: 100%;
   height: 100vh;
   overflow: scroll;

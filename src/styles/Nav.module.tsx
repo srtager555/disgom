@@ -1,6 +1,58 @@
-import Link from "next/link";
+import Link, { LinkProps } from "next/link";
 import styled, { css } from "styled-components";
 import { globalCSSVars } from "./colors";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
+
+const LinkBase = styled(Link)<{ $active: boolean }>`
+  position: relative;
+  display: inline-block;
+  font-style: italic;
+  transition: 200ms all ease;
+
+  &:active {
+    transform: scale(0.9);
+  }
+
+  &:after {
+    content: "";
+    height: 3px;
+    width: ${(props) => (props.$active ? "100%" : "0%")};
+    background-color: #0099ff;
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: all 200ms ease;
+  }
+  &:hover {
+    &:after {
+      width: 100%;
+    }
+  }
+`;
+
+interface props extends LinkProps {
+  actived?: boolean;
+  children?: children;
+}
+
+export function CustomLink({ children, ...props }: props) {
+  const [actived, setActived] = useState(false);
+  const asPath = useRouter().asPath;
+
+  useEffect(() => {
+    if (props.href === asPath) {
+      setActived(true);
+    } else setActived(false);
+  }, [asPath, props.href]);
+
+  return (
+    <LinkBase {...props} $active={actived}>
+      {children}
+    </LinkBase>
+  );
+}
 
 export const Nav = styled.nav`
   display: grid;
@@ -56,4 +108,8 @@ export const NavContainer = styled.div<{ $deployNav: boolean }>`
   overflow: scroll;
   transition: all 200ms ease;
   padding: 10px;
+`;
+
+export const AnchorNavigators = styled(CustomLink)`
+  margin-right: 15px;
 `;

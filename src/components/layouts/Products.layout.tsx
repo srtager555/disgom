@@ -1,11 +1,19 @@
 import { globalCSSVars } from "@/styles/colors";
 import { Container } from "@/styles/index.styles";
-import { useEffect } from "react";
+import { AnchorNavigators } from "@/styles/Nav.module";
 
 export function ProductsLayout({ children }: { children: children }) {
-  useEffect(() => {
-    console.log(Math.floor(Math.random() * 10));
-  }, []);
+  const url: Array<{ href: string; text: string }> = [
+    {
+      href: "",
+      text: "Descripción general",
+    },
+    {
+      href: "/create",
+      text: "Añadir producto",
+    },
+  ];
+
   return (
     <>
       <Container styles={{ marginBottom: "25px" }}>
@@ -17,6 +25,13 @@ export function ProductsLayout({ children }: { children: children }) {
             padding: "10px",
           }}
         >
+          <Container styles={{ marginBottom: "30px" }}>
+            {url.map((el, i) => (
+              <AnchorNavigators key={i} href={"/products" + el.href}>
+                {el.text}
+              </AnchorNavigators>
+            ))}
+          </Container>
           {children}
         </Container>
       </Container>

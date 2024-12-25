@@ -2,7 +2,7 @@ import { Select } from "@/components/Inputs/select";
 import { InputText } from "@/components/Inputs/text";
 import { ProductsLayout } from "@/components/layouts/Products.layout";
 import { NextPageWithLayout } from "@/pages/_app";
-import { Form } from "@/styles/Form.styles";
+import { Button, Form } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { getRandomColorContrastWhite } from "@/tools/generateColor";
 import { createProduct, productUnits } from "@/tools/products/create";
@@ -103,7 +103,7 @@ const Page: NextPageWithLayout = () => {
                   />
                 </label>
               </Container>
-              <button>Agregar</button>
+              <Button $primary>Agregar</Button>
             </FlexContainer>
             {tags.length > 0 ? (
               tags.map((el, i) => <Tag key={i}>{el.name}</Tag>)

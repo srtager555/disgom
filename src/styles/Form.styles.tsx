@@ -6,7 +6,8 @@ import {
   MutableRefObject,
 } from "react";
 import { Container, deleteRepeatedValues } from "./index.styles";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
+import { globalCSSVars } from "./colors";
 
 interface FormType
   extends DetailedHTMLProps<
@@ -59,6 +60,37 @@ export const Form = forwardRef(function awa(
   );
 });
 
-export const Button = styled.button`
-  padding: "5px 10px";
+export const Button = styled.button<{ $warn?: boolean; $primary?: boolean }>`
+  display: inline-block;
+  padding: 5px 10px;
+  background-color: transparent;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: 200ms all ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+  &:active {
+    transform: scale(0.9);
+  }
+
+  ${(props) => {
+    if (props.$primary) {
+      return css`
+        background-color: ${globalCSSVars["--highlight"]};
+        color: #fff;
+      `;
+    } else if (props.$warn) {
+      return css`
+        background-color: ${globalCSSVars["--warn"]};
+        color: #fff;
+      `;
+    } else
+      return css`
+        border: 2px solid ${globalCSSVars["--foreground"]};
+      `;
+  }};
 `;

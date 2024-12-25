@@ -3,6 +3,8 @@
   --foreground: #171717;
   --foreground-hover: #17171720;
   --detail: #5f6368;
+  --highlight: #0099ff;
+  --warn: red;
 }
 
 @media (prefers-color-scheme: dark) {

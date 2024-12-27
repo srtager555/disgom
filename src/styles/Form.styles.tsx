@@ -62,11 +62,11 @@ export const Form = forwardRef(function awa(
 
 export const Button = styled.button<{ $warn?: boolean; $primary?: boolean }>`
   display: inline-block;
-  padding: 5px 10px;
+  padding: 10px 15px;
   background-color: transparent;
   border: none;
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 1rem;
   cursor: pointer;
   transition: 200ms all ease;
 

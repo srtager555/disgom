@@ -1,8 +1,15 @@
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, Timestamp } from "firebase/firestore";
 import { Firestore } from "../firestore";
 import { ProductsCollection } from "../firestore/CollectionTyping";
 
 export type productUnits = "LB" | "KG" | "1/4" | "1/2" | "U";
+
+export type productDoc = {
+  name: string;
+  created_at: Timestamp;
+  units: productUnits;
+  tags: string[];
+};
 
 /**
  * A function to create a product
@@ -23,5 +30,6 @@ export async function createProduct(
     name,
     units,
     tags,
+    exclude: false,
   });
 }

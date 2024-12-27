@@ -1,6 +1,7 @@
 import { globalCSSVars } from "@/styles/colors";
 import { Container } from "@/styles/index.styles";
 import { AnchorNavigators } from "@/styles/Nav.module";
+import { Products } from "../pages/products";
 
 export function ProductsLayout({ children }: { children: children }) {
   const url: Array<{ href: string; text: string }> = [
@@ -11,6 +12,10 @@ export function ProductsLayout({ children }: { children: children }) {
     {
       href: "/create",
       text: "Añadir producto",
+    },
+    {
+      href: "/edit",
+      text: "Editar producto",
     },
   ];
 
@@ -35,7 +40,7 @@ export function ProductsLayout({ children }: { children: children }) {
           {children}
         </Container>
       </Container>
-      ES el martillo, tomame una foto XD
+      <Products />
     </>
   );
 }

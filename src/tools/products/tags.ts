@@ -12,7 +12,10 @@ import {
 } from "firebase/firestore";
 import styled, { css } from "styled-components";
 
-export const TagComponent = styled.button<{ $bg: string; $hold?: boolean }>`
+export const TagComponent = styled.button<{
+  $bg: string;
+  $hold?: boolean;
+}>`
   position: relative;
   padding: 5px 10px;
   background-color: ${(props) => props.$bg};
@@ -59,8 +62,10 @@ export type TagType = {
   color: string;
 };
 
+export type Tag = Record<string, TagType>;
+
 export type TagsDoc = {
-  tags: Record<string, TagType>;
+  tags: Tag;
 };
 
 export async function getTags() {

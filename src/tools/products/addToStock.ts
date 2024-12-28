@@ -1,9 +1,18 @@
-import { arrayUnion, DocumentReference, updateDoc } from "firebase/firestore";
+import {
+  arrayUnion,
+  DocumentReference,
+  Timestamp,
+  updateDoc,
+} from "firebase/firestore";
 import { productDoc } from "./create";
 import { entryData, entryDoc } from "./addEntry";
 
-interface stockProps extends entryData {
+export interface stockProps extends entryData {
   entry_ref: DocumentReference<entryDoc>;
+}
+
+export interface stockType extends stockProps {
+  created_at: Timestamp;
 }
 
 export async function addToStock(

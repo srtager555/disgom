@@ -2,6 +2,7 @@ import { addDoc, collection, Timestamp, updateDoc } from "firebase/firestore";
 import { Firestore } from "../firestore";
 import { ProductsCollection } from "../firestore/CollectionTyping";
 import { DocumentReference } from "firebase/firestore";
+import { stockType } from "./addToStock";
 
 export type productUnits = "LB" | "KG" | "1/4" | "1/2" | "U";
 
@@ -10,6 +11,7 @@ export type productDoc = {
   created_at: Timestamp;
   units: productUnits;
   tags: string[];
+  stock: stockType[];
 };
 
 /**

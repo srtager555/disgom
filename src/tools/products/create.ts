@@ -1,6 +1,7 @@
-import { addDoc, collection, Timestamp } from "firebase/firestore";
+import { addDoc, collection, Timestamp, updateDoc } from "firebase/firestore";
 import { Firestore } from "../firestore";
 import { ProductsCollection } from "../firestore/CollectionTyping";
+import { DocumentReference } from "firebase/firestore";
 
 export type productUnits = "LB" | "KG" | "1/4" | "1/2" | "U";
 
@@ -18,10 +19,19 @@ export type productDoc = {
  * @returns The new product reference
  */
 export async function createProduct(
+  product_ref: DocumentReference<productDoc> | undefined,
   name: string,
   units: productUnits,
   tags: Array<string>
 ) {
+  if (product_ref) {
+    return await updateDoc(product_ref, {
+      name,
+      units,
+      tags,
+    });
+  }
+
   const db = Firestore();
   const productColl = collection(db, ProductsCollection.root);
 
@@ -30,6 +40,7 @@ export async function createProduct(
     name,
     units,
     tags,
+    disabled: false,
     exclude: false,
   });
 }

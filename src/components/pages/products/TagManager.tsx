@@ -143,6 +143,12 @@ export function TagManager({
             onPointerUp={() => {
               clearInterval(timeoutSaved);
             }}
+            onMouseUp={() => {
+              clearInterval(timeoutSaved);
+            }}
+            onMouseLeave={() => {
+              clearInterval(timeoutSaved);
+            }}
           >
             {el.name}
           </TagComponent>

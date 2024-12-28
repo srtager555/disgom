@@ -2,8 +2,23 @@ import { globalCSSVars } from "@/styles/colors";
 import { Container } from "@/styles/index.styles";
 import { AnchorNavigators } from "@/styles/Nav.module";
 import { Products } from "../pages/products";
+import { createContext, Dispatch, SetStateAction, useState } from "react";
+import { QueryDocumentSnapshot } from "firebase/firestore";
+import { productDoc } from "@/tools/products/create";
+
+export const ProductContext = createContext<{
+  selectedProduct: QueryDocumentSnapshot<productDoc> | undefined;
+  setSelectedProduct:
+    | Dispatch<SetStateAction<QueryDocumentSnapshot<productDoc> | undefined>>
+    | undefined;
+}>({
+  selectedProduct: undefined,
+  setSelectedProduct: undefined,
+});
 
 export function ProductsLayout({ children }: { children: children }) {
+  const [selectedProduct, setSelectedProduct] =
+    useState<QueryDocumentSnapshot<productDoc>>();
   const url: Array<{ href: string; text: string }> = [
     {
       href: "",
@@ -11,16 +26,17 @@ export function ProductsLayout({ children }: { children: children }) {
     },
     {
       href: "/create",
-      text: "Añadir producto",
-    },
-    {
-      href: "/edit",
-      text: "Editar producto",
+      text: "Añadir o editar producto",
     },
   ];
 
   return (
-    <>
+    <ProductContext.Provider
+      value={{
+        selectedProduct,
+        setSelectedProduct,
+      }}
+    >
       <Container styles={{ marginBottom: "25px" }}>
         <Container
           styles={{
@@ -41,6 +57,6 @@ export function ProductsLayout({ children }: { children: children }) {
         </Container>
       </Container>
       <Products />
-    </>
+    </ProductContext.Provider>
   );
 }

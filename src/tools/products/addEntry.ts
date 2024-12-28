@@ -12,6 +12,7 @@ import { addToStock } from "./addToStock";
 export type entryData = {
   purchase_price: number;
   sale_price: number;
+  seller_profit: number;
   amount: number;
 };
 

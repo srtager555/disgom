@@ -60,7 +60,12 @@ export const Form = forwardRef(function awa(
   );
 });
 
-export const Button = styled.button<{ $warn?: boolean; $primary?: boolean }>`
+export const Button = styled.button<{
+  $warn?: boolean;
+  $primary?: boolean;
+  $hold?: boolean;
+}>`
+  position: relative;
   display: inline-block;
   padding: 10px 15px;
   background-color: transparent;
@@ -75,6 +80,26 @@ export const Button = styled.button<{ $warn?: boolean; $primary?: boolean }>`
   }
   &:active {
     transform: scale(0.9);
+
+    ${(props) =>
+      props.$hold &&
+      css`
+        &::before {
+          width: 100%;
+          transition: 5000ms width ease;
+        }
+      `}
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 0%;
+    transition: 200ms width ease;
+    background-color: #ff000080;
   }
 
   ${(props) => {

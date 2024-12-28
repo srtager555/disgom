@@ -12,24 +12,25 @@ interface props
     InputHTMLAttributes<HTMLInputElement>,
     HTMLInputElement
   > {
-  children?: string;
+  children?: children;
   inline?: boolean;
 }
 
-export function InputNumber({ children, inline, ...props }: props) {
+export function InputNumber({ children, width, inline, ...props }: props) {
   return (
     <Container
       styles={{
         display: inline ? "inline-block" : "block",
         marginBottom: "20px",
         marginRight: inline ? "10px" : "0px",
+        width,
       }}
     >
       <p>
         {children}
         {props.required && "*"}
       </p>
-      <Input {...props} type="number" />
+      <Input style={{ width: "100%" }} {...props} type="number" />
     </Container>
   );
 }

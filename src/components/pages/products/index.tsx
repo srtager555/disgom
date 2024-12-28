@@ -82,22 +82,22 @@ export function Products() {
     <>
       <h2>Productos</h2>
       <ProductsContainer>
-        {tags &&
-          products.docs?.map((_, i) => {
-            const data = _.data();
-            const bottomPadding = data.tags.filter((el) => tags[el]);
+        {products.docs?.map((_, i) => {
+          const data = _.data();
+          const bottomPadding = data.tags.filter((el) => tags && tags[el]);
 
-            return (
-              <Container key={i}>
-                <Product
-                  onClick={() => handlerOnClik(_)}
-                  $removeBottomPadding={bottomPadding.length > 0}
-                >
-                  <h3>
-                    {data.name} - {data.units}
-                  </h3>
-                  <Container>
-                    {data.tags.map((el, i) => {
+          return (
+            <Container key={i}>
+              <Product
+                onClick={() => handlerOnClik(_)}
+                $removeBottomPadding={bottomPadding.length > 0}
+              >
+                <h3>
+                  {data.name} - {data.units}
+                </h3>
+                <Container>
+                  {tags &&
+                    data.tags.map((el, i) => {
                       const data = tags[el];
 
                       if (data)
@@ -107,11 +107,11 @@ export function Products() {
                           </TagSimple>
                         );
                     })}
-                  </Container>
-                </Product>
-              </Container>
-            );
-          })}
+                </Container>
+              </Product>
+            </Container>
+          );
+        })}
       </ProductsContainer>
     </>
   );

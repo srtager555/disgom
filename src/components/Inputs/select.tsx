@@ -13,12 +13,19 @@ interface props
     HTMLSelectElement
   > {
   children?: children;
+  inline?: boolean;
   options: Array<{ name: string; value: string; selected?: boolean }>;
 }
 
-export function Select({ children, options, ...props }: props) {
+export function Select({ children, inline, options, ...props }: props) {
   return (
-    <Container styles={{ marginBottom: "20px" }}>
+    <Container
+      styles={{
+        display: inline ? "inline-block" : "block",
+        marginBottom: "20px",
+        marginRight: inline ? "10px" : "0px",
+      }}
+    >
       <p>{children}</p>
       <SelectStyles {...props}>
         {options.map((el, i) => {

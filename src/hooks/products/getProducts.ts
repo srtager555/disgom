@@ -24,7 +24,11 @@ export function useGetProducts() {
       db,
       ProductsCollection.root
     ) as CollectionReference<productDoc>;
-    const q = query(coll, where("exclude", "!=", true));
+    const q = query(
+      coll,
+      where("exclude", "!=", true),
+      where("disabled", "==", false)
+    );
 
     const unsubcribe = onSnapshot(q, (snap) => {
       setSnap(snap);

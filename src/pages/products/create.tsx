@@ -1,38 +1,106 @@
 import { Select } from "@/components/Inputs/select";
 import { InputText } from "@/components/Inputs/text";
-import { ProductsLayout } from "@/components/layouts/Products.layout";
+import {
+  ProductContext,
+  ProductsLayout,
+} from "@/components/layouts/Products.layout";
 import { TagManager } from "@/components/pages/products/TagManager";
 import { NextPageWithLayout } from "@/pages/_app";
 import { Button, Form } from "@/styles/Form.styles";
 import { Container } from "@/styles/index.styles";
-import { createProduct, productUnits } from "@/tools/products/create";
+import {
+  createProduct,
+  productDoc,
+  productUnits,
+} from "@/tools/products/create";
+import { disableProduct } from "@/tools/products/disable";
 import { getUnits } from "@/tools/products/getUnits";
-import { TagType } from "@/tools/products/tags";
-import { FormEvent, ReactElement, useRef, useState } from "react";
+import { getTags, TagType } from "@/tools/products/tags";
+import {
+  FormEvent,
+  ReactElement,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const Page: NextPageWithLayout = () => {
+  const { selectedProduct, setSelectedProduct } = useContext(ProductContext);
   const [tagsAdded, setTagsAdded] = useState<Array<TagType>>([]);
+  const [selectedProductData, setSelectedProductData] = useState<productDoc>();
+  const [timeOut, setTimeOut] = useState<NodeJS.Timeout>();
   const productFormRef = useRef<HTMLFormElement>(null);
   const units = getUnits();
+
+  function handlerDisableProduct(e: FormEvent) {
+    e.preventDefault();
+    const timeout = setTimeout(async () => {
+      if (selectedProduct) await disableProduct(selectedProduct.ref);
+
+      if (setSelectedProduct) setSelectedProduct(undefined);
+      productFormRef.current?.reset();
+      setTagsAdded([]);
+    }, 5000);
+
+    setTimeOut(timeout);
+  }
 
   async function handlerCreateProduct(e: FormEvent) {
     if (!productFormRef) return;
     e.preventDefault();
     const { productName, units } = e.target as EventTarget & {
       productName: HTMLInputElement;
+      productCostPrice: HTMLInputElement;
+      productSalePrice: HTMLInputElement;
+      amount: HTMLInputElement;
       units: HTMLInputElement & { value: productUnits };
     };
 
     const tagsParsed = tagsAdded.map((el) => el.name);
 
-    await createProduct(productName.value, units.value, tagsParsed);
+    await createProduct(
+      selectedProduct?.ref,
+      productName.value,
+      units.value,
+      tagsParsed
+    );
+
     productFormRef.current?.reset();
     setTagsAdded([]);
+    if (setSelectedProduct) setSelectedProduct(undefined);
   }
+
+  useEffect(() => {
+    async function getData() {
+      // logic to get the data
+      if (!selectedProduct) {
+        setSelectedProductData(undefined);
+        setTagsAdded([]);
+        productFormRef.current?.reset();
+        return;
+      }
+
+      const data = selectedProduct.data();
+      setSelectedProductData(data);
+
+      // logic to get the tags
+      const tags = await getTags().then((_) => _.data()?.tags);
+      if (!tags) return;
+      const currentTags = data.tags.map((_) => tags[_]);
+
+      setTagsAdded(currentTags);
+    }
+    getData();
+  }, [selectedProduct]);
 
   return (
     <Container styles={{ padding: "0 1%" }}>
-      <h1>Añadir un nuevo producto</h1>
+      <h1 style={{ marginBottom: "0px" }}>Añadir o edita un producto</h1>
+      <p style={{ marginBottom: "10px" }}>
+        Para editar un producto se tiene que seleccionar en la lista de
+        productos
+      </p>
       <Container
         styles={{
           display: "grid",
@@ -40,19 +108,52 @@ const Page: NextPageWithLayout = () => {
           gap: "20px",
         }}
       >
-        <Form ref={productFormRef} onSubmit={handlerCreateProduct}>
-          <h2>Información</h2>
-          <InputText name="productName" type="text" required>
-            Nombre del producto
-          </InputText>
-          <Select
-            name="units"
-            options={units.map((u) => ({ name: "en " + u, value: u }))}
-          >
-            ¿Como se medirá este producto?
-          </Select>
-          <Button $primary>Crear producto</Button>
-        </Form>
+        <Container>
+          <Form ref={productFormRef} onSubmit={handlerCreateProduct}>
+            <h2>Información</h2>
+            <InputText
+              name="productName"
+              required
+              defaultValue={selectedProductData?.name}
+            >
+              Nombre del producto
+            </InputText>
+
+            <Select
+              name="units"
+              options={units.map((u) => ({ name: "en " + u, value: u }))}
+              defaultValue={selectedProductData?.units}
+            >
+              ¿Cómo se medirá este producto?
+            </Select>
+
+            <Button $primary style={{ marginRight: "10px" }}>
+              {selectedProduct ? "Actualizar producto" : "Crear producto"}
+            </Button>
+            {selectedProduct && (
+              <Button
+                onPointerDown={handlerDisableProduct}
+                onPointerUp={() => clearTimeout(timeOut)}
+                onMouseUp={() => clearTimeout(timeOut)}
+                onMouseLeave={() => clearTimeout(timeOut)}
+                $warn
+                $hold
+              >
+                Eliminar producto
+              </Button>
+            )}
+          </Form>
+          {selectedProduct && (
+            <Button
+              style={{ marginTop: "10px" }}
+              onClick={() =>
+                setSelectedProduct && setSelectedProduct(undefined)
+              }
+            >
+              Eliminar selección
+            </Button>
+          )}
+        </Container>
         <TagManager state={tagsAdded} setState={setTagsAdded} />
       </Container>
     </Container>

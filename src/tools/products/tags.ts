@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Firestore } from "@/tools/firestore";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
 import {
@@ -12,23 +13,32 @@ import {
 } from "firebase/firestore";
 import styled, { css } from "styled-components";
 
-export const TagComponent = styled.button<{
+type TagProps = {
   $bg: string;
   $hold?: boolean;
-}>`
-  position: relative;
-  padding: 5px 10px;
-  background-color: ${(props) => props.$bg};
-  border-radius: 10px;
-  border: none;
-  font-size: 1rem;
-  cursor: pointer;
-  color: #fff;
-  transition: 200ms all ease;
-  margin-right: 10px;
-  margin-bottom: 10px;
-  overflow: hidden;
+};
 
+const styles = (props: TagProps) => ({
+  display: "inline-block",
+  padding: "5px 10px",
+  position: "relative",
+  backgroundColor: props.$bg,
+  borderRadius: "10px",
+  border: "none",
+  fontSize: "1rem",
+  color: "#fff",
+  transition: "200ms all ease",
+  marginRight: "10px",
+  marginBottom: "10px",
+  overflow: "hidden",
+});
+
+// @ts-ignore
+export const TagSimple = styled.span<TagProps>((props) => styles(props));
+// @ts-ignore
+export const TagButtonBase = styled.button<TagProps>((props) => styles(props));
+export const TagComponent = styled(TagButtonBase)<TagProps>`
+  cursor: pointer;
   &::before {
     content: "";
     position: absolute;

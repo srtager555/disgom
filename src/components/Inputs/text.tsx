@@ -22,7 +22,7 @@ export function InputText({ children, ...props }: props) {
         {children}
         {props.required && "*"}
       </p>
-      <Input {...props} />
+      <Input {...props} type="text" />
     </Container>
   );
 }

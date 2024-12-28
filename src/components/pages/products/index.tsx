@@ -1,11 +1,19 @@
+import { ProductContext } from "@/components/layouts/Products.layout";
 import { useGetProducts } from "@/hooks/products/getProducts";
 import { globalCSSVars } from "@/styles/colors";
 import { Container } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
-import { Tag, TagComponent, TagsDoc } from "@/tools/products/tags";
-import { doc, DocumentReference, onSnapshot } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { productDoc } from "@/tools/products/create";
+import { Tag, TagsDoc, TagSimple } from "@/tools/products/tags";
+import {
+  doc,
+  DocumentData,
+  DocumentReference,
+  onSnapshot,
+  QueryDocumentSnapshot,
+} from "firebase/firestore";
+import { useContext, useEffect, useState } from "react";
 import styled, { css } from "styled-components";
 
 const ProductsContainer = styled.div`
@@ -15,12 +23,25 @@ const ProductsContainer = styled.div`
   gap: 10px;
 `;
 
-const Product = styled.div<{ $removeBottomPadding: boolean }>`
+const Product = styled.button<{ $removeBottomPadding: boolean }>`
+  text-align: start;
+  display: block;
+  font-size: 1rem;
+  background-color: transparent;
   width: 100%;
   height: auto;
   border-radius: 20px;
   border: 2px solid ${globalCSSVars["--foreground"]};
   padding: 10px;
+  cursor: pointer;
+
+  &:hover {
+    transform: scale(1.02);
+  }
+  &:active {
+    transform: scale(0.95);
+  }
+
   ${(props) =>
     props.$removeBottomPadding &&
     css`
@@ -29,8 +50,15 @@ const Product = styled.div<{ $removeBottomPadding: boolean }>`
 `;
 
 export function Products() {
+  const { setSelectedProduct } = useContext(ProductContext);
   const products = useGetProducts();
   const [tags, setTags] = useState<Tag>();
+
+  function handlerOnClik(
+    product: QueryDocumentSnapshot<productDoc, DocumentData>
+  ) {
+    if (setSelectedProduct) setSelectedProduct(product);
+  }
 
   useEffect(() => {
     const db = Firestore();
@@ -57,14 +85,14 @@ export function Products() {
         {tags &&
           products.docs?.map((_, i) => {
             const data = _.data();
-            console.log(tags);
-            console.log(data.tags);
             const bottomPadding = data.tags.filter((el) => tags[el]);
-            console.log("filter", bottomPadding);
 
             return (
               <Container key={i}>
-                <Product $removeBottomPadding={bottomPadding.length > 0}>
+                <Product
+                  onClick={() => handlerOnClik(_)}
+                  $removeBottomPadding={bottomPadding.length > 0}
+                >
                   <h3>
                     {data.name} - {data.units}
                   </h3>
@@ -74,9 +102,9 @@ export function Products() {
 
                       if (data)
                         return (
-                          <TagComponent $bg={data.color} key={i}>
+                          <TagSimple $bg={data.color} key={i}>
                             {data.name}
-                          </TagComponent>
+                          </TagSimple>
                         );
                     })}
                   </Container>

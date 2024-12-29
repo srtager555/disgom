@@ -19,7 +19,7 @@ import {
   useRef,
   useState,
 } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 const MainContainer = styled.div`
   display: grid;
@@ -59,10 +59,20 @@ const StockMapContainer = styled(Container)`
   margin-bottom: 20px;
 `;
 
-const StockButton = styled(Button)`
+const StockButton = styled(Button)<{ $selected: boolean }>`
   text-align: start;
   padding: 5px;
   width: 100%;
+  background-color: ${(props) =>
+    props.$selected
+      ? globalCSSVars["--selected"]
+      : globalCSSVars["--background"]};
+  ${(props) =>
+    props.$selected &&
+    css`
+      color: #fff;
+      transform: scale(1.04);
+    `}
 
   &:hover {
     transform: scale(1.02);
@@ -81,7 +91,7 @@ const FormContainer = styled.div`
 const Page: NextPageWithLayout = () => {
   const { selectedProduct } = useContext(ProductContext);
   const product = useGetProduct();
-  const [entryToEdit, setEntryToEdit] = useState();
+  const [entryToEdit, setEntryToEdit] = useState<stockType | undefined>();
   const [stock, setStock] = useState<stockType[]>();
   const [defaultCost, setDefaultCost] = useState(0);
   const [dynamicMinCost, setDynamicMinCost] = useState<number | undefined>(
@@ -131,6 +141,11 @@ const Page: NextPageWithLayout = () => {
     setDynamicMinSeller(Number(newMin));
   }
 
+  function handlerSelectEntry(stock: stockType) {
+    if (entryToEdit === stock) setEntryToEdit(undefined);
+    else setEntryToEdit(stock);
+  }
+
   useEffect(() => {
     const s = product.data?.stock;
     if (!s) {
@@ -156,10 +171,16 @@ const Page: NextPageWithLayout = () => {
 
     const currentPriceData = stock[0];
 
-    setDefaultCost(currentPriceData.purchase_price);
-    setDefaultProfitOwner(currentPriceData.sale_price);
-    setDefaultProfitSeller(currentPriceData.seller_profit);
-  }, [stock]);
+    setDefaultCost(
+      entryToEdit?.purchase_price ?? currentPriceData.purchase_price
+    );
+    setDefaultProfitOwner(
+      entryToEdit?.sale_price ?? currentPriceData.sale_price
+    );
+    setDefaultProfitSeller(
+      entryToEdit?.seller_profit ?? currentPriceData.seller_profit
+    );
+  }, [stock, entryToEdit]);
 
   return (
     <Container>
@@ -186,7 +207,10 @@ const Page: NextPageWithLayout = () => {
                 {stock.map((_, i) => {
                   return (
                     <Container key={i} styles={{ width: "100%" }}>
-                      <StockButton>
+                      <StockButton
+                        $selected={_ === entryToEdit}
+                        onClick={() => handlerSelectEntry(_)}
+                      >
                         {_.created_at.toDate().toLocaleDateString()} - hay{" "}
                         {_.amount} {product.data?.units}
                         <FlexContainer>

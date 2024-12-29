@@ -1,10 +1,10 @@
 import { arrayRemove, DocumentReference, updateDoc } from "firebase/firestore";
-import { entryDoc } from "./addEntry";
 import { stockType } from "./addToStock";
+import { productDoc } from "./create";
 
 export async function removeEntry(
   stock: stockType,
-  product_ref: DocumentReference<entryDoc>,
+  product_ref: DocumentReference<productDoc>,
   disable: boolean
 ) {
   // remove stock

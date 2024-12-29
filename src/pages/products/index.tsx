@@ -24,6 +24,28 @@ import {
 } from "react";
 import styled, { css } from "styled-components";
 
+const FadeContainer = styled(Container)<{ $fade: boolean }>`
+  &:after {
+    content: "";
+    ${(props) =>
+      !props.$fade &&
+      css`
+        display: none;
+      `}
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    cursor: not-allowed;
+  }
+  ${(props) =>
+    props.$fade &&
+    css`
+      opacity: 0.3;
+    `}
+`;
+
 const MainContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(8, 1fr);
@@ -247,138 +269,140 @@ const Page: NextPageWithLayout = () => {
           productos
         </i>
       </p>
-      <h1>{selectedProduct?.data().name}</h1>
-      <MainContainer>
-        <ChartContainer>
-          <h3>Ventas semanales</h3>
-          <Chart />
-        </ChartContainer>
-        <StockContainer>
-          <h3>Existencias</h3>
-          {stock && <p>Para editar una entrada seleccionela</p>}
-          <StockMapContainer>
-            {!stock ? (
-              <p>No hay existencia de este producto</p>
-            ) : (
-              <>
-                {stock.map((_, i) => {
-                  return (
-                    <Container key={i} styles={{ width: "100%" }}>
-                      <StockButton
-                        $selected={_ === entryToEdit}
-                        onClick={() => handlerSelectEntry(_)}
-                      >
-                        {_.created_at.toDate().toLocaleDateString()} - hay{" "}
-                        {_.amount} {product.data?.units}
-                        <FlexContainer>
-                          <Container styles={{ marginRight: "10px" }}>
-                            Costo {_.purchase_price} -
-                          </Container>
-                          <Container styles={{ marginRight: "10px" }}>
-                            Precio {_.sale_price} -
-                          </Container>
-                          <Container>Vendedor {_.seller_profit}</Container>
-                        </FlexContainer>
-                      </StockButton>
-                    </Container>
-                  );
-                })}
-              </>
-            )}
-          </StockMapContainer>
-        </StockContainer>
-        <FormContainer>
-          <Form ref={formRef} onSubmit={handlerOnSubmit}>
-            <h3>Crear una nueva entrada</h3>
-            <p>
-              {entryToEdit
-                ? "Edita la entrada seleccionada"
-                : "Ingresa nuevo producto al stock."}
-            </p>
-            <FlexContainer>
-              <Container styles={{ width: "80px" }}>
-                <InputNumber
-                  ref={costRef}
-                  defaultValue={defaultCost}
-                  min={0}
-                  onChange={handlerOnChangeOwnerMin}
-                  name="productCostPrice"
-                  inline
-                  required
-                >
-                  Costó
-                </InputNumber>
-              </Container>
-              <Container styles={{ width: "80px" }}>
-                <InputNumber
-                  ref={ownerRef}
-                  onChange={handlerOnChangeSellerMin}
-                  min={dynamicMinCost ?? defaultCost}
-                  defaultValue={defaultProfitOwner}
-                  name="productSalePrice"
-                  step="0.01"
-                  inline
-                  required
-                >
-                  P. Venta
-                </InputNumber>
-              </Container>
-              <Container styles={{ width: "110px" }}>
-                <InputNumber
-                  min={dynamicMinSeller ?? defaultProfitOwner}
-                  defaultValue={defaultProfitSeller}
-                  name="sellerProfit"
-                  step="0.01"
-                  inline
-                  required
-                >
-                  P. Vendedor
-                </InputNumber>
-              </Container>
-              <Container styles={{ width: "110px" }}>
-                <InputNumber
-                  defaultValue={entryToEdit?.amount}
-                  inline
-                  name="amount"
-                  required
-                  step="0.01"
-                >
-                  {entryToEdit ? (
-                    <>Stock ({originalAmount})</>
-                  ) : (
-                    <>
-                      Ingresó{" "}
-                      {selectedProduct?.data()
-                        ? `${selectedProduct.data().units}`
-                        : ""}
-                    </>
-                  )}
-                </InputNumber>
-              </Container>
-            </FlexContainer>
-            <Container
-              styles={{ display: "inline-block", marginRight: "10px" }}
-            >
-              <Button>
-                {entryToEdit ? "Editar entrada" : "Agregar entrada"}
-              </Button>
-            </Container>
-            {entryToEdit && (
-              <Button
-                $warn
-                $hold
-                onPointerDown={handlerRemoveStock}
-                onPointerUp={handlerCancelRemoveStock}
-                onPointerLeave={handlerCancelRemoveStock}
+      <FadeContainer $fade={selectedProduct ? false : true}>
+        <h1>{selectedProduct?.data().name}</h1>
+        <MainContainer>
+          <ChartContainer>
+            <h3>Ventas semanales</h3>
+            <Chart />
+          </ChartContainer>
+          <StockContainer>
+            <h3>Existencias</h3>
+            {stock && <p>Para editar una entrada seleccionela</p>}
+            <StockMapContainer>
+              {!stock ? (
+                <p>No hay existencia de este producto</p>
+              ) : (
+                <>
+                  {stock.map((_, i) => {
+                    return (
+                      <Container key={i} styles={{ width: "100%" }}>
+                        <StockButton
+                          $selected={_ === entryToEdit}
+                          onClick={() => handlerSelectEntry(_)}
+                        >
+                          {_.created_at.toDate().toLocaleDateString()} - hay{" "}
+                          {_.amount} {product.data?.units}
+                          <FlexContainer>
+                            <Container styles={{ marginRight: "10px" }}>
+                              Costo {_.purchase_price} -
+                            </Container>
+                            <Container styles={{ marginRight: "10px" }}>
+                              Precio {_.sale_price} -
+                            </Container>
+                            <Container>Vendedor {_.seller_profit}</Container>
+                          </FlexContainer>
+                        </StockButton>
+                      </Container>
+                    );
+                  })}
+                </>
+              )}
+            </StockMapContainer>
+          </StockContainer>
+          <FormContainer>
+            <Form ref={formRef} onSubmit={handlerOnSubmit}>
+              <h3>Crear una nueva entrada</h3>
+              <p>
+                {entryToEdit
+                  ? "Edita la entrada seleccionada"
+                  : "Ingresa nuevo producto al stock."}
+              </p>
+              <FlexContainer>
+                <Container styles={{ width: "80px" }}>
+                  <InputNumber
+                    ref={costRef}
+                    defaultValue={defaultCost}
+                    min={0}
+                    onChange={handlerOnChangeOwnerMin}
+                    name="productCostPrice"
+                    inline
+                    required
+                  >
+                    Costó
+                  </InputNumber>
+                </Container>
+                <Container styles={{ width: "80px" }}>
+                  <InputNumber
+                    ref={ownerRef}
+                    onChange={handlerOnChangeSellerMin}
+                    min={dynamicMinCost ?? defaultCost}
+                    defaultValue={defaultProfitOwner}
+                    name="productSalePrice"
+                    step="0.01"
+                    inline
+                    required
+                  >
+                    P. Venta
+                  </InputNumber>
+                </Container>
+                <Container styles={{ width: "110px" }}>
+                  <InputNumber
+                    min={dynamicMinSeller ?? defaultProfitOwner}
+                    defaultValue={defaultProfitSeller}
+                    name="sellerProfit"
+                    step="0.01"
+                    inline
+                    required
+                  >
+                    P. Vendedor
+                  </InputNumber>
+                </Container>
+                <Container styles={{ width: "110px" }}>
+                  <InputNumber
+                    defaultValue={entryToEdit?.amount}
+                    inline
+                    name="amount"
+                    required
+                    step="0.01"
+                  >
+                    {entryToEdit ? (
+                      <>Stock ({originalAmount})</>
+                    ) : (
+                      <>
+                        Ingresó{" "}
+                        {selectedProduct?.data()
+                          ? `${selectedProduct.data().units}`
+                          : ""}
+                      </>
+                    )}
+                  </InputNumber>
+                </Container>
+              </FlexContainer>
+              <Container
+                styles={{ display: "inline-block", marginRight: "10px" }}
               >
-                {entryToEdit.amount === originalAmount
-                  ? "Eliminar entrada"
-                  : "Eliminar existencias"}
-              </Button>
-            )}
-          </Form>
-        </FormContainer>
-      </MainContainer>
+                <Button>
+                  {entryToEdit ? "Editar entrada" : "Agregar entrada"}
+                </Button>
+              </Container>
+              {entryToEdit && (
+                <Button
+                  $warn
+                  $hold
+                  onPointerDown={handlerRemoveStock}
+                  onPointerUp={handlerCancelRemoveStock}
+                  onPointerLeave={handlerCancelRemoveStock}
+                >
+                  {entryToEdit.amount === originalAmount
+                    ? "Eliminar entrada"
+                    : "Eliminar existencias"}
+                </Button>
+              )}
+            </Form>
+          </FormContainer>
+        </MainContainer>
+      </FadeContainer>
     </Container>
   );
 };

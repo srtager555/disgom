@@ -146,6 +146,7 @@ const Page: NextPageWithLayout = () => {
     formRef.current?.reset();
   };
 
+  // functions to manage the min input value
   function handlerOnChangeOwnerMin(e: ChangeEvent<HTMLInputElement>) {
     const newMin = e.target.value;
     setDynamicMinCost(Number(newMin));
@@ -155,11 +156,13 @@ const Page: NextPageWithLayout = () => {
     setDynamicMinSeller(Number(newMin));
   }
 
+  // function to select and unselect a entry
   function handlerSelectEntry(stock: stockType) {
     if (entryToEdit === stock) setEntryToEdit(undefined);
     else setEntryToEdit(stock);
   }
 
+  // effect to sort the product stock by date
   useEffect(() => {
     const s = product.data?.stock;
     if (!s) {
@@ -174,6 +177,9 @@ const Page: NextPageWithLayout = () => {
     setStock(stock);
   }, [product.data?.stock]);
 
+  // effect to set the default values in the inputs
+  // if there is a entry selected the code will put their values
+  // in the default input values
   useEffect(() => {
     if (!stock || stock?.length === 0) {
       setDefaultCost(0);
@@ -196,6 +202,7 @@ const Page: NextPageWithLayout = () => {
     );
   }, [stock, entryToEdit]);
 
+  // effect to get the original entry amount
   useEffect(() => {
     async function getEntry() {
       if (!entryToEdit) {

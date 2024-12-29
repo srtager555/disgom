@@ -5,6 +5,7 @@
   --detail: #5f6368;
   --highlight: #0077c7;
   --warn: red;
+  --selected: #005a93;
 }
 
 @media (prefers-color-scheme: dark) {

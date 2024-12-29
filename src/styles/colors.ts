@@ -5,4 +5,5 @@ export const globalCSSVars = {
   "--detail": "var(--detail)",
   "--highlight": "var(--highlight)",
   "--warn": "var(--warn)",
+  "--selected": "var(--selected)",
 };

@@ -3,3 +3,7 @@ export const ProductsCollection = {
   entry: "entry",
   tags: "tags",
 };
+
+export const SellersCollection = {
+  root: "Sellers",
+};

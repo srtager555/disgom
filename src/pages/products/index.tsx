@@ -10,6 +10,7 @@ import { Button, Form } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { addEntry } from "@/tools/products/addEntry";
 import { stockType } from "@/tools/products/addToStock";
+import { getDoc } from "firebase/firestore";
 import {
   ChangeEvent,
   FormEvent,
@@ -92,6 +93,7 @@ const Page: NextPageWithLayout = () => {
   const { selectedProduct } = useContext(ProductContext);
   const product = useGetProduct();
   const [entryToEdit, setEntryToEdit] = useState<stockType | undefined>();
+  const [originalAmount, setOriginalAmount] = useState(0);
   const [stock, setStock] = useState<stockType[]>();
   const [defaultCost, setDefaultCost] = useState(0);
   const [dynamicMinCost, setDynamicMinCost] = useState<number | undefined>(
@@ -182,6 +184,22 @@ const Page: NextPageWithLayout = () => {
     );
   }, [stock, entryToEdit]);
 
+  useEffect(() => {
+    async function getEntry() {
+      if (!entryToEdit) return;
+
+      const query = await getDoc(entryToEdit.entry_ref);
+      const originalAmount = query.data()?.amount;
+
+      if (originalAmount) setOriginalAmount(originalAmount);
+    }
+    getEntry();
+  }, [entryToEdit]);
+
+  useEffect(() => {
+    setEntryToEdit(undefined);
+  }, [selectedProduct]);
+
   return (
     <Container>
       <p>
@@ -233,7 +251,11 @@ const Page: NextPageWithLayout = () => {
         <FormContainer>
           <Form ref={formRef} onSubmit={handlerOnSubmit}>
             <h3>Crear una nueva entrada</h3>
-            <p>Ingresa nuevo producto al stock.</p>
+            <p>
+              {entryToEdit
+                ? "Edita la entrada seleccionada"
+                : "Ingresa nuevo producto al stock."}
+            </p>
             <FlexContainer>
               <Container styles={{ width: "80px" }}>
                 <InputNumber
@@ -255,7 +277,7 @@ const Page: NextPageWithLayout = () => {
                   min={dynamicMinCost ?? defaultCost}
                   defaultValue={defaultProfitOwner}
                   name="productSalePrice"
-                  step="0.001"
+                  step="0.01"
                   inline
                   required
                 >
@@ -267,23 +289,46 @@ const Page: NextPageWithLayout = () => {
                   min={dynamicMinSeller ?? defaultProfitOwner}
                   defaultValue={defaultProfitSeller}
                   name="sellerProfit"
-                  step="0.001"
+                  step="0.01"
                   inline
                   required
                 >
                   P. Vendedor
                 </InputNumber>
               </Container>
-              <Container styles={{ width: "100px" }}>
-                <InputNumber inline name="amount" required step="0.001">
-                  Ingresó{" "}
-                  {selectedProduct?.data()
-                    ? `${selectedProduct.data().units}`
-                    : ""}
+              <Container styles={{ width: "110px" }}>
+                <InputNumber
+                  defaultValue={entryToEdit?.amount}
+                  inline
+                  name="amount"
+                  required
+                  step="0.01"
+                >
+                  {entryToEdit ? (
+                    <>Stock ({originalAmount})</>
+                  ) : (
+                    <>
+                      Ingresó{" "}
+                      {selectedProduct?.data()
+                        ? `${selectedProduct.data().units}`
+                        : ""}
+                    </>
+                  )}
                 </InputNumber>
               </Container>
             </FlexContainer>
-            <Button>Agregar carga</Button>
+            <Container
+              styles={{ display: "inline-block", marginRight: "10px" }}
+            >
+              <Button>
+                {entryToEdit ? "Editar entrada" : "Agregar entrada"}
+              </Button>
+            </Container>
+            {entryToEdit && (
+              <Button $warn $hold>
+                Eliminar entrada
+              </Button>
+            )}
           </Form>
         </FormContainer>
       </MainContainer>

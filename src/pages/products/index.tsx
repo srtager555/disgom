@@ -11,7 +11,8 @@ import { Container, FlexContainer } from "@/styles/index.styles";
 import { addEntry } from "@/tools/products/addEntry";
 import { stockType } from "@/tools/products/addToStock";
 import { EditEntry } from "@/tools/products/editEntry";
-import { getDoc, Timestamp } from "firebase/firestore";
+import { removeEntry } from "@/tools/products/removeEntry";
+import { getDoc } from "firebase/firestore";
 import {
   ChangeEvent,
   FormEvent,
@@ -93,6 +94,7 @@ const FormContainer = styled.div`
 const Page: NextPageWithLayout = () => {
   const { selectedProduct } = useContext(ProductContext);
   const product = useGetProduct();
+  const [timeoutSaved, setTimeoutSaved] = useState<NodeJS.Timeout>();
   const [entryToEdit, setEntryToEdit] = useState<stockType | undefined>();
   const [originalAmount, setOriginalAmount] = useState(0);
   const [stock, setStock] = useState<stockType[]>();
@@ -145,6 +147,21 @@ const Page: NextPageWithLayout = () => {
 
     formRef.current?.reset();
   };
+
+  // functions to remove a stock
+  function handlerRemoveStock() {
+    setTimeoutSaved(
+      setTimeout(async () => {
+        if (!entryToEdit || !selectedProduct?.ref) return;
+        await removeEntry(entryToEdit, selectedProduct?.ref, false);
+
+        setEntryToEdit(undefined);
+      }, 5000)
+    );
+  }
+  function handlerCancelRemoveStock() {
+    clearTimeout(timeoutSaved);
+  }
 
   // functions to manage the min input value
   function handlerOnChangeOwnerMin(e: ChangeEvent<HTMLInputElement>) {
@@ -347,7 +364,13 @@ const Page: NextPageWithLayout = () => {
               </Button>
             </Container>
             {entryToEdit && (
-              <Button $warn $hold>
+              <Button
+                $warn
+                $hold
+                onPointerDown={handlerRemoveStock}
+                onPointerUp={handlerCancelRemoveStock}
+                onPointerLeave={handlerCancelRemoveStock}
+              >
                 {entryToEdit.amount === originalAmount
                   ? "Eliminar entrada"
                   : "Eliminar existencias"}

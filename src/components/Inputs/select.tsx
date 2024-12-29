@@ -14,15 +14,22 @@ interface props
   > {
   children?: children;
   inline?: boolean;
+  marginBottom?: string;
   options: Array<{ name: string; value: string; selected?: boolean }>;
 }
 
-export function Select({ children, inline, options, ...props }: props) {
+export function Select({
+  children,
+  inline,
+  marginBottom,
+  options,
+  ...props
+}: props) {
   return (
     <Container
       styles={{
         display: inline ? "inline-block" : "block",
-        marginBottom: "20px",
+        marginBottom: marginBottom || "20px",
         marginRight: inline ? "10px" : "0px",
       }}
     >

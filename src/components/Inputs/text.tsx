@@ -13,11 +13,18 @@ interface props
     HTMLInputElement
   > {
   children?: string;
+  inline?: boolean;
+  marginBottom?: string;
 }
 
-export function InputText({ children, ...props }: props) {
+export function InputText({ children, inline, marginBottom, ...props }: props) {
   return (
-    <Container styles={{ marginBottom: "20px" }}>
+    <Container
+      styles={{
+        marginBottom: marginBottom || "20px",
+        marginRight: inline ? "10px" : "0px",
+      }}
+    >
       <p>
         {children}
         {props.required && "*"}

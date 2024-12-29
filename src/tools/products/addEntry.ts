@@ -9,6 +9,10 @@ import { productDoc } from "./create";
 import { ProductsCollection } from "../firestore/CollectionTyping";
 import { addToStock } from "./addToStock";
 
+export interface entryDoc extends entryData {
+  disabled: false;
+}
+
 export type entryData = {
   purchase_price: number;
   sale_price: number;
@@ -28,6 +32,7 @@ export async function addEntry(
 
   await addDoc(coll, {
     created_at: new Date(),
+    disabled: false,
     ...data,
   }).then(async (_) => {
     const entry_ref = doc(coll, _.id) as DocumentReference<entryDoc>;

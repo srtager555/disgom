@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
-import { Icon } from "../Icons";
+import { Icon } from "../../Icons";
 
 const Nav = styled.nav`
   display: flex;
@@ -24,11 +24,11 @@ const Anchor = styled(AnchorNavigators)`
 const CreateAnchor = styled(Link)`
   display: flex;
   align-items: center;
-  font-size: 1.3rem;
-  padding: 5px 10px;
+  font-size: 1rem;
+  padding: 3px 10px;
   margin-left: 20px;
   border-radius: 10px;
-  color: #fff;
+
   background-color: ${globalCSSVars["--background"]};
   border: 3px solid ${globalCSSVars["--selected"]};
 
@@ -43,7 +43,7 @@ const CreateAnchor = styled(Link)`
 const IconContainer = styled.span`
   margin-right: 5px;
   & > div svg {
-    fill: #fff;
+    /* fill: #fff; */
   }
 `;
 

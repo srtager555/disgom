@@ -104,6 +104,8 @@ export const NavContainer = styled.div<{ $deployNav: boolean }>`
   display: grid;
   grid-template-columns: ${({ $deployNav }) => ($deployNav ? "200px" : "60px")} 1fr 60px;
   width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
   height: 100vh;
   overflow: scroll;
   transition: all 200ms ease;

@@ -44,6 +44,7 @@ export function ProductsLayout({ children }: { children: children }) {
             border: "2px solid " + globalCSSVars["--foreground"],
             borderRadius: "20px",
             padding: "10px",
+            width: "100%",
           }}
         >
           <Container styles={{ marginBottom: "30px" }}>

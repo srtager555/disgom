@@ -3,9 +3,17 @@ import { Container } from "@/styles/index.styles";
 import { AnchorNavigators } from "@/styles/Nav.module";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import {
+  createContext,
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useState,
+} from "react";
 import styled from "styled-components";
 import { Icon } from "../../Icons";
+import { SellersDoc } from "@/tools/sellers/create";
+import { QueryDocumentSnapshot } from "firebase/firestore";
 
 const Nav = styled.nav`
   display: flex;
@@ -51,7 +59,20 @@ type props = {
   children: children;
 };
 
+type sellerSelected = QueryDocumentSnapshot<SellersDoc> | undefined;
+type setSellerSelected = Dispatch<SetStateAction<sellerSelected>> | undefined;
+
+export const SellerContext = createContext<{
+  sellerSelected: sellerSelected;
+  setSellerSelected: setSellerSelected;
+}>({
+  sellerSelected: undefined,
+  setSellerSelected: undefined,
+});
+
 export function SellersLayout({ children }: props) {
+  const [sellerSelected, setSellerSelected] =
+    useState<sellerSelected>(undefined);
   const [showCreateAnchor, setShowCreateAnchor] = useState(false);
   const router = useRouter();
 
@@ -62,19 +83,21 @@ export function SellersLayout({ children }: props) {
   }, [router]);
 
   return (
-    <Container>
-      <Nav>
-        <Anchor href="/sellers">Vendedores</Anchor>
-        {showCreateAnchor && (
-          <CreateAnchor href="/sellers/create">
-            <IconContainer>
-              <Icon iconType="addCircle" />
-            </IconContainer>
-            Agregar nuevo
-          </CreateAnchor>
-        )}
-      </Nav>
-      {children}
-    </Container>
+    <SellerContext.Provider value={{ sellerSelected, setSellerSelected }}>
+      <Container>
+        <Nav>
+          <Anchor href="/sellers">Vendedores</Anchor>
+          {showCreateAnchor && (
+            <CreateAnchor href="/sellers/create">
+              <IconContainer>
+                <Icon iconType="addCircle" />
+              </IconContainer>
+              Agregar nuevo
+            </CreateAnchor>
+          )}
+        </Nav>
+        {children}
+      </Container>
+    </SellerContext.Provider>
   );
 }

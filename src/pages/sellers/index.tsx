@@ -4,7 +4,7 @@ import { NextPageWithLayout } from "@/pages/_app";
 import { ReactElement } from "react";
 
 const Page: NextPageWithLayout = () => {
-  return "a";
+  return "";
 };
 
 Page.getLayout = function getLayout(page: ReactElement) {

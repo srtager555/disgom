@@ -10,7 +10,8 @@ import { Button, Form } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { addEntry } from "@/tools/products/addEntry";
 import { stockType } from "@/tools/products/addToStock";
-import { getDoc } from "firebase/firestore";
+import { EditEntry } from "@/tools/products/editEntry";
+import { getDoc, Timestamp } from "firebase/firestore";
 import {
   ChangeEvent,
   FormEvent,
@@ -124,12 +125,23 @@ const Page: NextPageWithLayout = () => {
     const sale_price = Number(productSalePrice.value);
     const seller_profit = Number(sellerProfit.value);
 
-    await addEntry(selectedProduct?.ref, {
-      amount: Number(amount.value),
-      purchase_price,
-      sale_price,
-      seller_profit,
-    });
+    if (entryToEdit) {
+      await EditEntry(selectedProduct.ref, entryToEdit, {
+        amount: Number(amount.value),
+        purchase_price,
+        sale_price,
+        seller_profit,
+      });
+
+      setEntryToEdit(undefined);
+    } else {
+      await addEntry(selectedProduct?.ref, {
+        amount: Number(amount.value),
+        purchase_price,
+        sale_price,
+        seller_profit,
+      });
+    }
 
     formRef.current?.reset();
   };
@@ -186,7 +198,10 @@ const Page: NextPageWithLayout = () => {
 
   useEffect(() => {
     async function getEntry() {
-      if (!entryToEdit) return;
+      if (!entryToEdit) {
+        setOriginalAmount(0);
+        return;
+      }
 
       const query = await getDoc(entryToEdit.entry_ref);
       const originalAmount = query.data()?.amount;
@@ -326,7 +341,9 @@ const Page: NextPageWithLayout = () => {
             </Container>
             {entryToEdit && (
               <Button $warn $hold>
-                Eliminar entrada
+                {entryToEdit.amount === originalAmount
+                  ? "Eliminar entrada"
+                  : "Eliminar existencias"}
               </Button>
             )}
           </Form>

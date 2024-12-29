@@ -11,6 +11,7 @@ import { Container, FlexContainer } from "@/styles/index.styles";
 import { addEntry } from "@/tools/products/addEntry";
 import { stockType } from "@/tools/products/addToStock";
 import {
+  ChangeEvent,
   FormEvent,
   ReactElement,
   useContext,
@@ -23,7 +24,7 @@ import styled from "styled-components";
 const MainContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  grid-auto-rows: 25px;
+  grid-auto-rows: 22px;
   gap: 10px;
 `;
 
@@ -74,19 +75,26 @@ const StockButton = styled(Button)`
 const FormContainer = styled.div`
   display: grid;
   grid-column: 1 / 5;
-  grid-row: 8 / 13;
+  grid-row: 8 / 14;
 `;
 
 const Page: NextPageWithLayout = () => {
   const { selectedProduct } = useContext(ProductContext);
   const product = useGetProduct();
+  const [entryToEdit, setEntryToEdit] = useState();
   const [stock, setStock] = useState<stockType[]>();
-  const costRef = useRef<HTMLInputElement>(null);
-  const ownerRef = useRef<HTMLInputElement>(null);
   const [defaultCost, setDefaultCost] = useState(0);
+  const [dynamicMinCost, setDynamicMinCost] = useState<number | undefined>(
+    undefined
+  );
   const [defaultProfitOwner, setDefaultProfitOwner] = useState(0);
   const [defaultProfitSeller, setDefaultProfitSeller] = useState(0);
+  const [dynamicMinSeller, setDynamicMinSeller] = useState<number | undefined>(
+    undefined
+  );
   const formRef = useRef<HTMLFormElement>(null);
+  const costRef = useRef<HTMLInputElement>(null);
+  const ownerRef = useRef<HTMLInputElement>(null);
 
   const handlerOnSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -113,6 +121,15 @@ const Page: NextPageWithLayout = () => {
 
     formRef.current?.reset();
   };
+
+  function handlerOnChangeOwnerMin(e: ChangeEvent<HTMLInputElement>) {
+    const newMin = e.target.value;
+    setDynamicMinCost(Number(newMin));
+  }
+  function handlerOnChangeSellerMin(e: ChangeEvent<HTMLInputElement>) {
+    const newMin = e.target.value;
+    setDynamicMinSeller(Number(newMin));
+  }
 
   useEffect(() => {
     const s = product.data?.stock;
@@ -143,11 +160,6 @@ const Page: NextPageWithLayout = () => {
     setDefaultProfitOwner(currentPriceData.sale_price);
     setDefaultProfitSeller(currentPriceData.seller_profit);
   }, [stock]);
-
-  // dinamyc min in sale price
-  useEffect(() => {
-    if (!costRef) return;
-  }, [costRef]);
 
   return (
     <Container>
@@ -196,13 +208,15 @@ const Page: NextPageWithLayout = () => {
         </StockContainer>
         <FormContainer>
           <Form ref={formRef} onSubmit={handlerOnSubmit}>
-            <h3>Cargar producto</h3>
+            <h3>Crear una nueva entrada</h3>
+            <p>Ingresa nuevo producto al stock.</p>
             <FlexContainer>
               <Container styles={{ width: "80px" }}>
                 <InputNumber
                   ref={costRef}
                   defaultValue={defaultCost}
                   min={0}
+                  onChange={handlerOnChangeOwnerMin}
                   name="productCostPrice"
                   inline
                   required
@@ -213,9 +227,11 @@ const Page: NextPageWithLayout = () => {
               <Container styles={{ width: "80px" }}>
                 <InputNumber
                   ref={ownerRef}
-                  min={defaultCost}
+                  onChange={handlerOnChangeSellerMin}
+                  min={dynamicMinCost ?? defaultCost}
                   defaultValue={defaultProfitOwner}
                   name="productSalePrice"
+                  step="0.001"
                   inline
                   required
                 >
@@ -224,9 +240,10 @@ const Page: NextPageWithLayout = () => {
               </Container>
               <Container styles={{ width: "110px" }}>
                 <InputNumber
-                  min={defaultProfitOwner}
+                  min={dynamicMinSeller ?? defaultProfitOwner}
                   defaultValue={defaultProfitSeller}
                   name="sellerProfit"
+                  step="0.001"
                   inline
                   required
                 >
@@ -234,7 +251,7 @@ const Page: NextPageWithLayout = () => {
                 </InputNumber>
               </Container>
               <Container styles={{ width: "100px" }}>
-                <InputNumber defaultValue={0} inline name="amount" required>
+                <InputNumber inline name="amount" required step="0.001">
                   Ingresó{" "}
                   {selectedProduct?.data()
                     ? `${selectedProduct.data().units}`

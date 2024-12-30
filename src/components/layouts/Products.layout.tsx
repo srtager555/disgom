@@ -2,9 +2,16 @@ import { globalCSSVars } from "@/styles/colors";
 import { Container } from "@/styles/index.styles";
 import { AnchorNavigators } from "@/styles/Nav.module";
 import { Products } from "../pages/products";
-import { createContext, Dispatch, SetStateAction, useState } from "react";
+import {
+  createContext,
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useState,
+} from "react";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
+import { useRouter } from "next/router";
 
 export const ProductContext = createContext<{
   selectedProduct: QueryDocumentSnapshot<productDoc> | undefined;
@@ -17,6 +24,7 @@ export const ProductContext = createContext<{
 });
 
 export function ProductsLayout({ children }: { children: children }) {
+  const router = useRouter();
   const [selectedProduct, setSelectedProduct] =
     useState<QueryDocumentSnapshot<productDoc>>();
   const url: Array<{ href: string; text: string }> = [
@@ -29,6 +37,10 @@ export function ProductsLayout({ children }: { children: children }) {
       text: "Añadir o editar producto",
     },
   ];
+
+  useEffect(() => {
+    setSelectedProduct(undefined);
+  }, [router.asPath]);
 
   return (
     <ProductContext.Provider

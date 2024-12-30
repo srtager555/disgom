@@ -56,7 +56,7 @@ const CloseButton = styled.button`
 `;
 
 export function SellersList() {
-  const { setSellerSelected } = useContext(SellerContext);
+  const { sellerSelected, setSellerSelected } = useContext(SellerContext);
   const sellers = useGetSellers();
   const [changeToEdit, setChangeToEdit] = useState(false);
   const router = useRouter();
@@ -65,7 +65,9 @@ export function SellersList() {
     if (router.asPath != "/sellers") {
       setChangeToEdit(false);
     } else setChangeToEdit(true);
-  }, [router]);
+
+    if (setSellerSelected) setSellerSelected(undefined);
+  }, [router, setSellerSelected]);
 
   return (
     <Container styles={{ marginTop: "50px" }}>
@@ -81,11 +83,17 @@ export function SellersList() {
                   <Container>
                     {!changeToEdit ? (
                       <SeeMoreButton
-                        onClick={() =>
-                          setSellerSelected && setSellerSelected(el)
-                        }
+                        onClick={() => {
+                          if (!setSellerSelected) return;
+
+                          if (sellerSelected?.id === el.id)
+                            setSellerSelected(undefined);
+                          else setSellerSelected(el);
+                        }}
                       >
-                        Seleccionar
+                        {sellerSelected?.id == el.id
+                          ? "Deseleccionar"
+                          : "Seleccionar"}
                       </SeeMoreButton>
                     ) : (
                       <>

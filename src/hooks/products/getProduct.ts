@@ -17,7 +17,6 @@ export function useGetProduct() {
     const ref = selectedProduct?.ref;
     if (!ref) return;
     const unsubcribe = onSnapshot(ref, (snap) => {
-      console.log(snap);
       setProduct({ snap, data: snap.data() });
     });
 

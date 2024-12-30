@@ -28,11 +28,11 @@ export function NavLayout({ children }: { children: children }) {
       icon: "invoice",
       active: false,
     },
-    {
-      href: "/invoices",
-      icon: "chart",
-      active: false,
-    },
+    // {
+    //   href: "/invoices",
+    //   icon: "chart",
+    //   active: false,
+    // },
   ]);
   const { asPath } = useRouter();
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { useState, useEffect, useContext } from "react";
 import styled from "styled-components";
 import { SellerContext } from "./Sellers.layout";
+import useQueryParams from "@/hooks/getQueryParams";
 
 const SellerButton = styled.div`
   display: flex;
@@ -58,16 +59,23 @@ const CloseButton = styled.button`
 export function SellersList() {
   const { sellerSelected, setSellerSelected } = useContext(SellerContext);
   const sellers = useGetSellers();
+  const params = useQueryParams();
   const [changeToEdit, setChangeToEdit] = useState(false);
   const router = useRouter();
 
+  function goToSellerData(sellerID: string) {
+    router.push("/sellers?id=" + sellerID);
+  }
+
   useEffect(() => {
-    if (router.asPath != "/sellers") {
-      setChangeToEdit(false);
-    } else setChangeToEdit(true);
+    if (router.asPath == "/sellers/create") {
+      setChangeToEdit(true);
+    } else setChangeToEdit(false);
 
     if (setSellerSelected) setSellerSelected(undefined);
   }, [router, setSellerSelected]);
+
+  if (Object.keys(params).length > 0) return <></>;
 
   return (
     <Container styles={{ marginTop: "50px" }}>
@@ -81,7 +89,7 @@ export function SellersList() {
                 <SellerButton key={i}>
                   {data.name}
                   <Container>
-                    {!changeToEdit ? (
+                    {changeToEdit ? (
                       <SeeMoreButton
                         onClick={() => {
                           if (!setSellerSelected) return;
@@ -98,7 +106,9 @@ export function SellersList() {
                     ) : (
                       <>
                         <CloseButton>Hacer Cierre</CloseButton>
-                        <SeeMoreButton>Ver más</SeeMoreButton>
+                        <SeeMoreButton onClick={() => goToSellerData(el.id)}>
+                          Ver más
+                        </SeeMoreButton>
                       </>
                     )}
                   </Container>

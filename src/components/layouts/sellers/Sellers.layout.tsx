@@ -13,7 +13,9 @@ import {
 import styled from "styled-components";
 import { Icon } from "../../Icons";
 import { SellersDoc } from "@/tools/sellers/create";
-import { QueryDocumentSnapshot } from "firebase/firestore";
+import { DocumentSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
+import useQueryParams from "@/hooks/getQueryParams";
+import { getSeller } from "@/tools/sellers/getSeller";
 
 const Nav = styled.nav`
   display: flex;
@@ -73,8 +75,10 @@ export const SellerContext = createContext<{
 export function SellersLayout({ children }: props) {
   const [sellerSelected, setSellerSelected] =
     useState<sellerSelected>(undefined);
+  const [seller, setSeller] = useState<DocumentSnapshot<SellersDoc>>();
   const [showCreateAnchor, setShowCreateAnchor] = useState(false);
   const router = useRouter();
+  const params = useQueryParams();
 
   useEffect(() => {
     if (router.asPath != "/sellers") {
@@ -82,11 +86,30 @@ export function SellersLayout({ children }: props) {
     } else setShowCreateAnchor(true);
   }, [router]);
 
+  useEffect(() => {
+    async function getTheSeller() {
+      if (!params.id) return setSeller(undefined);
+
+      const s = await getSeller(params.id);
+      setSeller(s);
+    }
+
+    getTheSeller();
+  }, [params]);
+
   return (
     <SellerContext.Provider value={{ sellerSelected, setSellerSelected }}>
       <Container>
         <Nav>
           <Anchor href="/sellers">Vendedores</Anchor>
+          {seller && (
+            <>
+              <Anchor href={`/sellers`}>/</Anchor>
+              <Anchor href={`/sellers?id=${seller.id}`}>
+                {seller.data()?.name}
+              </Anchor>
+            </>
+          )}
           {showCreateAnchor && (
             <CreateAnchor href="/sellers/create">
               <IconContainer>

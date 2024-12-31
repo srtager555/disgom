@@ -2,7 +2,7 @@ import { InvoiceLayout } from "@/components/layouts/Invoice.layout";
 import { NextPageWithLayout } from "@/pages/_app";
 
 const Page: NextPageWithLayout = () => {
-  return "a";
+  return "b";
 };
 
 Page.getLayout = function getLayout(Page) {

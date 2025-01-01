@@ -1,12 +1,19 @@
 import { Select } from "@/components/Inputs/select";
 import { InvoiceLayout } from "@/components/layouts/Invoice.layout";
+import { ProductList } from "@/components/pages/invoice/ProductList";
 import { SelectClient } from "@/components/pages/invoice/SelectClient";
 import { useGetSellers } from "@/hooks/sellers/getSellers";
 import { NextPageWithLayout } from "@/pages/_app";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { SellersDoc } from "@/tools/sellers/create";
 import { QueryDocumentSnapshot } from "firebase/firestore";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  createContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import styled from "styled-components";
 
 const SellersSelect = styled(FlexContainer)`
@@ -19,6 +26,12 @@ const SellersSelect = styled(FlexContainer)`
     font-weight: bold;
   }
 `;
+
+export const InvoiceContext = createContext<{
+  selectedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
+}>({
+  selectedSeller: undefined,
+});
 
 const Page: NextPageWithLayout = () => {
   const sellers = useGetSellers();
@@ -43,27 +56,30 @@ const Page: NextPageWithLayout = () => {
   useEffect(() => {}, [selectedSeller]);
 
   return (
-    <Container>
-      <SellersSelect>
-        <h2 style={{ margin: "0" }}>Factura para</h2>
-        <Select
-          marginBottom="0px"
-          onChange={selectSeller}
-          options={
-            !sellers
-              ? [{ name: "Cargando...", value: "none" }]
-              : sellers.docs.map((el) => {
-                  const data = el.data();
-                  return {
-                    name: data.name,
-                    value: el.id,
-                  };
-                })
-          }
-        />
-      </SellersSelect>
-      <SelectClient sellerDoc={sellerDoc} sellerData={sellerData} />
-    </Container>
+    <InvoiceContext.Provider value={{ selectedSeller: sellerDoc }}>
+      <Container>
+        <SellersSelect>
+          <h2 style={{ margin: "0" }}>Factura para</h2>
+          <Select
+            marginBottom="0px"
+            onChange={selectSeller}
+            options={
+              !sellers
+                ? [{ name: "Cargando...", value: "none" }]
+                : sellers.docs.map((el) => {
+                    const data = el.data();
+                    return {
+                      name: data.name,
+                      value: el.id,
+                    };
+                  })
+            }
+          />
+        </SellersSelect>
+        <SelectClient sellerDoc={sellerDoc} sellerData={sellerData} />
+        <ProductList />
+      </Container>
+    </InvoiceContext.Provider>
   );
 };
 

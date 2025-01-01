@@ -14,14 +14,21 @@ interface props
   > {
   children?: children;
   inline?: boolean;
+  marginBottom?: string;
 }
 
-export function InputNumber({ children, width, inline, ...props }: props) {
+export function InputNumber({
+  children,
+  width,
+  marginBottom,
+  inline,
+  ...props
+}: props) {
   return (
     <Container
       styles={{
         display: inline ? "inline-block" : "block",
-        marginBottom: "20px",
+        marginBottom: marginBottom || "20px",
         marginRight: inline ? "10px" : "0px",
         width,
       }}

@@ -11,7 +11,7 @@ export type productDoc = {
   created_at: Timestamp;
   units: productUnits;
   tags: string[];
-  stock: stockType[];
+  stock: stockType[] | [];
 };
 
 /**

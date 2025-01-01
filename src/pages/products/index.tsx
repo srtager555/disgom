@@ -119,7 +119,7 @@ const Page: NextPageWithLayout = () => {
   const [timeoutSaved, setTimeoutSaved] = useState<NodeJS.Timeout>();
   const [entryToEdit, setEntryToEdit] = useState<stockType | undefined>();
   const [originalAmount, setOriginalAmount] = useState(0);
-  const [stock, setStock] = useState<stockType[]>();
+  const [stock, setStock] = useState<stockType[]>([]);
   const [defaultCost, setDefaultCost] = useState(0);
   const [dynamicMinCost, setDynamicMinCost] = useState<number | undefined>(
     undefined
@@ -204,8 +204,8 @@ const Page: NextPageWithLayout = () => {
   // effect to sort the product stock by date
   useEffect(() => {
     const s = product.data?.stock;
-    if (!s) {
-      setStock(undefined);
+    if (!s || s?.length === 0) {
+      setStock([]);
       return;
     }
 
@@ -278,9 +278,9 @@ const Page: NextPageWithLayout = () => {
           </ChartContainer>
           <StockContainer>
             <h3>Existencias</h3>
-            {stock && <p>Para editar una entrada seleccionela</p>}
+            {stock.length > 0 && <p>Para editar una entrada seleccionela</p>}
             <StockMapContainer>
-              {!stock ? (
+              {stock.length === 0 ? (
                 <p>No hay existencia de este producto</p>
               ) : (
                 <>

@@ -6,4 +6,5 @@ export const ProductsCollection = {
 
 export const SellersCollection = {
   root: "Sellers",
+  clients: "clients",
 };

@@ -1,5 +1,6 @@
 import { Select } from "@/components/Inputs/select";
 import { InvoiceLayout } from "@/components/layouts/Invoice.layout";
+import { SelectClient } from "@/components/pages/invoice/SelectClient";
 import { useGetSellers } from "@/hooks/sellers/getSellers";
 import { NextPageWithLayout } from "@/pages/_app";
 import { Container, FlexContainer } from "@/styles/index.styles";
@@ -21,6 +22,7 @@ const SellersSelect = styled(FlexContainer)`
 
 const Page: NextPageWithLayout = () => {
   const sellers = useGetSellers();
+  const sellersDocs = useMemo(() => sellers?.docs, [sellers]);
   const [selectedSeller, setSelectedSeller] = useState<string | undefined>();
   const [sellerDoc, setSellerDoc] =
     useState<QueryDocumentSnapshot<SellersDoc>>();
@@ -34,9 +36,9 @@ const Page: NextPageWithLayout = () => {
   useEffect(() => {
     if (!selectedSeller) return;
 
-    const sellerDoc = sellers?.docs.find((el) => el.id === selectedSeller);
+    const sellerDoc = sellersDocs?.find((el) => el.id === selectedSeller);
     setSellerDoc(sellerDoc);
-  }, [selectedSeller, sellers?.docs]);
+  }, [selectedSeller, sellersDocs]);
 
   useEffect(() => {}, [selectedSeller]);
 
@@ -60,13 +62,7 @@ const Page: NextPageWithLayout = () => {
           }
         />
       </SellersSelect>
-      {!sellerData?.hasInventory && (
-        <Container>
-          <Select options={[{ name: "sin clientes", value: "" }]}>
-            Seleccionar cliente:
-          </Select>
-        </Container>
-      )}
+      <SelectClient sellerDoc={sellerDoc} sellerData={sellerData} />
     </Container>
   );
 };

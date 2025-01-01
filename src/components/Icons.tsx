@@ -21,7 +21,9 @@ export type iconType =
   | "invoice"
   | "chart"
   | "home"
-  | "addCircle";
+  | "addCircle"
+  | "fold"
+  | "unfold";
 
 interface I {
   iconType: iconType;
@@ -95,6 +97,28 @@ export const Icon = (props: I) => {
         fill="#e8eaed"
       >
         <path d="M120-120v-77.33L186.67-264v144H120Zm163.33 0v-237.33L350-424v304h-66.67Zm163.34 0v-304l66.66 67.67V-120h-66.66ZM610-120v-236.33L676.67-423v303H610Zm163.33 0v-397.33L840-584v464h-66.67ZM120-346.33v-94.34l280-278.66 160 160L840-840v94.33L560-465 400-625 120-346.33Z" />
+      </svg>
+    ),
+    fold: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        height={props.height || "25px"}
+        viewBox="0 -960 960 960"
+        width={props.width || "25px"}
+        fill="#e8eaed"
+      >
+        <path d="m356-160-56-56 180-180 180 180-56 56-124-124-124 124Zm124-404L300-744l56-56 124 124 124-124 56 56-180 180Z" />
+      </svg>
+    ),
+    unfold: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        height={props.height || "25px"}
+        viewBox="0 -960 960 960"
+        width={props.width || "25px"}
+        fill="#e8eaed"
+      >
+        <path d="M480-120 300-300l58-58 122 122 122-122 58 58-180 180ZM358-598l-58-58 180-180 180 180-58 58-122-122-122 122Z" />
       </svg>
     ),
   };

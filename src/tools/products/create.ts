@@ -42,6 +42,7 @@ export async function createProduct(
     name,
     units,
     tags,
+    stock: [],
     disabled: false,
     exclude: false,
   });

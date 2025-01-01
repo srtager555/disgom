@@ -1,5 +1,6 @@
 :root {
   --background: #ffffff;
+  --background-highlight: #f5eeee;
   --foreground: #171717;
   --foreground-hover: #17171720;
   --detail: #5f6368;
@@ -11,6 +12,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
+    --background-highlight: #242424;
     --foreground: #ededed;
     --foreground-hover: #ededed20;
     --detail: #9aa0a6;
@@ -57,6 +59,15 @@ h3 {
 
 p {
   margin-bottom: 5px;
+}
+
+button {
+  &:hover {
+    transform: scale(1.1);
+  }
+  &:active {
+    transform: scale(0.9);
+  }
 }
 
 @media (prefers-color-scheme: dark) {

@@ -1,5 +1,6 @@
 export const globalCSSVars = {
   "--background": "var(--background)",
+  "--background-highlight": "var(--background-highlight)",
   "--foreground": "var(--foreground)",
   "--foreground-hover": "var(--foreground-hover)",
   "--detail": "var(--detail)",

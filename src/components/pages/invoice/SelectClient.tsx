@@ -47,7 +47,7 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
   return (
     <>
       {sellerData?.hasInventory && (
-        <Container>
+        <Container styles={{ marginBottom: "20px" }}>
           <InvoiceInfo>
             {clients && (
               <SelectContainer>

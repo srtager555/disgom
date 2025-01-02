@@ -10,6 +10,8 @@ export const ProductContainer = styled.div<{
   $hasInventory: boolean | undefined;
   $withoutStock?: number;
   $header?: boolean;
+  $fold?: boolean;
+  $children?: boolean;
 }>`
   ${(props) =>
     props.$header &&
@@ -20,14 +22,29 @@ export const ProductContainer = styled.div<{
       /* box-shadow: 0 5px 15px #0003; */
     `}
   display: grid;
+  grid-column: 1 / -1;
   grid-template-columns: repeat(
     ${(props) => (props.$hasInventory ? "13, 60px" : "10, 75px")}
   );
-  padding: ${(props) => (props.$header ? "10px" : "5px")} 0;
-  padding-left: 10px;
-  /* margin-bottom: 10px; */
+  ${(props) =>
+    !props.$children
+      ? css`
+          padding: ${props.$header ? "10px" : "5px"} 0;
+          padding-left: 10px;
+          background-color: ${globalCSSVars["--background"]};
+        `
+      : css`
+          background-color: inherit;
+        `}
   gap: 10px;
-  background-color: ${globalCSSVars["--background"]};
+  overflow: hidden;
+  ${(props) => {
+    if (typeof props.$fold === "boolean") {
+      return css`
+        display: ${props.$fold ? "none" : "grid"};
+      `;
+    }
+  }};
 
   &:nth-child(even) {
     background-color: ${globalCSSVars["--background-highlight"]};

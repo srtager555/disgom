@@ -219,15 +219,22 @@ export function Product({ product, hasInventory }: props) {
           <Icon iconType={fold ? "fold" : "unfold"} />
         </ExtraButton>
       </Column>
-      {stocks &&
-        ExtraPrices.map((el, i) => (
-          <Extra
-            key={i}
-            extra={el}
-            stock={stocks[el.stockPosition]}
-            hasInventory={hasInventory}
-          />
-        ))}
+      <ProductContainer
+        $children
+        $hasInventory={hasInventory}
+        $withoutStock={stockAmount}
+        $fold={!fold}
+      >
+        {stocks &&
+          ExtraPrices.map((el, i) => (
+            <Extra
+              key={i}
+              extra={el}
+              stock={stocks[el.stockPosition]}
+              hasInventory={hasInventory}
+            />
+          ))}
+      </ProductContainer>
     </ProductContainer>
   );
 }

@@ -21,9 +21,12 @@ export type ExtraPrices = {
 };
 
 export type extraValues = {
+  cost: number;
   total_cost: number;
+  sale: number;
   total_sale: number;
   total_profit: number;
+  seller_price: number;
   total_seller_sale?: number;
   total_seller_profit?: number;
 };
@@ -102,8 +105,6 @@ export function Product({ product, hasInventory }: props) {
 
   const [ExtraPrices, setExtraPrices] = useState<ExtraPrices[]>([]);
 
-  console.log(ExtraPrices);
-
   const [extraValues, setExtraValues] = useState<Record<number, extraValues>>(
     {}
   );
@@ -134,6 +135,10 @@ export function Product({ product, hasInventory }: props) {
         break;
       }
     }
+  }
+
+  function checkPrices(field: keyof extraValues, diff: number) {
+    return Object.values(extraValues).filter((el) => el[field] != diff);
   }
 
   function changeValue(
@@ -203,18 +208,26 @@ export function Product({ product, hasInventory }: props) {
           type="number"
           max={stockAmount}
           min={0}
+          step={0.01}
         />
       </Column>
-      <Column $gridColumn="5 / 6">{currentStock?.purchase_price || "~"}</Column>
+      <Column $gridColumn="5 / 6">
+        {checkPrices("cost", currentStock?.purchase_price || 0).length > 0
+          ? "~"
+          : currentStock?.purchase_price || "~"}
+      </Column>
       <Column $gridColumn="6 / 7" title={purchaseValue.toLocaleString()}>
         {purchaseValue.toLocaleString()}
       </Column>
       <Column $gridColumn="7 / 8">
-        {currentStock?.sale_price ? (
+        {checkPrices("sale", currentStock?.sale_price || 0).length > 0 ? (
+          "~"
+        ) : currentStock?.sale_price ? (
           <Input
             onChange={(e) => changeValue(e, setSalePrice)}
             type="number"
             min={currentStock.purchase_price}
+            step={0.01}
             defaultValue={salePrice || currentStock.sale_price}
           />
         ) : (
@@ -230,11 +243,15 @@ export function Product({ product, hasInventory }: props) {
       {hasInventory && (
         <>
           <Column $gridColumn="10 / 11">
-            {currentStock?.seller_profit ? (
+            {checkPrices("seller_price", currentStock?.seller_profit || 0)
+              .length > 0 ? (
+              "~"
+            ) : currentStock?.seller_profit ? (
               <Input
                 onChange={(e) => changeValue(e, setSellerPrice)}
                 type="number"
                 min={salePrice}
+                step={0.01}
                 defaultValue={sellerPrice || currentStock.seller_profit}
               />
             ) : (

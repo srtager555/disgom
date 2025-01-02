@@ -65,23 +65,40 @@ export function Extra({
       return {
         ...props,
         [index]: {
+          cost: stock.purchase_price,
           total_cost: purchaseValue,
+          sale: salePrice,
           total_sale: saleValue,
           total_profit: profitValue,
 
+          seller_price: sellerPrice,
           total_seller_sale: sellerValue,
           total_seller_profit: sellerProfit,
         },
       };
     });
+
+    return () => {
+      setState((props) => {
+        const data = { ...props };
+        delete data[index];
+
+        return {
+          ...data,
+        };
+      });
+    };
   }, [
     index,
     profitValue,
     purchaseValue,
+    salePrice,
     saleValue,
+    sellerPrice,
     sellerProfit,
     sellerValue,
     setState,
+    stock.purchase_price,
   ]);
 
   return (
@@ -99,6 +116,7 @@ export function Extra({
           value={!editAmountValue ? extra.amount : undefined}
           max={stock.amount}
           min={0}
+          step={0.01}
         />
       </Column>
       <Column $gridColumn="5 / 6">{stock.purchase_price}</Column>
@@ -112,6 +130,7 @@ export function Extra({
             type="number"
             min={stock.purchase_price}
             defaultValue={salePrice || stock.sale_price}
+            step={0.01}
           />
         ) : (
           "~"
@@ -132,6 +151,7 @@ export function Extra({
                 type="number"
                 min={salePrice}
                 defaultValue={sellerPrice || stock.seller_profit}
+                step={0.01}
               />
             ) : (
               "~"

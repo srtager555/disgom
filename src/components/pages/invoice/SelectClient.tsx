@@ -46,31 +46,29 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
 
   return (
     <>
-      {!sellerData?.hasInventory && (
+      {!sellerData?.hasInventory && clients && (
         <Container styles={{ marginBottom: "20px" }}>
           <InvoiceInfo>
-            {clients && (
-              <SelectContainer>
-                <Select
-                  options={[
-                    {
-                      name: "Crear cliente nuevo",
-                      value: "",
-                      ...clients.map((el) => {
-                        const data = el.data();
+            <SelectContainer>
+              <Select
+                options={[
+                  {
+                    name: "Crear cliente nuevo",
+                    value: "",
+                    ...clients.map((el) => {
+                      const data = el.data();
 
-                        return {
-                          name: data.name,
-                          value: el.id,
-                        };
-                      }),
-                    },
-                  ]}
-                >
-                  Selecciona un cliente
-                </Select>
-              </SelectContainer>
-            )}
+                      return {
+                        name: data.name,
+                        value: el.id,
+                      };
+                    }),
+                  },
+                ]}
+              >
+                Selecciona un cliente
+              </Select>
+            </SelectContainer>
             <Container>
               <FlexContainer>
                 <Container

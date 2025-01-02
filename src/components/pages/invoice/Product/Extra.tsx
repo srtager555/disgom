@@ -13,6 +13,7 @@ interface ExtraProps {
   stock: stockType;
   extra: ExtraPrices;
   setState: Dispatch<SetStateAction<Record<number, extraValues>>>;
+  setEditParentAmount: Dispatch<SetStateAction<boolean>>;
   index: number;
 }
 
@@ -21,6 +22,7 @@ export function Extra({
   extra,
   hasInventory,
   setState,
+  setEditParentAmount,
   index,
 }: ExtraProps) {
   const [amount, setAmount] = useState(extra.amount);
@@ -42,6 +44,7 @@ export function Extra({
   }
 
   function updateValue() {
+    setEditParentAmount(true);
     setEditAmountValue(true);
   }
 
@@ -65,6 +68,7 @@ export function Extra({
       return {
         ...props,
         [index]: {
+          amount: amount,
           cost: stock.purchase_price,
           total_cost: purchaseValue,
           sale: salePrice,
@@ -89,6 +93,7 @@ export function Extra({
       });
     };
   }, [
+    amount,
     index,
     profitValue,
     purchaseValue,

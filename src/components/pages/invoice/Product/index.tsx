@@ -21,6 +21,7 @@ export type ExtraPrices = {
 };
 
 export type extraValues = {
+  amount: number;
   cost: number;
   total_cost: number;
   sale: number;
@@ -109,6 +110,8 @@ export function Product({ product, hasInventory }: props) {
     {}
   );
 
+  const [editAmount, setEditAmount] = useState(false);
+
   function amountListener(e: ChangeEvent<HTMLInputElement>) {
     let remainingAmount = Number(e.target.value);
 
@@ -153,15 +156,15 @@ export function Product({ product, hasInventory }: props) {
     setFold(!fold);
   }
 
+  function getValues(num: keyof extraValues) {
+    return Object.values(extraValues)
+      .map((el) => el[num] || 0)
+      .reduce((accumulator, currentValue) => accumulator + currentValue);
+  }
+
   useEffect(() => {
     if (!currentStock) return;
     if (ExtraPrices.length > 1) {
-      function getValues(num: keyof extraValues) {
-        return Object.values(extraValues)
-          .map((el) => el[num] || 0)
-          .reduce((accumulator, currentValue) => accumulator + currentValue);
-      }
-
       setPurchaseValue(getValues("total_cost"));
       setSaleValue(getValues("total_sale"));
       setProfitValue(getValues("total_profit"));
@@ -176,6 +179,8 @@ export function Product({ product, hasInventory }: props) {
       setSellerValue(amount * sellerPrice);
       setSellerProfit((sellerPrice - salePrice) * amount);
     }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     ExtraPrices.length,
     amount,
@@ -201,11 +206,13 @@ export function Product({ product, hasInventory }: props) {
       </Column>
       <Column $gridColumn="4 / 5">
         <Input
+          onClick={() => setEditAmount(false)}
           onChange={(e) => {
             changeValue(e, setAmount);
             amountListener(e);
           }}
           type="number"
+          value={editAmount ? getValues("amount") : undefined}
           max={stockAmount}
           min={0}
           step={0.01}
@@ -285,6 +292,7 @@ export function Product({ product, hasInventory }: props) {
               stock={stocks[el.stockPosition]}
               hasInventory={hasInventory}
               setState={setExtraValues}
+              setEditParentAmount={setEditAmount}
               index={i}
             />
           ))}

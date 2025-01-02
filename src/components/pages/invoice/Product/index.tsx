@@ -12,11 +12,11 @@ import {
   useState,
 } from "react";
 import styled from "styled-components";
-import { ProductContainer } from "./ProductList";
+import { ProductContainer } from "../ProductList";
 
 const Column = styled(Container)<{ $gridColumn: string }>`
   grid-column: ${(props) => props.$gridColumn};
-  border-right: solid 1px #000;
+  border-right: solid 1px ${globalCSSVars["--detail"]};
   width: 100%;
   white-space: nowrap;
   overflow: hidden;

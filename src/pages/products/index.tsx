@@ -324,6 +324,7 @@ const Page: NextPageWithLayout = () => {
                     ref={costRef}
                     defaultValue={defaultCost}
                     min={0}
+                    step={0.01}
                     onChange={handlerOnChangeOwnerMin}
                     name="productCostPrice"
                     inline

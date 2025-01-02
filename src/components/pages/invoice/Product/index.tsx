@@ -13,13 +13,14 @@ import {
 } from "react";
 import styled from "styled-components";
 import { ProductContainer } from "../ProductList";
+import { Extra } from "./Extra";
 
-type ExtraPrices = {
+export type ExtraPrices = {
   stockPosition: number;
   amount: number;
 };
 
-const Column = styled(Container)<{ $gridColumn: string }>`
+export const Column = styled(Container)<{ $gridColumn: string }>`
   grid-column: ${(props) => props.$gridColumn};
   border-right: solid 1px ${globalCSSVars["--detail"]};
   width: 100%;
@@ -37,7 +38,7 @@ const ProductName = styled.span`
   cursor: help;
 `;
 
-const Input = styled.input`
+export const Input = styled.input`
   width: 100%;
   height: 100%;
   border: none;
@@ -97,8 +98,9 @@ export function Product({ product, hasInventory }: props) {
 
   function amountListener(e: ChangeEvent<HTMLInputElement>) {
     let remainingAmount = Number(e.target.value);
-    const stocksSelected: Array<ExtraPrices> = [];
 
+    setExtraPrices([]);
+    if (remainingAmount <= 0) return;
     if (!stocks) return;
 
     for (let index = 0; index < stocks.length; index++) {
@@ -108,19 +110,18 @@ export function Product({ product, hasInventory }: props) {
 
       if (remaining > 0) {
         remainingAmount = remaining;
-        stocksSelected.push({
-          amount: stock.amount,
-          stockPosition: index,
-        });
+        setExtraPrices((props) => [
+          ...props,
+          { amount: stock.amount, stockPosition: index },
+        ]);
       } else {
-        stocksSelected.push({
-          amount: remainingAmount,
-          stockPosition: index,
-        });
+        setExtraPrices((props) => [
+          ...props,
+          { amount: remainingAmount, stockPosition: index },
+        ]);
         break;
       }
     }
-    setExtraPrices(stocksSelected);
   }
 
   function changeValue(
@@ -218,6 +219,15 @@ export function Product({ product, hasInventory }: props) {
           <Icon iconType={fold ? "fold" : "unfold"} />
         </ExtraButton>
       </Column>
+      {stocks &&
+        ExtraPrices.map((el, i) => (
+          <Extra
+            key={i}
+            extra={el}
+            stock={stocks[el.stockPosition]}
+            hasInventory={hasInventory}
+          />
+        ))}
     </ProductContainer>
   );
 }

@@ -20,6 +20,14 @@ export type ExtraPrices = {
   amount: number;
 };
 
+export type extraValues = {
+  total_cost: number;
+  total_sale: number;
+  total_profit: number;
+  total_seller_sale?: number;
+  total_seller_profit?: number;
+};
+
 export const Column = styled(Container)<{ $gridColumn: string }>`
   grid-column: ${(props) => props.$gridColumn};
   border-right: solid 1px ${globalCSSVars["--detail"]};
@@ -96,6 +104,10 @@ export function Product({ product, hasInventory }: props) {
 
   console.log(ExtraPrices);
 
+  const [extraValues, setExtraValues] = useState<Record<number, extraValues>>(
+    {}
+  );
+
   function amountListener(e: ChangeEvent<HTMLInputElement>) {
     let remainingAmount = Number(e.target.value);
 
@@ -138,13 +150,36 @@ export function Product({ product, hasInventory }: props) {
 
   useEffect(() => {
     if (!currentStock) return;
-    setPurchaseValue(amount * currentStock.purchase_price);
-    setSaleValue(amount * salePrice);
-    setProfitValue((salePrice - currentStock.purchase_price) * amount);
+    if (ExtraPrices.length > 1) {
+      function getValues(num: keyof extraValues) {
+        return Object.values(extraValues)
+          .map((el) => el[num] || 0)
+          .reduce((accumulator, currentValue) => accumulator + currentValue);
+      }
 
-    setSellerValue(amount * sellerPrice);
-    setSellerProfit((sellerPrice - salePrice) * amount);
-  }, [amount, currentStock, salePrice, sellerPrice, sellerValue]);
+      setPurchaseValue(getValues("total_cost"));
+      setSaleValue(getValues("total_sale"));
+      setProfitValue(getValues("total_profit"));
+
+      setSellerValue(getValues("total_seller_sale"));
+      setSellerProfit(getValues("total_seller_profit"));
+    } else {
+      setPurchaseValue(amount * currentStock.purchase_price);
+      setSaleValue(amount * salePrice);
+      setProfitValue((salePrice - currentStock.purchase_price) * amount);
+
+      setSellerValue(amount * sellerPrice);
+      setSellerProfit((sellerPrice - salePrice) * amount);
+    }
+  }, [
+    ExtraPrices.length,
+    amount,
+    currentStock,
+    extraValues,
+    salePrice,
+    sellerPrice,
+    sellerValue,
+  ]);
 
   return (
     <ProductContainer $hasInventory={hasInventory} $withoutStock={stockAmount}>
@@ -232,6 +267,8 @@ export function Product({ product, hasInventory }: props) {
               extra={el}
               stock={stocks[el.stockPosition]}
               hasInventory={hasInventory}
+              setState={setExtraValues}
+              index={i}
             />
           ))}
       </ProductContainer>

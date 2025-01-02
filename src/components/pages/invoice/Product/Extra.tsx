@@ -1,4 +1,4 @@
-import { Column, ExtraPrices, Input } from ".";
+import { Column, ExtraPrices, extraValues, Input } from ".";
 import { stockType } from "@/tools/products/addToStock";
 import {
   ChangeEvent,
@@ -12,9 +12,17 @@ interface ExtraProps {
   hasInventory: boolean | undefined;
   stock: stockType;
   extra: ExtraPrices;
+  setState: Dispatch<SetStateAction<Record<number, extraValues>>>;
+  index: number;
 }
 
-export function Extra({ stock, extra, hasInventory }: ExtraProps) {
+export function Extra({
+  stock,
+  extra,
+  hasInventory,
+  setState,
+  index,
+}: ExtraProps) {
   const [amount, setAmount] = useState(extra.amount);
   const [editAmountValue, setEditAmountValue] = useState(false);
   const [purchaseValue, setPurchaseValue] = useState(0);
@@ -51,6 +59,30 @@ export function Extra({ stock, extra, hasInventory }: ExtraProps) {
     setSellerValue(amount * sellerPrice);
     setSellerProfit((sellerPrice - salePrice) * amount);
   }, [amount, salePrice, sellerPrice, sellerValue, stock]);
+
+  useEffect(() => {
+    setState((props) => {
+      return {
+        ...props,
+        [index]: {
+          total_cost: purchaseValue,
+          total_sale: saleValue,
+          total_profit: profitValue,
+
+          total_seller_sale: sellerValue,
+          total_seller_profit: sellerProfit,
+        },
+      };
+    });
+  }, [
+    index,
+    profitValue,
+    purchaseValue,
+    saleValue,
+    sellerProfit,
+    sellerValue,
+    setState,
+  ]);
 
   return (
     <>

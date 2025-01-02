@@ -39,7 +39,7 @@ export function Extra({
     e: ChangeEvent<HTMLInputElement> | number,
     setState: Dispatch<SetStateAction<number>>
   ) {
-    const value = typeof e === "number" ? e : Number(e.target.value);
+    const value = typeof e === "number" ? e : Number(e.target.value) || 0;
     setState(value);
   }
 
@@ -117,6 +117,7 @@ export function Extra({
             changeValue(e, setAmount);
           }}
           onClick={updateValue}
+          onFocus={updateValue}
           type="number"
           value={!editAmountValue ? extra.amount : undefined}
           max={stock.amount}
@@ -170,7 +171,7 @@ export function Extra({
           </Column>
         </>
       )}
-      <Column $gridColumn="-1 / -2">x</Column>
+      <Column $gridColumn="-1 / -2"></Column>
     </>
   );
 }

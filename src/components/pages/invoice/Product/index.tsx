@@ -148,7 +148,7 @@ export function Product({ product, hasInventory }: props) {
     e: ChangeEvent<HTMLInputElement>,
     setState: Dispatch<SetStateAction<number>>
   ) {
-    const value = Number(e.target.value);
+    const value = Number(e.target.value) || 0;
     setState(value);
   }
 
@@ -197,7 +197,7 @@ export function Product({ product, hasInventory }: props) {
         <ProductName
           title={`Hay ${stockAmount} existencias${
             data.stock.length > 1
-              ? ` divididas en ${data.stock.length} entregas`
+              ? ` divididas en ${data.stock.length} entradas`
               : ""
           }`}
         >

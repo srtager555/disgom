@@ -14,6 +14,11 @@ import {
 import styled from "styled-components";
 import { ProductContainer } from "../ProductList";
 
+type ExtraPrices = {
+  stockPosition: number;
+  amount: number;
+};
+
 const Column = styled(Container)<{ $gridColumn: string }>`
   grid-column: ${(props) => props.$gridColumn};
   border-right: solid 1px ${globalCSSVars["--detail"]};
@@ -59,7 +64,7 @@ export function Product({ product, hasInventory }: props) {
   const stocks = useMemo(() => {
     if (data.stock.length === 0) return undefined;
     return data.stock.sort(
-      (a, b) => b.created_at.seconds - a.created_at.seconds
+      (a, b) => a.created_at.seconds - b.created_at.seconds
     );
   }, [data.stock]);
   const currentStock = stocks ? stocks[0] : undefined;
@@ -85,6 +90,38 @@ export function Product({ product, hasInventory }: props) {
   );
   const [sellerValue, setSellerValue] = useState(0);
   const [sellerProfit, setSellerProfit] = useState(0);
+
+  const [ExtraPrices, setExtraPrices] = useState<ExtraPrices[]>([]);
+
+  console.log(ExtraPrices);
+
+  function amountListener(e: ChangeEvent<HTMLInputElement>) {
+    let remainingAmount = Number(e.target.value);
+    const stocksSelected: Array<ExtraPrices> = [];
+
+    if (!stocks) return;
+
+    for (let index = 0; index < stocks.length; index++) {
+      const stock = stocks[index];
+
+      const remaining = remainingAmount - stock.amount;
+
+      if (remaining > 0) {
+        remainingAmount = remaining;
+        stocksSelected.push({
+          amount: stock.amount,
+          stockPosition: index,
+        });
+      } else {
+        stocksSelected.push({
+          amount: remainingAmount,
+          stockPosition: index,
+        });
+        break;
+      }
+    }
+    setExtraPrices(stocksSelected);
+  }
 
   function changeValue(
     e: ChangeEvent<HTMLInputElement>,
@@ -123,7 +160,10 @@ export function Product({ product, hasInventory }: props) {
       </Column>
       <Column $gridColumn="4 / 5">
         <Input
-          onChange={(e) => changeValue(e, setAmount)}
+          onChange={(e) => {
+            changeValue(e, setAmount);
+            amountListener(e);
+          }}
           type="number"
           max={stockAmount}
           min={0}

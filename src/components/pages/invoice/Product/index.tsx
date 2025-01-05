@@ -27,9 +27,15 @@ export type OutputCostDescription = {
   total_cost: number;
 };
 
-export const Column = styled(Container)<{ $gridColumn: string }>`
+export const Column = styled(Container)<{
+  $gridColumn: string;
+  $removeBorder?: boolean;
+}>`
   grid-column: ${(props) => props.$gridColumn};
-  border-right: solid 1px ${globalCSSVars["--detail"]};
+  ${(props) =>
+    !props.$removeBorder &&
+    `border-right: solid 1px ${globalCSSVars["--detail"]};`}
+
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
@@ -109,18 +115,22 @@ export function Product({ product, hasInventory }: props) {
   const [sellerValue, setSellerValue] = useState(0);
   const [sellerProfit, setSellerProfit] = useState(0);
 
-  const [extraValuesData, setExtraValuesData] = useState<OutputsRequest[]>([]);
+  const [costRequestsData, setCostRequestData] = useState<OutputsRequest[]>([]);
 
-  const [extraValues, setExtraValues] = useState<
+  const [costValues, setCostValues] = useState<
     Record<number, OutputCostDescription>
   >({});
-  const [customExtraValues, setCustomExtraValues] = useState();
-  const [editAmount, setEditAmount] = useState(false);
+  const [requestPricesValues, setRequestPricesValues] = useState<
+    Array<{
+      amount: number;
+    }>
+  >([]);
+  const [editAmount, setEditAmount] = useState(true);
 
   function amountListener(e: ChangeEvent<HTMLInputElement>) {
     let remainingAmount = Number(e.target.value);
 
-    setExtraValuesData([]);
+    setCostRequestData([]);
     if (remainingAmount <= 0) return;
     if (!stocks) return;
 
@@ -131,12 +141,12 @@ export function Product({ product, hasInventory }: props) {
 
       if (remaining > 0) {
         remainingAmount = remaining;
-        setExtraValuesData((props) => [
+        setCostRequestData((props) => [
           ...props,
           { amount: stock.amount, stockPosition: index },
         ]);
       } else {
-        setExtraValuesData((props) => [
+        setCostRequestData((props) => [
           ...props,
           { amount: remainingAmount, stockPosition: index },
         ]);
@@ -146,14 +156,14 @@ export function Product({ product, hasInventory }: props) {
   }
 
   function checkPrices(field: keyof OutputCostDescription, diff: number) {
-    return Object.values(extraValues).filter((el) => el[field] != diff);
+    return Object.values(costValues).filter((el) => el[field] != diff);
   }
 
   function addCustomExtraValue() {
-    setCustomExtraValues();
+    setRequestPricesValues();
   }
 
-  function changeValue(
+  function changeStateValue(
     e: ChangeEvent<HTMLInputElement>,
     setState: Dispatch<SetStateAction<number>>
   ) {
@@ -166,14 +176,24 @@ export function Product({ product, hasInventory }: props) {
   }
 
   function getValues(num: keyof OutputCostDescription) {
-    return Object.values(extraValues)
+    return Object.values(costValues)
       .map((el) => el[num] || 0)
       .reduce((accumulator, currentValue) => accumulator + currentValue);
   }
 
   useEffect(() => {
+    if (requestPricesValues.length === 0) {
+      setRequestPricesValues((props) => [...props, { amount }]);
+    } else if (requestPricesValues.length > 1) {
+      setEditAmount(false);
+    } else {
+      setEditAmount(true);
+    }
+  }, [amount, requestPricesValues]);
+
+  useEffect(() => {
     if (!currentStock) return;
-    if (extraValuesData.length > 1) {
+    if (costRequestsData.length > 1) {
       setPurchaseValue(getValues("total_cost"));
       setSaleValue(getValues("total_sale"));
       setProfitValue(getValues("total_profit"));
@@ -191,10 +211,10 @@ export function Product({ product, hasInventory }: props) {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    extraValuesData.length,
+    costRequestsData.length,
     amount,
     currentStock,
-    extraValues,
+    costValues,
     salePrice,
     sellerPrice,
     sellerValue,
@@ -223,11 +243,11 @@ export function Product({ product, hasInventory }: props) {
         <Input
           onClick={() => setEditAmount(false)}
           onChange={(e) => {
-            changeValue(e, setAmount);
+            changeStateValue(e, setAmount);
             amountListener(e);
           }}
           type="number"
-          value={editAmount ? getValues("amount") : undefined}
+          value={!editAmount ? getValues("amount") : undefined}
           max={stockAmount}
           min={0}
           step={0.01}
@@ -246,7 +266,7 @@ export function Product({ product, hasInventory }: props) {
           "~"
         ) : currentStock?.sale_price ? (
           <Input
-            onChange={(e) => changeValue(e, setSalePrice)}
+            onChange={(e) => changeStateValue(e, setSalePrice)}
             type="number"
             min={currentStock.purchase_price}
             step={0.01}
@@ -270,7 +290,7 @@ export function Product({ product, hasInventory }: props) {
               "~"
             ) : currentStock?.seller_profit ? (
               <Input
-                onChange={(e) => changeValue(e, setSellerPrice)}
+                onChange={(e) => changeStateValue(e, setSellerPrice)}
                 type="number"
                 min={salePrice}
                 step={0.01}
@@ -304,22 +324,21 @@ export function Product({ product, hasInventory }: props) {
           $hasInventory={hasInventory}
           $withoutStock={stockAmount}
         >
-          <Column $gridColumn="4 / 7">
+          <Column $gridColumn="4 / 8" $removeBorder>
             <Button onClick={() => console.log("?")}>
-              Modificar precio de venta
+              Agregar variaciones
             </Button>
           </Column>
         </ProductContainer>
 
         {stocks &&
-          extraValuesData.map((el, i) => (
+          costRequestsData.map((el, i) => (
             <Extra
               key={i}
               outputRequest={el}
               stockInfo={stocks[el.stockPosition]}
               hasInventory={hasInventory}
-              setState={setExtraValues}
-              setEditParentAmount={setEditAmount}
+              setState={setCostValues}
               index={i}
             />
           ))}

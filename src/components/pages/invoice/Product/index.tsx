@@ -14,22 +14,17 @@ import {
 import styled from "styled-components";
 import { ProductContainer } from "../ProductList";
 import { Extra } from "./Extra";
+import { Button } from "@/styles/Form.styles";
 
-export type ExtraPrices = {
+export type OutputsRequest = {
   stockPosition: number;
   amount: number;
 };
 
-export type extraValues = {
+export type OutputCostDescription = {
   amount: number;
   cost: number;
   total_cost: number;
-  sale: number;
-  total_sale: number;
-  total_profit: number;
-  seller_price: number;
-  total_seller_sale?: number;
-  total_seller_profit?: number;
 };
 
 export const Column = styled(Container)<{ $gridColumn: string }>`
@@ -39,6 +34,16 @@ export const Column = styled(Container)<{ $gridColumn: string }>`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  & > button {
+    padding: 5px 10px;
+    &:hover {
+      transform: scale(1);
+    }
+    &:active {
+      transform: scale(0.95);
+    }
+  }
 `;
 
 const ProductName = styled.span`
@@ -104,18 +109,18 @@ export function Product({ product, hasInventory }: props) {
   const [sellerValue, setSellerValue] = useState(0);
   const [sellerProfit, setSellerProfit] = useState(0);
 
-  const [ExtraPrices, setExtraPrices] = useState<ExtraPrices[]>([]);
+  const [extraValuesData, setExtraValuesData] = useState<OutputsRequest[]>([]);
 
-  const [extraValues, setExtraValues] = useState<Record<number, extraValues>>(
-    {}
-  );
-
+  const [extraValues, setExtraValues] = useState<
+    Record<number, OutputCostDescription>
+  >({});
+  const [customExtraValues, setCustomExtraValues] = useState();
   const [editAmount, setEditAmount] = useState(false);
 
   function amountListener(e: ChangeEvent<HTMLInputElement>) {
     let remainingAmount = Number(e.target.value);
 
-    setExtraPrices([]);
+    setExtraValuesData([]);
     if (remainingAmount <= 0) return;
     if (!stocks) return;
 
@@ -126,12 +131,12 @@ export function Product({ product, hasInventory }: props) {
 
       if (remaining > 0) {
         remainingAmount = remaining;
-        setExtraPrices((props) => [
+        setExtraValuesData((props) => [
           ...props,
           { amount: stock.amount, stockPosition: index },
         ]);
       } else {
-        setExtraPrices((props) => [
+        setExtraValuesData((props) => [
           ...props,
           { amount: remainingAmount, stockPosition: index },
         ]);
@@ -140,8 +145,12 @@ export function Product({ product, hasInventory }: props) {
     }
   }
 
-  function checkPrices(field: keyof extraValues, diff: number) {
+  function checkPrices(field: keyof OutputCostDescription, diff: number) {
     return Object.values(extraValues).filter((el) => el[field] != diff);
+  }
+
+  function addCustomExtraValue() {
+    setCustomExtraValues();
   }
 
   function changeValue(
@@ -156,7 +165,7 @@ export function Product({ product, hasInventory }: props) {
     setFold(!fold);
   }
 
-  function getValues(num: keyof extraValues) {
+  function getValues(num: keyof OutputCostDescription) {
     return Object.values(extraValues)
       .map((el) => el[num] || 0)
       .reduce((accumulator, currentValue) => accumulator + currentValue);
@@ -164,7 +173,7 @@ export function Product({ product, hasInventory }: props) {
 
   useEffect(() => {
     if (!currentStock) return;
-    if (ExtraPrices.length > 1) {
+    if (extraValuesData.length > 1) {
       setPurchaseValue(getValues("total_cost"));
       setSaleValue(getValues("total_sale"));
       setProfitValue(getValues("total_profit"));
@@ -182,7 +191,7 @@ export function Product({ product, hasInventory }: props) {
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    ExtraPrices.length,
+    extraValuesData.length,
     amount,
     currentStock,
     extraValues,
@@ -191,6 +200,12 @@ export function Product({ product, hasInventory }: props) {
     sellerValue,
   ]);
 
+  // lo que tengo que hacer ahora es que tengo que dar la opcion de
+  // agregar producto extra, a lo que me refiero es que
+  // si se quiere añadir un saco especial que se pueda
+  // agregar directamente
+  // al usar esa opcion, seria ideal bloquear el amount
+  // del producto main para evitar errores
   return (
     <ProductContainer $hasInventory={hasInventory} $withoutStock={stockAmount}>
       <Column $gridColumn="1 / 4">
@@ -284,12 +299,24 @@ export function Product({ product, hasInventory }: props) {
         $withoutStock={stockAmount}
         $fold={!fold}
       >
+        <ProductContainer
+          $children
+          $hasInventory={hasInventory}
+          $withoutStock={stockAmount}
+        >
+          <Column $gridColumn="4 / 7">
+            <Button onClick={() => console.log("?")}>
+              Modificar precio de venta
+            </Button>
+          </Column>
+        </ProductContainer>
+
         {stocks &&
-          ExtraPrices.map((el, i) => (
+          extraValuesData.map((el, i) => (
             <Extra
               key={i}
-              extra={el}
-              stock={stocks[el.stockPosition]}
+              outputRequest={el}
+              stockInfo={stocks[el.stockPosition]}
               hasInventory={hasInventory}
               setState={setExtraValues}
               setEditParentAmount={setEditAmount}

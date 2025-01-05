@@ -1,12 +1,6 @@
-import { Column, OutputsRequest, OutputCostDescription, Input } from ".";
+import { Column, OutputsRequest, OutputCostDescription } from ".";
 import { stockType } from "@/tools/products/addToStock";
-import {
-  ChangeEvent,
-  Dispatch,
-  SetStateAction,
-  useEffect,
-  useState,
-} from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 interface ExtraProps {
   hasInventory: boolean | undefined;
@@ -22,33 +16,20 @@ export function Extra({
   setState,
   index,
 }: ExtraProps) {
-  const [amount, setAmount] = useState(outputRequest.amount);
   const [purchaseValue, setPurchaseValue] = useState(0);
-
-  function changeValue(
-    e: ChangeEvent<HTMLInputElement> | number,
-    setState: Dispatch<SetStateAction<number>>
-  ) {
-    const value = typeof e === "number" ? e : Number(e.target.value) || 0;
-    setState(value);
-  }
-
-  useEffect(() => {
-    changeValue(outputRequest.amount, setAmount);
-  }, [outputRequest.amount]);
 
   useEffect(() => {
     if (!stockInfo) return;
 
-    setPurchaseValue(amount * stockInfo.purchase_price);
-  }, [amount, stockInfo]);
+    setPurchaseValue(outputRequest.amount * stockInfo.purchase_price);
+  }, [outputRequest.amount, stockInfo]);
 
   useEffect(() => {
     setState((props) => {
       return {
         ...props,
         [index]: {
-          amount: amount,
+          amount: outputRequest.amount,
           cost: stockInfo.purchase_price,
           total_cost: purchaseValue,
         },
@@ -65,7 +46,13 @@ export function Extra({
         };
       });
     };
-  }, [amount, index, purchaseValue, setState, stockInfo.purchase_price]);
+  }, [
+    index,
+    outputRequest.amount,
+    purchaseValue,
+    setState,
+    stockInfo.purchase_price,
+  ]);
 
   return (
     <>

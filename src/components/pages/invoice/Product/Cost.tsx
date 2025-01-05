@@ -10,7 +10,7 @@ interface ExtraProps {
   index: number;
 }
 
-export function Extra({
+export function Cost({
   stockInfo,
   outputRequest,
   setState,

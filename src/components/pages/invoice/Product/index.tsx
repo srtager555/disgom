@@ -13,7 +13,7 @@ import {
 } from "react";
 import styled from "styled-components";
 import { ProductContainer } from "../ProductList";
-import { Extra } from "./Extra";
+import { Cost } from "./Cost";
 import { Button } from "@/styles/Form.styles";
 
 export type OutputsRequest = {
@@ -333,7 +333,7 @@ export function Product({ product, hasInventory }: props) {
 
         {stocks &&
           costRequestsData.map((el, i) => (
-            <Extra
+            <Cost
               key={i}
               outputRequest={el}
               stockInfo={stocks[el.stockPosition]}

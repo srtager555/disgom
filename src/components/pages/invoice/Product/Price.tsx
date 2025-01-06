@@ -1,7 +1,8 @@
-import { Column, Input, priceRequestDescription } from ".";
+import { Column, Input, priceRequest, priceRequestDescription } from ".";
 import { stockType } from "@/tools/products/addToStock";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { numberParser } from "@/tools/numberPaser";
+import { Button } from "@/styles/Form.styles";
 
 interface PriceProsp {
   hasInventory: boolean | undefined;
@@ -10,7 +11,11 @@ interface PriceProsp {
   theSellerPrice: number;
   priceRequestLength: number;
   priceRequest: { amount: number };
-  setState: Dispatch<SetStateAction<Record<number, priceRequestDescription>>>;
+  setSaleData: Dispatch<
+    SetStateAction<Record<number, priceRequestDescription>>
+  >;
+  saleData: Record<number, priceRequestDescription>;
+  setRequestData: Dispatch<SetStateAction<Array<priceRequest>>>;
   index: number;
 }
 
@@ -21,7 +26,8 @@ export function Price({
   thePrice,
   theSellerPrice,
   hasInventory,
-  setState: setSaleData,
+  setSaleData,
+  setRequestData,
   index,
 }: PriceProsp) {
   const [amount, setAmount] = useState(priceRequest.amount);
@@ -29,6 +35,22 @@ export function Price({
   const [totalSold, setTotalSold] = useState(0);
   const [sellerPrice, setSellerPrice] = useState(theSellerPrice);
   const [totalSellerSold, setTotalSellerSold] = useState(0);
+
+  function deleteo_o() {
+    setSaleData((props) => {
+      const elements = { ...props };
+      delete elements[index];
+
+      return elements;
+    });
+
+    setRequestData((props) => {
+      const arr = [...props];
+      arr.splice(index, 1);
+
+      return arr;
+    });
+  }
 
   useEffect(() => {
     setSoldPrice(thePrice);
@@ -94,7 +116,6 @@ export function Price({
       <Column $gridColumn="8 / 9" title={numberParser(totalSold)}>
         {numberParser(totalSold)}
       </Column>
-      <Column $gridColumn="9 / 10"></Column>
 
       {hasInventory && (
         <>
@@ -113,6 +134,11 @@ export function Price({
             {numberParser(totalSellerSold)}
           </Column>
         </>
+      )}
+      {index != 0 && (
+        <Column $gridColumn="-1 / -2" $removeBorder>
+          <Button onClick={deleteo_o}>Quitar</Button>
+        </Column>
       )}
     </>
   );

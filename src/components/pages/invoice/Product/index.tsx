@@ -58,7 +58,9 @@ export const Column = styled(Container)<{
   text-overflow: ellipsis;
 
   & > button {
-    padding: 5px 10px;
+    padding: 0px;
+    border: none;
+    text-decoration: underline;
     &:hover {
       transform: scale(1);
     }
@@ -392,7 +394,9 @@ export function Product({ product, hasInventory }: props) {
               thePrice={salePrice}
               theSellerPrice={sellerPrice}
               priceRequest={el}
-              setState={setPriceRequestDescription}
+              setSaleData={setPriceRequestDescription}
+              saleData={priceRequestDescription}
+              setRequestData={setRequestPricesValues}
               index={i}
             />
           ))}

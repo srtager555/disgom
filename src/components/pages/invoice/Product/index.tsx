@@ -45,6 +45,7 @@ export type priceRequestDescription = {
 export const Column = styled(Container)<{
   $gridColumn: string;
   $removeBorder?: boolean;
+  $title?: string;
 }>`
   grid-column: ${(props) => props.$gridColumn};
   ${(props) =>
@@ -56,6 +57,7 @@ export const Column = styled(Container)<{
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background-color: inherit;
 
   & > button {
     padding: 0px;
@@ -67,6 +69,23 @@ export const Column = styled(Container)<{
     &:active {
       transform: scale(0.95);
     }
+  }
+
+  &:hover {
+    &:before {
+      opacity: 1;
+    }
+  }
+
+  &:before {
+    content: ${(props) => JSON.stringify(props.$title) || "0"};
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 5px 10px;
+    background-color: inherit;
+    opacity: 0;
   }
 `;
 
@@ -321,7 +340,7 @@ export function Product({ product, hasInventory }: props) {
       <Column $gridColumn="5 / 6">
         {diffPurchasePrices ? "~" : currentStock?.purchase_price || "~"}
       </Column>
-      <Column $gridColumn="6 / 7" title={numberParser(purchaseValue)}>
+      <Column $gridColumn="6 / 7" $title={numberParser(purchaseValue)}>
         {numberParser(purchaseValue)}
       </Column>
       <Column $gridColumn="7 / 8">
@@ -339,10 +358,10 @@ export function Product({ product, hasInventory }: props) {
           "~"
         )}
       </Column>
-      <Column $gridColumn="8 / 9" title={numberParser(saleValue)}>
+      <Column $gridColumn="8 / 9" $title={numberParser(saleValue)}>
         {numberParser(saleValue)}
       </Column>
-      <Column $gridColumn="9 / 10" title={numberParser(profitValue)}>
+      <Column $gridColumn="9 / 10" $title={numberParser(profitValue)}>
         {numberParser(profitValue)}
       </Column>
       {hasInventory && (
@@ -362,10 +381,10 @@ export function Product({ product, hasInventory }: props) {
               "~"
             )}
           </Column>
-          <Column $gridColumn="11 / 12" title={numberParser(sellerValue)}>
+          <Column $gridColumn="11 / 12" $title={numberParser(sellerValue)}>
             {numberParser(sellerValue)}
           </Column>
-          <Column $gridColumn="12 / 13" title={numberParser(sellerProfit)}>
+          <Column $gridColumn="12 / 13" $title={numberParser(sellerProfit)}>
             {numberParser(sellerProfit)}
           </Column>
         </>

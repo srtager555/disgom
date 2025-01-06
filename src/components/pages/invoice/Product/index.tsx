@@ -7,6 +7,7 @@ import {
   ChangeEvent,
   Dispatch,
   SetStateAction,
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -35,7 +36,9 @@ export type priceRequest = {
 
 export type priceRequestDescription = {
   amount: number;
+  sold_price: number;
   totalSold: number;
+  seller_sold_price: number;
   totalSellerSold: number;
 };
 
@@ -118,10 +121,13 @@ export function Product({ product, hasInventory }: props) {
   }, [data.stock]);
   const [fold, setFold] = useState(false);
   const [amount, setAmount] = useState(0);
+  const [diffPurchasePrices, setDiffPurchasePrices] = useState(false);
   const [purchaseValue, setPurchaseValue] = useState(0);
   const [salePrice, setSalePrice] = useState(currentStock?.sale_price || 0);
+  const [diffSalePrices, setDiffSalePrices] = useState(false);
   const [saleValue, setSaleValue] = useState(0);
   const [profitValue, setProfitValue] = useState(0);
+  const [diffSellerPrices, setDiffSellerPrices] = useState(false);
   const [sellerPrice, setSellerPrice] = useState(
     currentStock?.seller_profit || 0
   );
@@ -169,9 +175,27 @@ export function Product({ product, hasInventory }: props) {
     }
   }
 
-  function checkPrices(field: keyof OutputCostDescription, diff: number) {
-    return Object.values(costValues).filter((el) => el[field] != diff);
-  }
+  const checkCost = useCallback(
+    function (field: keyof OutputCostDescription, diff: number) {
+      const values = Object.values(costValues);
+      if (values.length === 1) return [];
+
+      return Object.values(costValues).filter((el) => el[field] != diff);
+    },
+    [costValues]
+  );
+
+  const checkPrice = useCallback(
+    function (field: keyof priceRequestDescription, diff: number) {
+      const values = Object.values(priceRequestDescription);
+      if (values.length === 1) return [];
+
+      return Object.values(priceRequestDescription).filter((el) => {
+        return el[field] != diff;
+      });
+    },
+    [priceRequestDescription]
+  );
 
   function addNewPriceRequest() {
     setRequestPricesValues((props) => [...props, { amount: 0 }]);
@@ -191,7 +215,6 @@ export function Product({ product, hasInventory }: props) {
 
   function getCostValues(num: keyof OutputCostDescription) {
     const values = Object.values(costValues);
-    console.log("values", values);
     if (values.length === 0) return 0;
     return values
       .map((el) => el[num] || 0)
@@ -216,6 +239,7 @@ export function Product({ product, hasInventory }: props) {
     }
   }, [amount, requestPricesValues]);
 
+  // effect to manage the costs
   useEffect(() => {
     if (!currentStock) return;
     setPurchaseValue(getCostValues("total_cost"));
@@ -223,6 +247,7 @@ export function Product({ product, hasInventory }: props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [costValues]);
 
+  // effect to manage the sales
   useEffect(() => {
     setSaleValue(getSaleValues("totalSold"));
     setSellerValue(getSaleValues("totalSellerSold"));
@@ -230,10 +255,28 @@ export function Product({ product, hasInventory }: props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [priceRequestDescription]);
 
+  // useEffect to manage the profits
   useEffect(() => {
     setProfitValue(saleValue - purchaseValue);
     setSellerProfit(sellerValue - saleValue);
   }, [purchaseValue, saleValue, sellerValue]);
+
+  // effects to manage if there are multiply prices
+  useEffect(() => {
+    setDiffPurchasePrices(
+      checkCost("cost", currentStock?.purchase_price || 0).length > 0
+    );
+  }, [checkCost, currentStock?.purchase_price]);
+
+  useEffect(() => {
+    setDiffSalePrices(checkPrice("sold_price", salePrice).length > 0);
+  }, [checkPrice, diffSalePrices, salePrice]);
+
+  useEffect(() => {
+    setDiffSellerPrices(
+      checkPrice("seller_sold_price", sellerPrice || 0).length > 0
+    );
+  }, [checkPrice, sellerPrice]);
 
   return (
     <ProductContainer $hasInventory={hasInventory} $withoutStock={stockAmount}>
@@ -263,15 +306,13 @@ export function Product({ product, hasInventory }: props) {
         />
       </Column>
       <Column $gridColumn="5 / 6">
-        {checkPrices("cost", currentStock?.purchase_price || 0).length > 0
-          ? "~"
-          : currentStock?.purchase_price || "~"}
+        {diffPurchasePrices ? "~" : currentStock?.purchase_price || "~"}
       </Column>
       <Column $gridColumn="6 / 7" title={numberParser(purchaseValue)}>
         {numberParser(purchaseValue)}
       </Column>
       <Column $gridColumn="7 / 8">
-        {checkPrices("sale", currentStock?.sale_price || 0).length > 0 ? (
+        {diffSalePrices ? (
           "~"
         ) : currentStock?.sale_price ? (
           <Input
@@ -294,8 +335,7 @@ export function Product({ product, hasInventory }: props) {
       {hasInventory && (
         <>
           <Column $gridColumn="10 / 11">
-            {checkPrices("seller_price", currentStock?.seller_profit || 0)
-              .length > 0 ? (
+            {diffSellerPrices ? (
               "~"
             ) : currentStock?.seller_profit ? (
               <Input
@@ -338,6 +378,8 @@ export function Product({ product, hasInventory }: props) {
               hasInventory={hasInventory}
               stockInfo={currentStock}
               priceRequestLength={requestPricesValues.length}
+              thePrice={salePrice}
+              theSellerPrice={sellerPrice}
               priceRequest={el}
               setState={setPriceRequestDescription}
               index={i}

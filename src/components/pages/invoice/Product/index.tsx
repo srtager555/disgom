@@ -179,22 +179,22 @@ export function Product({ product, hasInventory }: props) {
   );
 
   const checkCost = useCallback(
-    function (field: keyof OutputCostDescription, diff: number) {
+    function (field: keyof OutputCostDescription) {
       const values = Object.values(costValues);
       if (values.length === 1) return [];
 
-      return Object.values(costValues).filter((el) => el[field] != diff);
+      return Object.values(costValues).filter((el) => el[field]);
     },
     [costValues]
   );
 
   const checkPrice = useCallback(
-    function (field: keyof priceRequestDescription, diff: number) {
+    function (field: keyof priceRequestDescription) {
       const values = Object.values(priceRequestDescription);
       if (values.length === 1) return [];
 
       return Object.values(priceRequestDescription).filter((el) => {
-        return el[field] != diff;
+        return el[field];
       });
     },
     [priceRequestDescription]
@@ -269,19 +269,15 @@ export function Product({ product, hasInventory }: props) {
 
   // effects to manage if there are multiply prices
   useEffect(() => {
-    setDiffPurchasePrices(
-      checkCost("cost", currentStock?.purchase_price || 0).length > 0
-    );
+    setDiffPurchasePrices(checkCost("cost").length > 0);
   }, [checkCost, currentStock?.purchase_price]);
 
   useEffect(() => {
-    setDiffSalePrices(checkPrice("sold_price", salePrice).length > 0);
+    setDiffSalePrices(checkPrice("sold_price").length > 0);
   }, [checkPrice, diffSalePrices, salePrice]);
 
   useEffect(() => {
-    setDiffSellerPrices(
-      checkPrice("seller_sold_price", sellerPrice || 0).length > 0
-    );
+    setDiffSellerPrices(checkPrice("seller_sold_price").length > 0);
   }, [checkPrice, sellerPrice]);
 
   // effect to manage the amount when have more than 1 price

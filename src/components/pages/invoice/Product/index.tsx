@@ -147,33 +147,36 @@ export function Product({ product, hasInventory }: props) {
   >({});
   const [editAmount, setEditAmount] = useState(true);
 
-  function amountListener(e: ChangeEvent<HTMLInputElement>) {
-    let remainingAmount = Number(e.target.value);
+  const amountListener = useCallback(
+    function (n: number) {
+      let remainingAmount = n;
 
-    setCostRequestData([]);
-    if (remainingAmount <= 0) return;
-    if (!stocks) return;
+      setCostRequestData([]);
+      if (remainingAmount <= 0) return;
+      if (!stocks) return;
 
-    for (let index = 0; index < stocks.length; index++) {
-      const stock = stocks[index];
+      for (let index = 0; index < stocks.length; index++) {
+        const stock = stocks[index];
 
-      const remaining = remainingAmount - stock.amount;
+        const remaining = remainingAmount - stock.amount;
 
-      if (remaining > 0) {
-        remainingAmount = remaining;
-        setCostRequestData((props) => [
-          ...props,
-          { amount: stock.amount, stockPosition: index },
-        ]);
-      } else {
-        setCostRequestData((props) => [
-          ...props,
-          { amount: remainingAmount, stockPosition: index },
-        ]);
-        break;
+        if (remaining > 0) {
+          remainingAmount = remaining;
+          setCostRequestData((props) => [
+            ...props,
+            { amount: stock.amount, stockPosition: index },
+          ]);
+        } else {
+          setCostRequestData((props) => [
+            ...props,
+            { amount: remainingAmount, stockPosition: index },
+          ]);
+          break;
+        }
       }
-    }
-  }
+    },
+    [stocks]
+  );
 
   const checkCost = useCallback(
     function (field: keyof OutputCostDescription, diff: number) {
@@ -221,13 +224,16 @@ export function Product({ product, hasInventory }: props) {
       .reduce((accumulator, currentValue) => accumulator + currentValue);
   }
 
-  function getSaleValues(num: keyof priceRequestDescription) {
-    const values = Object.values(priceRequestDescription);
-    if (values.length === 0) return 0;
-    return values
-      .map((el) => el[num] || 0)
-      .reduce((accumulator, currentValue) => accumulator + currentValue);
-  }
+  const getSaleValues = useCallback(
+    function (num: keyof priceRequestDescription) {
+      const values = Object.values(priceRequestDescription);
+      if (values.length === 0) return 0;
+      return values
+        .map((el) => el[num] || 0)
+        .reduce((accumulator, currentValue) => accumulator + currentValue);
+    },
+    [priceRequestDescription]
+  );
 
   useEffect(() => {
     if (requestPricesValues.length > 1) {
@@ -278,6 +284,11 @@ export function Product({ product, hasInventory }: props) {
     );
   }, [checkPrice, sellerPrice]);
 
+  // effect to manage the amount when have more than 1 price
+  useEffect(() => {
+    amountListener(getSaleValues("amount"));
+  }, [amountListener, checkPrice, getSaleValues, salePrice]);
+
   return (
     <ProductContainer $hasInventory={hasInventory} $withoutStock={stockAmount}>
       <Column $gridColumn="1 / 4">
@@ -292,18 +303,22 @@ export function Product({ product, hasInventory }: props) {
         </ProductName>
       </Column>
       <Column $gridColumn="4 / 5">
-        <Input
-          onClick={() => setEditAmount(true)}
-          onChange={(e) => {
-            changeStateValue(e, setAmount);
-            amountListener(e);
-          }}
-          type="number"
-          value={!editAmount ? getCostValues("amount") : undefined}
-          max={stockAmount}
-          min={0}
-          step={0.01}
-        />
+        {Object.values(priceRequestDescription).length > 1 ? (
+          getSaleValues("amount")
+        ) : (
+          <Input
+            onClick={() => setEditAmount(true)}
+            onChange={(e) => {
+              changeStateValue(e, setAmount);
+              amountListener(Number(e.target.value));
+            }}
+            type="number"
+            value={!editAmount ? getCostValues("amount") : undefined}
+            max={stockAmount}
+            min={0}
+            step={0.01}
+          />
+        )}
       </Column>
       <Column $gridColumn="5 / 6">
         {diffPurchasePrices ? "~" : currentStock?.purchase_price || "~"}

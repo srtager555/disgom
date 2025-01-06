@@ -40,9 +40,9 @@ export function Price({
   }, [priceRequest.amount]);
 
   useEffect(() => {
-    setTotalSold(amount * thePrice);
-    setTotalSellerSold(amount * theSellerPrice);
-  }, [amount, thePrice, theSellerPrice]);
+    setTotalSold(amount * soldPrice);
+    setTotalSellerSold(amount * sellerPrice);
+  }, [amount, sellerPrice, soldPrice]);
 
   useEffect(() => {
     setSaleData((props) => {

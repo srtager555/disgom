@@ -102,15 +102,16 @@ export function Price({
             {priceRequestLength > 1 ? (
               <Input
                 type="number"
-                defaultValue={stockInfo.sale_price}
+                defaultValue={stockInfo.seller_profit}
                 onChange={(e) => setSellerPrice(Number(e.target.value))}
               />
             ) : (
               numberParser(stockInfo.seller_profit)
             )}
           </Column>
-          <Column $gridColumn="11 / 12">{numberParser(totalSellerSold)}</Column>
-          <Column $gridColumn="12 / 13"></Column>
+          <Column $gridColumn="11 / 12" title={numberParser(totalSellerSold)}>
+            {numberParser(totalSellerSold)}
+          </Column>
         </>
       )}
     </>

@@ -1,3 +1,4 @@
+import { numberParser } from "@/tools/numberPaser";
 import { Column, OutputsRequest, OutputCostDescription } from ".";
 import { stockType } from "@/tools/products/addToStock";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
@@ -60,9 +61,11 @@ export function Cost({
         {stockInfo.created_at.toDate().toLocaleDateString()}
       </Column>
       <Column $gridColumn="4 / 5">{outputRequest.amount}</Column>
-      <Column $gridColumn="5 / 6">{stockInfo.purchase_price}</Column>
-      <Column $gridColumn="6 / 7" title={purchaseValue.toLocaleString()}>
-        {purchaseValue.toLocaleString()}
+      <Column $gridColumn="5 / 6">
+        {numberParser(stockInfo.purchase_price)}
+      </Column>
+      <Column $gridColumn="6 / 7" title={numberParser(purchaseValue)}>
+        {numberParser(purchaseValue)}
       </Column>
     </>
   );

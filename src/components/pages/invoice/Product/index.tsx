@@ -15,6 +15,8 @@ import styled from "styled-components";
 import { ProductContainer } from "../ProductList";
 import { Cost } from "./Cost";
 import { Button } from "@/styles/Form.styles";
+import { Price } from "./Price";
+import { numberParser } from "@/tools/numberPaser";
 
 export type OutputsRequest = {
   stockPosition: number;
@@ -27,6 +29,16 @@ export type OutputCostDescription = {
   total_cost: number;
 };
 
+export type priceRequest = {
+  amount: number;
+};
+
+export type priceRequestDescription = {
+  amount: number;
+  totalSold: number;
+  totalSellerSold: number;
+};
+
 export const Column = styled(Container)<{
   $gridColumn: string;
   $removeBorder?: boolean;
@@ -37,6 +49,7 @@ export const Column = styled(Container)<{
     `border-right: solid 1px ${globalCSSVars["--detail"]};`}
 
   width: 100%;
+  height: 25px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -121,10 +134,11 @@ export function Product({ product, hasInventory }: props) {
     Record<number, OutputCostDescription>
   >({});
   const [requestPricesValues, setRequestPricesValues] = useState<
-    Array<{
-      amount: number;
-    }>
-  >([]);
+    Array<priceRequest>
+  >([{ amount }]);
+  const [priceRequestDescription, setPriceRequestDescription] = useState<
+    Record<number, priceRequestDescription>
+  >({});
   const [editAmount, setEditAmount] = useState(true);
 
   function amountListener(e: ChangeEvent<HTMLInputElement>) {
@@ -159,8 +173,8 @@ export function Product({ product, hasInventory }: props) {
     return Object.values(costValues).filter((el) => el[field] != diff);
   }
 
-  function addCustomExtraValue() {
-    setRequestPricesValues();
+  function addNewPriceRequest() {
+    setRequestPricesValues((props) => [...props, { amount: 0 }]);
   }
 
   function changeStateValue(
@@ -175,57 +189,52 @@ export function Product({ product, hasInventory }: props) {
     setFold(!fold);
   }
 
-  function getValues(num: keyof OutputCostDescription) {
-    return Object.values(costValues)
+  function getCostValues(num: keyof OutputCostDescription) {
+    const values = Object.values(costValues);
+    console.log("values", values);
+    if (values.length === 0) return 0;
+    return values
+      .map((el) => el[num] || 0)
+      .reduce((accumulator, currentValue) => accumulator + currentValue);
+  }
+
+  function getSaleValues(num: keyof priceRequestDescription) {
+    const values = Object.values(priceRequestDescription);
+    if (values.length === 0) return 0;
+    return values
       .map((el) => el[num] || 0)
       .reduce((accumulator, currentValue) => accumulator + currentValue);
   }
 
   useEffect(() => {
-    if (requestPricesValues.length === 0) {
-      setRequestPricesValues((props) => [...props, { amount }]);
-    } else if (requestPricesValues.length > 1) {
+    if (requestPricesValues.length > 1) {
       setEditAmount(false);
     } else {
+      if (amount === requestPricesValues[0].amount) return;
+      setRequestPricesValues([{ amount: amount }]);
       setEditAmount(true);
     }
   }, [amount, requestPricesValues]);
 
   useEffect(() => {
     if (!currentStock) return;
-    if (costRequestsData.length > 1) {
-      setPurchaseValue(getValues("total_cost"));
-      setSaleValue(getValues("total_sale"));
-      setProfitValue(getValues("total_profit"));
-
-      setSellerValue(getValues("total_seller_sale"));
-      setSellerProfit(getValues("total_seller_profit"));
-    } else {
-      setPurchaseValue(amount * currentStock.purchase_price);
-      setSaleValue(amount * salePrice);
-      setProfitValue((salePrice - currentStock.purchase_price) * amount);
-
-      setSellerValue(amount * sellerPrice);
-      setSellerProfit((sellerPrice - salePrice) * amount);
-    }
+    setPurchaseValue(getCostValues("total_cost"));
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    costRequestsData.length,
-    amount,
-    currentStock,
-    costValues,
-    salePrice,
-    sellerPrice,
-    sellerValue,
-  ]);
+  }, [costValues]);
 
-  // lo que tengo que hacer ahora es que tengo que dar la opcion de
-  // agregar producto extra, a lo que me refiero es que
-  // si se quiere añadir un saco especial que se pueda
-  // agregar directamente
-  // al usar esa opcion, seria ideal bloquear el amount
-  // del producto main para evitar errores
+  useEffect(() => {
+    setSaleValue(getSaleValues("totalSold"));
+    setSellerValue(getSaleValues("totalSellerSold"));
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceRequestDescription]);
+
+  useEffect(() => {
+    setProfitValue(saleValue - purchaseValue);
+    setSellerProfit(sellerValue - saleValue);
+  }, [purchaseValue, saleValue, sellerValue]);
+
   return (
     <ProductContainer $hasInventory={hasInventory} $withoutStock={stockAmount}>
       <Column $gridColumn="1 / 4">
@@ -241,13 +250,13 @@ export function Product({ product, hasInventory }: props) {
       </Column>
       <Column $gridColumn="4 / 5">
         <Input
-          onClick={() => setEditAmount(false)}
+          onClick={() => setEditAmount(true)}
           onChange={(e) => {
             changeStateValue(e, setAmount);
             amountListener(e);
           }}
           type="number"
-          value={!editAmount ? getValues("amount") : undefined}
+          value={!editAmount ? getCostValues("amount") : undefined}
           max={stockAmount}
           min={0}
           step={0.01}
@@ -258,8 +267,8 @@ export function Product({ product, hasInventory }: props) {
           ? "~"
           : currentStock?.purchase_price || "~"}
       </Column>
-      <Column $gridColumn="6 / 7" title={purchaseValue.toLocaleString()}>
-        {purchaseValue.toLocaleString()}
+      <Column $gridColumn="6 / 7" title={numberParser(purchaseValue)}>
+        {numberParser(purchaseValue)}
       </Column>
       <Column $gridColumn="7 / 8">
         {checkPrices("sale", currentStock?.sale_price || 0).length > 0 ? (
@@ -276,11 +285,11 @@ export function Product({ product, hasInventory }: props) {
           "~"
         )}
       </Column>
-      <Column $gridColumn="8 / 9" title={saleValue.toLocaleString()}>
-        {saleValue.toLocaleString()}
+      <Column $gridColumn="8 / 9" title={numberParser(saleValue)}>
+        {numberParser(saleValue)}
       </Column>
-      <Column $gridColumn="9 / 10" title={profitValue.toLocaleString()}>
-        {profitValue.toLocaleString()}
+      <Column $gridColumn="9 / 10" title={numberParser(profitValue)}>
+        {numberParser(profitValue)}
       </Column>
       {hasInventory && (
         <>
@@ -300,11 +309,11 @@ export function Product({ product, hasInventory }: props) {
               "~"
             )}
           </Column>
-          <Column $gridColumn="11 / 12" title={sellerValue.toLocaleString()}>
-            {sellerValue.toLocaleString()}
+          <Column $gridColumn="11 / 12" title={numberParser(sellerValue)}>
+            {numberParser(sellerValue)}
           </Column>
-          <Column $gridColumn="12 / 13" title={sellerProfit.toLocaleString()}>
-            {sellerProfit.toLocaleString()}
+          <Column $gridColumn="12 / 13" title={numberParser(sellerProfit)}>
+            {numberParser(sellerProfit)}
           </Column>
         </>
       )}
@@ -319,18 +328,33 @@ export function Product({ product, hasInventory }: props) {
         $withoutStock={stockAmount}
         $fold={!fold}
       >
+        <Column $gridColumn="1 / -1" $removeBorder>
+          <b>Precios de la salida detallados</b>
+        </Column>
+        {currentStock &&
+          requestPricesValues.map((el, i) => (
+            <Price
+              key={i}
+              hasInventory={hasInventory}
+              stockInfo={currentStock}
+              priceRequestLength={requestPricesValues.length}
+              priceRequest={el}
+              setState={setPriceRequestDescription}
+              index={i}
+            />
+          ))}
         <ProductContainer
           $children
           $hasInventory={hasInventory}
           $withoutStock={stockAmount}
         >
           <Column $gridColumn="4 / 8" $removeBorder>
-            <Button onClick={() => console.log("?")}>
-              Agregar variaciones
-            </Button>
+            <Button onClick={addNewPriceRequest}>Agregar variaciones</Button>
           </Column>
         </ProductContainer>
-
+        <Column $gridColumn="1 / -1" $removeBorder>
+          <b>Costos de la salida detallados</b>
+        </Column>
         {stocks &&
           costRequestsData.map((el, i) => (
             <Cost

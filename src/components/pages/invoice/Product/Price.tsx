@@ -6,6 +6,8 @@ import { numberParser } from "@/tools/numberPaser";
 interface PriceProsp {
   hasInventory: boolean | undefined;
   stockInfo: stockType;
+  thePrice: number;
+  theSellerPrice: number;
   priceRequestLength: number;
   priceRequest: { amount: number };
   setState: Dispatch<SetStateAction<Record<number, priceRequestDescription>>>;
@@ -16,22 +18,31 @@ export function Price({
   stockInfo,
   priceRequestLength,
   priceRequest,
+  thePrice,
+  theSellerPrice,
   hasInventory,
   setState: setSaleData,
   index,
 }: PriceProsp) {
   const [amount, setAmount] = useState(priceRequest.amount);
+  const [soldPrice, setSoldPrice] = useState(thePrice);
   const [totalSold, setTotalSold] = useState(0);
+  const [sellerPrice, setSellerPrice] = useState(theSellerPrice);
   const [totalSellerSold, setTotalSellerSold] = useState(0);
+
+  useEffect(() => {
+    setSoldPrice(thePrice);
+    setSellerPrice(theSellerPrice);
+  }, [thePrice, theSellerPrice]);
 
   useEffect(() => {
     setAmount(priceRequest.amount);
   }, [priceRequest.amount]);
 
   useEffect(() => {
-    setTotalSold(amount * stockInfo.sale_price);
-    setTotalSellerSold(amount * stockInfo.seller_profit);
-  }, [amount, stockInfo.sale_price, stockInfo.seller_profit]);
+    setTotalSold(amount * thePrice);
+    setTotalSellerSold(amount * theSellerPrice);
+  }, [amount, thePrice, theSellerPrice]);
 
   useEffect(() => {
     setSaleData((props) => {
@@ -39,18 +50,29 @@ export function Price({
         ...props,
         [index]: {
           amount,
+          sold_price: soldPrice,
           totalSold,
+          seller_sold_price: sellerPrice,
           totalSellerSold,
         },
       };
     });
-  }, [amount, totalSold, totalSellerSold, setSaleData, index]);
+  }, [
+    amount,
+    totalSold,
+    totalSellerSold,
+    setSaleData,
+    index,
+    soldPrice,
+    sellerPrice,
+  ]);
 
   return (
     <>
       <Column $gridColumn="4 / 5">
         {priceRequestLength > 1 ? (
           <Input
+            type="number"
             onChange={(e) => setAmount(Number(e.target.value))}
             defaultValue={amount}
           />
@@ -60,9 +82,13 @@ export function Price({
       </Column>
       <Column $gridColumn="7 / 8">
         {priceRequestLength > 1 ? (
-          <Input defaultValue={stockInfo.sale_price} />
+          <Input
+            type="number"
+            defaultValue={thePrice}
+            onChange={(e) => setSoldPrice(Number(e.target.value))}
+          />
         ) : (
-          numberParser(stockInfo.sale_price)
+          numberParser(thePrice)
         )}
       </Column>
       <Column $gridColumn="8 / 9" title={numberParser(totalSold)}>
@@ -73,7 +99,15 @@ export function Price({
       {hasInventory && (
         <>
           <Column $gridColumn="10 / 11">
-            {numberParser(stockInfo.seller_profit)}
+            {priceRequestLength > 1 ? (
+              <Input
+                type="number"
+                defaultValue={stockInfo.sale_price}
+                onChange={(e) => setSellerPrice(Number(e.target.value))}
+              />
+            ) : (
+              numberParser(stockInfo.seller_profit)
+            )}
           </Column>
           <Column $gridColumn="11 / 12">{numberParser(totalSellerSold)}</Column>
           <Column $gridColumn="12 / 13"></Column>

@@ -13,7 +13,7 @@ import {
   useState,
 } from "react";
 import styled, { css } from "styled-components";
-import { ProductContainer } from "../ProductList";
+import { ProductContainer, productResult } from "../ProductList";
 import { Cost } from "./Cost";
 import { Button } from "@/styles/Form.styles";
 import { Price } from "./Price";
@@ -86,7 +86,6 @@ function ColumnBase({
   gridColumn: string;
   title?: string;
 }) {
-  console.log($gridColumn);
   return (
     <ColumnGrid
       $title={title}
@@ -154,9 +153,10 @@ const ExtraButton = styled.button`
 interface props {
   product: QueryDocumentSnapshot<productDoc>;
   hasInventory: boolean | undefined;
+  setProductsResults: Dispatch<SetStateAction<Record<string, productResult>>>;
 }
 
-export function Product({ product, hasInventory }: props) {
+export function Product({ product, hasInventory, setProductsResults }: props) {
   const data = useMemo(() => product.data(), [product]);
   const stocks = useMemo(() => {
     if (data.stock.length === 0) return undefined;
@@ -273,13 +273,16 @@ export function Product({ product, hasInventory }: props) {
     setFold(!fold);
   }
 
-  function getCostValues(num: keyof OutputCostDescription) {
-    const values = Object.values(costValues);
-    if (values.length === 0) return 0;
-    return values
-      .map((el) => el[num] || 0)
-      .reduce((accumulator, currentValue) => accumulator + currentValue);
-  }
+  const getCostValues = useCallback(
+    function (num: keyof OutputCostDescription) {
+      const values = Object.values(costValues);
+      if (values.length === 0) return 0;
+      return values
+        .map((el) => el[num] || 0)
+        .reduce((accumulator, currentValue) => accumulator + currentValue);
+    },
+    [costValues]
+  );
 
   const getSaleValues = useCallback(
     function (num: keyof priceRequestDescription) {
@@ -302,27 +305,22 @@ export function Product({ product, hasInventory }: props) {
     }
   }, [amount, requestPricesValues]);
 
-  // effect to manage the costs
+  // effect to manage the values
   useEffect(() => {
-    if (!currentStock) return;
-    setPurchaseValue(getCostValues("total_cost"));
+    const cost = getCostValues("total_cost");
+    const totalSold = getSaleValues("totalSold");
+    const totalSellerSold = getSaleValues("totalSellerSold");
+    const profit = totalSold - cost;
+    const seller_profit = totalSellerSold - totalSold;
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [costValues]);
+    setPurchaseValue(cost);
 
-  // effect to manage the sales
-  useEffect(() => {
-    setSaleValue(getSaleValues("totalSold"));
-    setSellerValue(getSaleValues("totalSellerSold"));
+    setSaleValue(totalSold);
+    setSellerValue(totalSellerSold);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [priceRequestDescription]);
-
-  // useEffect to manage the profits
-  useEffect(() => {
-    setProfitValue(saleValue - purchaseValue);
-    setSellerProfit(sellerValue - saleValue);
-  }, [purchaseValue, saleValue, sellerValue]);
+    setProfitValue(profit);
+    setSellerProfit(seller_profit);
+  }, [getCostValues, getSaleValues, priceRequestDescription]);
 
   // effects to manage if there are multiply prices
   useEffect(() => {
@@ -340,7 +338,46 @@ export function Product({ product, hasInventory }: props) {
   // effect to manage the amount when have more than 1 price
   useEffect(() => {
     amountListener(getSaleValues("amount"));
-  }, [amountListener, checkPrice, getSaleValues, salePrice]);
+  }, [amountListener, checkPrice, getSaleValues]);
+
+  // effect to update the product result
+  useEffect(() => {
+    // delete the result if the amount is 0
+    if (amount === 0) {
+      setProductsResults((props) => {
+        const arr = { ...props };
+        delete arr[product.id];
+
+        return arr;
+      });
+
+      return;
+    }
+
+    // add the result
+    setProductsResults((props) => {
+      return {
+        ...props,
+        [product.id]: {
+          amount,
+          cost: purchaseValue,
+          price: saleValue,
+          seller_sold: sellerValue,
+          profit: profitValue,
+          seller_profit: sellerProfit,
+        },
+      };
+    });
+  }, [
+    amount,
+    product.id,
+    profitValue,
+    purchaseValue,
+    saleValue,
+    sellerProfit,
+    sellerValue,
+    setProductsResults,
+  ]);
 
   return (
     <ProductContainer $hasInventory={hasInventory} $withoutStock={stockAmount}>

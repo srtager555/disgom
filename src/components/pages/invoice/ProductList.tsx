@@ -6,12 +6,20 @@ import { Dispatch, SetStateAction, useContext } from "react";
 import { InvoiceContext } from "@/pages/invoices/create";
 import { globalCSSVars } from "@/styles/colors";
 
+type priceVariation = {
+  total: number;
+  variations: Array<{
+    amount: number;
+    price: number;
+  }>;
+};
+
 export type productResult = {
   amount: number;
   cost: number;
-  price: number;
+  sold: priceVariation;
   profit: number;
-  seller_sold: number;
+  seller_sold: priceVariation;
   seller_profit: number;
 };
 

@@ -2,9 +2,19 @@ import { useGetProducts } from "@/hooks/products/getProducts";
 import { Product } from "./Product";
 import { Container } from "@/styles/index.styles";
 import styled, { css } from "styled-components";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { InvoiceContext } from "@/pages/invoices/create";
 import { globalCSSVars } from "@/styles/colors";
+import { Result } from "./Product/Result";
+
+export type productResult = {
+  amount: number;
+  cost: number;
+  price: number;
+  profit: number;
+  seller_sold: number;
+  seller_profit: number;
+};
 
 export const ProductContainer = styled.div<{
   $hasInventory: boolean | undefined;
@@ -67,6 +77,9 @@ const Column = styled(Container)<{ $gridColumn: string }>`
 export function ProductList() {
   const products = useGetProducts();
   const { selectedSeller } = useContext(InvoiceContext);
+  const [productsResults, setProductsResults] = useState<
+    Record<string, productResult>
+  >({});
 
   return (
     <Container styles={{ margin: "50px 0" }}>
@@ -84,10 +97,15 @@ export function ProductList() {
           <Product
             key={i}
             product={el}
+            setProductsResults={setProductsResults}
             hasInventory={selectedSeller?.data().hasInventory}
           />
         ))
       )}
+      <Result
+        hasInventory={selectedSeller?.data().hasInventory}
+        productsResults={productsResults}
+      />
     </Container>
   );
 }

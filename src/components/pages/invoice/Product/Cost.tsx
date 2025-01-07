@@ -57,14 +57,14 @@ export function Cost({
 
   return (
     <>
-      <Column $gridColumn="1 / 4">
+      <Column gridColumn="1 / 4">
         {stockInfo.created_at.toDate().toLocaleDateString()}
       </Column>
-      <Column $gridColumn="4 / 5">{outputRequest.amount}</Column>
-      <Column $gridColumn="5 / 6">
+      <Column gridColumn="4 / 5">{outputRequest.amount}</Column>
+      <Column gridColumn="5 / 6">
         {numberParser(stockInfo.purchase_price)}
       </Column>
-      <Column $gridColumn="6 / 7" title={numberParser(purchaseValue)}>
+      <Column gridColumn="6 / 7" title={numberParser(purchaseValue)}>
         {numberParser(purchaseValue)}
       </Column>
     </>

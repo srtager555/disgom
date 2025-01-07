@@ -91,7 +91,10 @@ export function Price({
 
   return (
     <>
-      <Column $gridColumn="4 / 5">
+      <Column
+        gridColumn="4 / 5"
+        title={priceRequestLength > 1 ? "" : numberParser(amount)}
+      >
         {priceRequestLength > 1 ? (
           <Input
             type="number"
@@ -102,7 +105,7 @@ export function Price({
           numberParser(amount)
         )}
       </Column>
-      <Column $gridColumn="7 / 8">
+      <Column gridColumn="7 / 8">
         {priceRequestLength > 1 ? (
           <Input
             type="number"
@@ -113,13 +116,13 @@ export function Price({
           numberParser(thePrice)
         )}
       </Column>
-      <Column $gridColumn="8 / 9" title={numberParser(totalSold)}>
+      <Column gridColumn="8 / 9" title={numberParser(totalSold)}>
         {numberParser(totalSold)}
       </Column>
 
       {hasInventory && (
         <>
-          <Column $gridColumn="10 / 11">
+          <Column gridColumn="10 / 11">
             {priceRequestLength > 1 ? (
               <Input
                 type="number"
@@ -130,13 +133,13 @@ export function Price({
               numberParser(stockInfo.seller_profit)
             )}
           </Column>
-          <Column $gridColumn="11 / 12" title={numberParser(totalSellerSold)}>
+          <Column gridColumn="11 / 12" title={numberParser(totalSellerSold)}>
             {numberParser(totalSellerSold)}
           </Column>
         </>
       )}
       {index != 0 && (
-        <Column $gridColumn="-1 / -2" $removeBorder>
+        <Column gridColumn="-1 / -2" $removeBorder>
           <Button onClick={deleteo_o}>Quitar</Button>
         </Column>
       )}

@@ -12,7 +12,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { ProductContainer } from "../ProductList";
 import { Cost } from "./Cost";
 import { Button } from "@/styles/Form.styles";
@@ -42,18 +42,71 @@ export type priceRequestDescription = {
   totalSellerSold: number;
 };
 
-export const Column = styled(Container)<{
-  $gridColumn: string;
-  $removeBorder?: boolean;
-  $title?: string;
-}>`
+const ColumnGrid = styled(Container)<{ $gridColumn: string; $title?: string }>`
   grid-column: ${(props) => props.$gridColumn};
+  width: 100%;
+  height: 25px;
+
+  background-color: inherit;
+
+  &:hover {
+    &:before {
+      opacity: 1;
+    }
+  }
+
+  &:before {
+    ${(props) =>
+      props.$title &&
+      css`
+        content: ${JSON.stringify(props.$title)};
+      `};
+    position: absolute;
+    top: calc(50% - 1px);
+    left: -10px;
+    transform: translateY(-50%);
+    height: 100%;
+    padding: 5px 10px;
+    background-color: inherit;
+    opacity: 0;
+    transition: all 200ms ease;
+    z-index: 1;
+    box-shadow: 10px 10px 15px #0002;
+  }
+`;
+
+function ColumnBase({
+  children,
+  className,
+  gridColumn: $gridColumn,
+  title,
+}: {
+  children: children;
+  className?: string;
+  gridColumn: string;
+  title?: string;
+}) {
+  console.log($gridColumn);
+  return (
+    <ColumnGrid
+      $title={title}
+      $gridColumn={$gridColumn}
+      styles={{ width: "100%", height: "100%" }}
+    >
+      <Container className={className}>{children}</Container>
+    </ColumnGrid>
+  );
+}
+
+export const Column = styled(ColumnBase)<{
+  $removeBorder?: boolean;
+}>`
   ${(props) =>
     !props.$removeBorder &&
     `border-right: solid 1px ${globalCSSVars["--detail"]};`}
 
   width: 100%;
-  height: 25px;
+  height: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -69,23 +122,6 @@ export const Column = styled(Container)<{
     &:active {
       transform: scale(0.95);
     }
-  }
-
-  &:hover {
-    &:before {
-      opacity: 1;
-    }
-  }
-
-  &:before {
-    content: ${(props) => JSON.stringify(props.$title) || "0"};
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 5px 10px;
-    background-color: inherit;
-    opacity: 0;
   }
 `;
 
@@ -308,7 +344,7 @@ export function Product({ product, hasInventory }: props) {
 
   return (
     <ProductContainer $hasInventory={hasInventory} $withoutStock={stockAmount}>
-      <Column $gridColumn="1 / 4">
+      <Column gridColumn="1 / 4">
         <ProductName
           title={`Hay ${stockAmount} existencias${
             data.stock.length > 1
@@ -319,7 +355,7 @@ export function Product({ product, hasInventory }: props) {
           {data.name}
         </ProductName>
       </Column>
-      <Column $gridColumn="4 / 5">
+      <Column gridColumn="4 / 5">
         {Object.values(priceRequestDescription).length > 1 ? (
           getSaleValues("amount")
         ) : (
@@ -337,13 +373,13 @@ export function Product({ product, hasInventory }: props) {
           />
         )}
       </Column>
-      <Column $gridColumn="5 / 6">
+      <Column gridColumn="5 / 6">
         {diffPurchasePrices ? "~" : currentStock?.purchase_price || "~"}
       </Column>
-      <Column $gridColumn="6 / 7" $title={numberParser(purchaseValue)}>
+      <Column gridColumn="6 / 7" title={numberParser(purchaseValue)}>
         {numberParser(purchaseValue)}
       </Column>
-      <Column $gridColumn="7 / 8">
+      <Column gridColumn="7 / 8">
         {diffSalePrices ? (
           "~"
         ) : currentStock?.sale_price ? (
@@ -358,15 +394,15 @@ export function Product({ product, hasInventory }: props) {
           "~"
         )}
       </Column>
-      <Column $gridColumn="8 / 9" $title={numberParser(saleValue)}>
+      <Column gridColumn="8 / 9" title={numberParser(saleValue)}>
         {numberParser(saleValue)}
       </Column>
-      <Column $gridColumn="9 / 10" $title={numberParser(profitValue)}>
+      <Column gridColumn="9 / 10" title={numberParser(profitValue)}>
         {numberParser(profitValue)}
       </Column>
       {hasInventory && (
         <>
-          <Column $gridColumn="10 / 11">
+          <Column gridColumn="10 / 11">
             {diffSellerPrices ? (
               "~"
             ) : currentStock?.seller_profit ? (
@@ -381,15 +417,15 @@ export function Product({ product, hasInventory }: props) {
               "~"
             )}
           </Column>
-          <Column $gridColumn="11 / 12" $title={numberParser(sellerValue)}>
+          <Column gridColumn="11 / 12" title={numberParser(sellerValue)}>
             {numberParser(sellerValue)}
           </Column>
-          <Column $gridColumn="12 / 13" $title={numberParser(sellerProfit)}>
+          <Column gridColumn="12 / 13" title={numberParser(sellerProfit)}>
             {numberParser(sellerProfit)}
           </Column>
         </>
       )}
-      <Column $gridColumn="-1 / -2">
+      <Column gridColumn="-1 / -2">
         <ExtraButton onClick={folding}>
           <Icon iconType={fold ? "fold" : "unfold"} />
         </ExtraButton>
@@ -400,7 +436,7 @@ export function Product({ product, hasInventory }: props) {
         $withoutStock={stockAmount}
         $fold={!fold}
       >
-        <Column $gridColumn="1 / -1" $removeBorder>
+        <Column gridColumn="1 / -1" $removeBorder>
           <b>Precios de la salida detallados</b>
         </Column>
         {currentStock &&
@@ -424,11 +460,11 @@ export function Product({ product, hasInventory }: props) {
           $hasInventory={hasInventory}
           $withoutStock={stockAmount}
         >
-          <Column $gridColumn="4 / 8" $removeBorder>
+          <Column gridColumn="4 / 8" $removeBorder>
             <Button onClick={addNewPriceRequest}>Agregar variaciones</Button>
           </Column>
         </ProductContainer>
-        <Column $gridColumn="1 / -1" $removeBorder>
+        <Column gridColumn="1 / -1" $removeBorder>
           <b>Costos de la salida detallados</b>
         </Column>
         {stocks &&

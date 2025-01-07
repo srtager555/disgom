@@ -1,6 +1,10 @@
 import { Select } from "@/components/Inputs/select";
 import { InvoiceLayout } from "@/components/layouts/Invoice.layout";
-import { ProductList } from "@/components/pages/invoice/ProductList";
+import {
+  ProductList,
+  productResult,
+} from "@/components/pages/invoice/ProductList";
+import { Result } from "@/components/pages/invoice/Result";
 import { SelectClient } from "@/components/pages/invoice/SelectClient";
 import { useGetSellers } from "@/hooks/sellers/getSellers";
 import { NextPageWithLayout } from "@/pages/_app";
@@ -40,6 +44,9 @@ const Page: NextPageWithLayout = () => {
   const [sellerDoc, setSellerDoc] =
     useState<QueryDocumentSnapshot<SellersDoc>>();
   const sellerData = useMemo(() => sellerDoc?.data(), [sellerDoc]);
+  const [productsResults, setProductsResults] = useState<
+    Record<string, productResult>
+  >({});
 
   function selectSeller(e: ChangeEvent<HTMLSelectElement>) {
     setSelectedSeller(e.target.value);
@@ -77,7 +84,11 @@ const Page: NextPageWithLayout = () => {
           />
         </SellersSelect>
         <SelectClient sellerDoc={sellerDoc} sellerData={sellerData} />
-        <ProductList />
+        <ProductList setProductsResults={setProductsResults} />
+        <Result
+          hasInventory={sellerDoc?.data().hasInventory}
+          productsResults={productsResults}
+        />
       </Container>
     </InvoiceContext.Provider>
   );

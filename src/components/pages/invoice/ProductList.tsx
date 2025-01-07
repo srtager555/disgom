@@ -2,10 +2,9 @@ import { useGetProducts } from "@/hooks/products/getProducts";
 import { Product } from "./Product";
 import { Container } from "@/styles/index.styles";
 import styled, { css } from "styled-components";
-import { useContext, useState } from "react";
+import { Dispatch, SetStateAction, useContext } from "react";
 import { InvoiceContext } from "@/pages/invoices/create";
 import { globalCSSVars } from "@/styles/colors";
-import { Result } from "./Product/Result";
 
 export type productResult = {
   amount: number;
@@ -74,12 +73,13 @@ const Column = styled(Container)<{ $gridColumn: string }>`
   border-right: solid 1px #000;
 `;
 
-export function ProductList() {
+type props = {
+  setProductsResults: Dispatch<SetStateAction<Record<string, productResult>>>;
+};
+
+export function ProductList({ setProductsResults }: props) {
   const products = useGetProducts();
   const { selectedSeller } = useContext(InvoiceContext);
-  const [productsResults, setProductsResults] = useState<
-    Record<string, productResult>
-  >({});
 
   return (
     <Container styles={{ margin: "50px 0" }}>
@@ -102,10 +102,6 @@ export function ProductList() {
           />
         ))
       )}
-      <Result
-        hasInventory={selectedSeller?.data().hasInventory}
-        productsResults={productsResults}
-      />
     </Container>
   );
 }

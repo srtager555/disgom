@@ -1,7 +1,7 @@
 import { Container } from "@/styles/index.styles";
-import { ProductContainer, productResult } from "../ProductList";
+import { ProductContainer, productResult } from "./ProductList";
 import { useEffect, useState } from "react";
-import { Column } from ".";
+import { Column } from "./Product";
 import { numberParser } from "@/tools/numberPaser";
 
 type props = {

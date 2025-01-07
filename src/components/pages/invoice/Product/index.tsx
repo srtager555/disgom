@@ -361,8 +361,20 @@ export function Product({ product, hasInventory, setProductsResults }: props) {
         [product.id]: {
           amount,
           cost: purchaseValue,
-          price: saleValue,
-          seller_sold: sellerValue,
+          sold: {
+            total: saleValue,
+            variations: Object.values(priceRequestDescription).map((el) => ({
+              price: el.sold_price,
+              amount: el.amount,
+            })),
+          },
+          seller_sold: {
+            total: sellerValue,
+            variations: Object.values(priceRequestDescription).map((el) => ({
+              price: el.seller_sold_price,
+              amount: el.amount,
+            })),
+          },
           profit: profitValue,
           seller_profit: sellerProfit,
         },
@@ -370,6 +382,7 @@ export function Product({ product, hasInventory, setProductsResults }: props) {
     });
   }, [
     amount,
+    priceRequestDescription,
     product.id,
     profitValue,
     purchaseValue,

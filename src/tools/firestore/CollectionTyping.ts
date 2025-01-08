@@ -1,6 +1,7 @@
 export const ProductsCollection = {
   root: "Products",
   entry: "entry",
+  output: "output",
   tags: "tags",
 };
 

@@ -5,6 +5,10 @@ export const ProductsCollection = {
   tags: "tags",
 };
 
+export const InvoiceCollection = {
+  root: "Invoices",
+};
+
 export const SellersCollection = {
   root: "Sellers",
   clients: "clients",

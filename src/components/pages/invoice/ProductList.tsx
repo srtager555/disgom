@@ -6,7 +6,7 @@ import { Dispatch, SetStateAction, useContext } from "react";
 import { InvoiceContext } from "@/pages/invoices/create";
 import { globalCSSVars } from "@/styles/colors";
 
-type priceVariation = {
+export type priceVariation = {
   total: number;
   variations: Array<{
     amount: number;

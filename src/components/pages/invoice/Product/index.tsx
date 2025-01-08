@@ -354,30 +354,33 @@ export function Product({ product, hasInventory, setProductsResults }: props) {
       return;
     }
 
+    const result = {
+      amount,
+      cost: purchaseValue,
+      sold: {
+        total: saleValue,
+        variations: Object.values(priceRequestDescription).map((el) => ({
+          price: el.sold_price,
+          amount: el.amount,
+        })),
+      },
+      seller_sold: {
+        total: sellerValue,
+        variations: Object.values(priceRequestDescription).map((el) => ({
+          price: el.seller_sold_price,
+          amount: el.amount,
+        })),
+      },
+      profit: profitValue,
+      seller_profit: sellerProfit,
+    };
+    console.log(result);
+
     // add the result
     setProductsResults((props) => {
       return {
         ...props,
-        [product.id]: {
-          amount,
-          cost: purchaseValue,
-          sold: {
-            total: saleValue,
-            variations: Object.values(priceRequestDescription).map((el) => ({
-              price: el.sold_price,
-              amount: el.amount,
-            })),
-          },
-          seller_sold: {
-            total: sellerValue,
-            variations: Object.values(priceRequestDescription).map((el) => ({
-              price: el.seller_sold_price,
-              amount: el.amount,
-            })),
-          },
-          profit: profitValue,
-          seller_profit: sellerProfit,
-        },
+        [product.id]: result,
       };
     });
   }, [

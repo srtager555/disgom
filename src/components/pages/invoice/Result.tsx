@@ -44,7 +44,6 @@ export function Result({ hasInventory, productsResults }: props) {
     );
 
     setTotal(total);
-    console.log(total);
   }, [productsResults]);
 
   return (

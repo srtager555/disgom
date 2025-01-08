@@ -2,14 +2,30 @@ import { productResult } from "@/components/pages/invoice/ProductList";
 import {
   addDoc,
   collection,
+  CollectionReference,
   doc,
   DocumentReference,
   getDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { Firestore } from "../firestore";
 import { ProductsCollection } from "../firestore/CollectionTyping";
 import { productDoc } from "./create";
 import { entryDoc } from "./addEntry";
+import { invoiceType } from "../invoices/createInvoice";
+
+export type outputType = {
+  created_at: Timestamp;
+  amount: number;
+  cost_price: number;
+  sale_prices: {
+    normal: number;
+    seller: number;
+  };
+  entry_ref: DocumentReference<entryDoc>;
+  invoice_ref: DocumentReference<invoiceType> | null;
+  disabled: boolean;
+};
 
 export async function addOutputs(
   product_id: string,
@@ -21,7 +37,10 @@ export async function addOutputs(
     ProductsCollection.root,
     product_id
   ) as DocumentReference<productDoc>;
-  const outputColl = collection(productRef, ProductsCollection.output);
+  const outputColl = collection(
+    productRef,
+    ProductsCollection.output
+  ) as CollectionReference<outputType>;
 
   const productSnap = await getDoc(productRef);
   const { stock: stocky } = productSnap.data() as productDoc;
@@ -33,7 +52,7 @@ export async function addOutputs(
     let finalData;
 
     const data = (amount: number, entry_ref: DocumentReference<entryDoc>) => ({
-      created_at: new Date(),
+      created_at: Timestamp.fromDate(new Date()),
       amount,
       cost_price: productOutputData.cost,
       sale_prices: {

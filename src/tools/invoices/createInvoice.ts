@@ -7,7 +7,7 @@ import {
 } from "firebase/firestore";
 import { Firestore } from "../firestore";
 import { InvoiceCollection } from "../firestore/CollectionTyping";
-import { SellersDoc, SellerType } from "../sellers/create";
+import { SellersDoc } from "../sellers/create";
 import { client } from "../sellers/createClient";
 import { outputType } from "../products/addOutputs";
 
@@ -36,14 +36,12 @@ export type invoiceType = {
   } | null;
 };
 
-export async function createInvoice() {
+export async function createInvoice(data: Omit<invoiceType, "created_at">) {
   const db = Firestore();
   const coll = collection(
     db,
     InvoiceCollection.root
   ) as CollectionReference<invoiceType>;
 
-  await addDoc(coll, {
-    created_at: Timestamp.fromDate(new Date()),
-  });
+  await addDoc(coll, { created_at: Timestamp.fromDate(new Date()), ...data });
 }

@@ -46,7 +46,7 @@ const SelectContainer = styled.div`
 interface props {
   sellerData: SellersDoc | undefined;
   sellerDoc: QueryDocumentSnapshot<SellersDoc> | undefined;
-  setClient: Dispatch<SetStateAction<DocumentReference<client>>>;
+  setClient: Dispatch<SetStateAction<DocumentReference<client> | null>>;
 }
 
 export function SelectClient({ sellerData, sellerDoc, setClient }: props) {
@@ -68,7 +68,7 @@ export function SelectClient({ sellerData, sellerDoc, setClient }: props) {
 
     const theClient = clients.find((el) => el.id === value);
     setSelectedClient(theClient);
-    if (theClient) setClient(theClient.ref);
+    setClient(theClient?.ref || null);
   }
 
   async function hanlderOnSubmit(e: FormEvent) {
@@ -135,7 +135,10 @@ export function SelectClient({ sellerData, sellerDoc, setClient }: props) {
       setClients(snap.docs);
     });
 
-    return unsubcribe;
+    return () => {
+      unsubcribe();
+      setClient(null);
+    };
   }, [createdClient, sellerDoc]);
 
   return (

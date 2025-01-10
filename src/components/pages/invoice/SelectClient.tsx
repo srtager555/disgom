@@ -12,6 +12,7 @@ import {
   collection,
   CollectionReference,
   doc,
+  DocumentReference,
   onSnapshot,
   QueryDocumentSnapshot,
 } from "firebase/firestore";
@@ -45,10 +46,10 @@ const SelectContainer = styled.div`
 interface props {
   sellerData: SellersDoc | undefined;
   sellerDoc: QueryDocumentSnapshot<SellersDoc> | undefined;
-  setClient: Dispatch<SetStateAction<client>>;
+  setClient: Dispatch<SetStateAction<DocumentReference<client>>>;
 }
 
-export function SelectClient({ sellerData, sellerDoc }: props) {
+export function SelectClient({ sellerData, sellerDoc, setClient }: props) {
   const [clients, setClients] = useState<QueryDocumentSnapshot<client>[]>();
   const [selectedClient, setSelectedClient] = useState<
     QueryDocumentSnapshot<client> | undefined
@@ -63,12 +64,11 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
   function selectTheClient(e: ChangeEvent<HTMLSelectElement> | string) {
     const value = typeof e === "string" ? e : e.target.value;
 
-    if (value === "create") {
-      setSelectedClient(undefined);
-    } else if (clients) {
-      const theClient = clients.find((el) => el.id === value);
-      setSelectedClient(theClient);
-    }
+    if (!clients) return;
+
+    const theClient = clients.find((el) => el.id === value);
+    setSelectedClient(theClient);
+    if (theClient) setClient(theClient.ref);
   }
 
   async function hanlderOnSubmit(e: FormEvent) {

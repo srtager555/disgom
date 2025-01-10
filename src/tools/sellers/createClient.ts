@@ -1,4 +1,9 @@
-import { doc, collection, addDoc } from "firebase/firestore";
+import {
+  doc,
+  collection,
+  addDoc,
+  CollectionReference,
+} from "firebase/firestore";
 import { Firestore } from "../firestore";
 import { SellersCollection } from "../firestore/CollectionTyping";
 
@@ -11,7 +16,10 @@ export type client = {
 export async function createClient(seller_id: string, data: client) {
   const db = Firestore();
   const sellerDoc = doc(db, SellersCollection.root, seller_id);
-  const coll = collection(sellerDoc, SellersCollection.clients);
+  const coll = collection(
+    sellerDoc,
+    SellersCollection.clients
+  ) as CollectionReference<client>;
 
   return await addDoc(coll, data);
 }

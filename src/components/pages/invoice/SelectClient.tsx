@@ -7,6 +7,7 @@ import { Firestore } from "@/tools/firestore";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client, createClient } from "@/tools/sellers/createClient";
+import { updateClient } from "@/tools/sellers/udpateClient";
 import {
   collection,
   CollectionReference,
@@ -20,6 +21,7 @@ import {
   FormEvent,
   SetStateAction,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import styled from "styled-components";
@@ -48,11 +50,15 @@ interface props {
 
 export function SelectClient({ sellerData, sellerDoc }: props) {
   const [clients, setClients] = useState<QueryDocumentSnapshot<client>[]>();
-  const [selectedClient, setSelectedClient] = useState<client | undefined>();
+  const [selectedClient, setSelectedClient] = useState<
+    QueryDocumentSnapshot<client> | undefined
+  >();
   const [createdClient, setCreatedClient] = useState<string | undefined>();
   const [createdClientAsDefault, setCreatedClientAsDefault] = useState<
     string | undefined
   >(undefined);
+  const [successfully, setSuccessfully] = useState<string | undefined>();
+  const formRef = useRef<HTMLFormElement>(null);
 
   function selectTheClient(e: ChangeEvent<HTMLSelectElement> | string) {
     const value = typeof e === "string" ? e : e.target.value;
@@ -61,11 +67,11 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
       setSelectedClient(undefined);
     } else if (clients) {
       const theClient = clients.find((el) => el.id === value);
-      setSelectedClient(theClient?.data());
+      setSelectedClient(theClient);
     }
   }
 
-  async function hanlderOnCreate(e: FormEvent) {
+  async function hanlderOnSubmit(e: FormEvent) {
     e.preventDefault();
 
     if (!sellerDoc) return;
@@ -75,17 +81,39 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
       phoneNumber: HTMLInputElement;
       address: HTMLTextAreaElement;
     };
+    if (selectedClient) {
+      await updateClient(selectedClient.ref, {
+        name: clientName.value,
+        phone_number: phoneNumber.value,
+        address: address.value,
+      });
 
-    const ref = await createClient(sellerDoc?.id, {
-      name: clientName.value,
-      phone_number: phoneNumber.value,
-      address: address.value,
-    });
+      setSuccessfully(`${clientName.value} se actualizó correctamente`);
+    } else {
+      const ref = await createClient(sellerDoc?.id, {
+        name: clientName.value,
+        phone_number: phoneNumber.value,
+        address: address.value,
+      });
 
-    setCreatedClientAsDefault(ref.id);
-    setCreatedClient(ref.id);
+      setSuccessfully(`${clientName.value} se creó correctamente`);
+      setCreatedClientAsDefault(ref.id);
+      setCreatedClient(ref.id);
+    }
+
+    formRef.current?.reset();
   }
 
+  //effect to crete a timeout for remove the successfully mesage
+  useEffect(() => {
+    if (successfully) {
+      setTimeout(() => {
+        setSuccessfully(undefined);
+      }, 3000);
+    }
+  }, [successfully]);
+
+  // efffect to manage the clients
   useEffect(() => {
     if (!sellerDoc) return;
 
@@ -100,7 +128,7 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
       const docs = snap.docs;
 
       if (createdClient) {
-        const newClient = docs.find((el) => el.id === createdClient)?.data();
+        const newClient = docs.find((el) => el.id === createdClient);
         setSelectedClient(newClient);
       }
 
@@ -134,7 +162,20 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
               </Select>
             </SelectContainer>
 
-            <Form onSubmit={hanlderOnCreate}>
+            <Form onSubmit={hanlderOnSubmit}>
+              {successfully && (
+                <Container
+                  styles={{
+                    padding: "5px",
+                    border: "solid 1px green",
+                    borderRadius: "10px",
+                    color: "green",
+                    marginBottom: "10px",
+                  }}
+                >
+                  {successfully}
+                </Container>
+              )}
               <FlexContainer>
                 <Container
                   styles={{ marginRight: "20px", marginBottom: "10px" }}
@@ -143,7 +184,7 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
                     name="clientName"
                     marginBottom="0px"
                     required
-                    defaultValue={selectedClient?.name}
+                    defaultValue={selectedClient?.data().name}
                   >
                     Nombre
                   </InputText>
@@ -151,7 +192,7 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
                 <InputText
                   name="phoneNumber"
                   marginBottom="0px"
-                  defaultValue={selectedClient?.phone_number}
+                  defaultValue={selectedClient?.data().phone_number}
                 >
                   Número de telefono
                 </InputText>
@@ -159,8 +200,8 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
               <p>Dirección</p>
               <textarea
                 name="address"
-                style={{ width: "100%" }}
-                defaultValue={selectedClient?.address}
+                style={{ width: "100%", padding: "5px" }}
+                defaultValue={selectedClient?.data().address}
               />
               <FlexContainer
                 styles={{ justifyContent: "flex-end", marginTop: "10px" }}

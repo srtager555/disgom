@@ -43,5 +43,8 @@ export async function createInvoice(data: Omit<invoiceType, "created_at">) {
     InvoiceCollection.root
   ) as CollectionReference<invoiceType>;
 
-  await addDoc(coll, { created_at: Timestamp.fromDate(new Date()), ...data });
+  return await addDoc(coll, {
+    created_at: Timestamp.fromDate(new Date()),
+    ...data,
+  });
 }

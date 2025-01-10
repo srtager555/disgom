@@ -162,7 +162,7 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
               </Select>
             </SelectContainer>
 
-            <Form onSubmit={hanlderOnSubmit}>
+            <Form onSubmit={hanlderOnSubmit} ref={formRef}>
               {successfully && (
                 <Container
                   styles={{

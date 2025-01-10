@@ -374,7 +374,6 @@ export function Product({ product, hasInventory, setProductsResults }: props) {
       profit: profitValue,
       seller_profit: sellerProfit,
     };
-    console.log(result);
 
     // add the result
     setProductsResults((props) => {

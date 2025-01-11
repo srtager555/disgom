@@ -15,6 +15,7 @@ import { ProductsCollection } from "../firestore/CollectionTyping";
 import { productDoc } from "./create";
 import { entryDoc } from "./addEntry";
 import { invoiceType } from "../invoices/createInvoice";
+import { updateStock } from "./updateStock";
 
 export type outputType = {
   created_at: Timestamp;
@@ -107,6 +108,8 @@ export async function addOutputs(
           data(stock.amount, stock.purchase_price, stock.entry_ref)
         );
 
+        await updateStock(productRef, stock, undefined);
+
         await updateDoc(invoice_ref, {
           products_outputs: arrayUnion(outputRef),
         });
@@ -115,6 +118,11 @@ export async function addOutputs(
           outputColl,
           data(remainingAmount, stock.purchase_price, stock.entry_ref)
         );
+
+        await updateStock(productRef, stock, {
+          ...stock,
+          amount: stock.amount - remainingAmount,
+        });
 
         await updateDoc(invoice_ref, {
           products_outputs: arrayUnion(outputRef),

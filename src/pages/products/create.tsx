@@ -1,3 +1,4 @@
+import { InputNumber } from "@/components/Inputs/number";
 import { Select } from "@/components/Inputs/select";
 import { InputText } from "@/components/Inputs/text";
 import {
@@ -12,6 +13,7 @@ import {
   createProduct,
   productDoc,
   productUnits,
+  unparseStep,
 } from "@/tools/products/create";
 import { disableProduct } from "@/tools/products/disable";
 import { getUnits } from "@/tools/products/getUnits";
@@ -49,12 +51,10 @@ const Page: NextPageWithLayout = () => {
   async function handlerCreateProduct(e: FormEvent) {
     if (!productFormRef) return;
     e.preventDefault();
-    const { productName, units } = e.target as EventTarget & {
+    const { productName, units, productStep } = e.target as EventTarget & {
       productName: HTMLInputElement;
-      productCostPrice: HTMLInputElement;
-      productSalePrice: HTMLInputElement;
-      amount: HTMLInputElement;
       units: HTMLInputElement & { value: productUnits };
+      productStep: HTMLInputElement;
     };
 
     const tagsParsed = tagsAdded.map((el) => el.name);
@@ -63,7 +63,8 @@ const Page: NextPageWithLayout = () => {
       selectedProduct?.ref,
       productName.value,
       units.value,
-      tagsParsed
+      tagsParsed,
+      productStep.value
     );
 
     productFormRef.current?.reset();
@@ -126,6 +127,20 @@ const Page: NextPageWithLayout = () => {
             >
               ¿Cómo se medirá este producto?
             </Select>
+
+            <InputNumber
+              name="productStep"
+              defaultValue={
+                selectedProductData?.step
+                  ? unparseStep(selectedProductData?.step)
+                  : 0
+              }
+              width="250px"
+              max={5}
+              min={0}
+            >
+              ¿Cuantos decimales manejará el peso?
+            </InputNumber>
 
             <Button $primary style={{ marginRight: "10px" }}>
               {selectedProduct ? "Actualizar producto" : "Crear producto"}

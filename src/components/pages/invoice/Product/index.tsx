@@ -421,7 +421,7 @@ export function Product({ product, hasInventory, setProductsResults }: props) {
             value={!editAmount ? getCostValues("amount") : undefined}
             max={stockAmount}
             min={0}
-            step={0.01}
+            step={data.step}
           />
         )}
       </Column>

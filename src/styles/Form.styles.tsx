@@ -74,6 +74,7 @@ export const Button = styled.button<{
   font-size: 1rem;
   cursor: pointer;
   transition: 200ms all ease;
+  overflow: hidden;
 
   &:hover {
     transform: scale(1.1);

@@ -15,6 +15,7 @@ import { addOutputs } from "@/tools/products/addOutputs";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client } from "@/tools/sellers/createClient";
 import { QueryDocumentSnapshot } from "firebase/firestore";
+import { useRouter } from "next/router";
 import {
   ChangeEvent,
   createContext,
@@ -55,6 +56,7 @@ const Page: NextPageWithLayout = () => {
     null
   );
   const [isCredit, setIsCredit] = useState(false);
+  const router = useRouter();
 
   function selectSeller(e: ChangeEvent<HTMLSelectElement>) {
     setSelectedSeller(e.target.value);
@@ -78,8 +80,6 @@ const Page: NextPageWithLayout = () => {
         total_profit: 0,
       }
     );
-    // const productResultEntries = Object.entries(productsResults);
-    // productResultEntries.map(async (el) => addOutputs(el[0], el[1]));
 
     const invoiceData: Omit<invoiceType, "created_at"> = {
       seller_ref: sellerDoc?.ref,
@@ -107,7 +107,15 @@ const Page: NextPageWithLayout = () => {
           },
     };
 
-    await createInvoice(invoiceData);
+    const invoiceRef = await createInvoice(invoiceData);
+
+    // add the outputs to the invoice
+    const productResultEntries = Object.entries(productsResults);
+    productResultEntries.forEach(
+      async (el) => await addOutputs(invoiceRef, el[0], el[1])
+    );
+
+    router.push("/invoices");
   }
 
   // effect to get the selected seller doc

@@ -9,6 +9,7 @@ import { NextPageWithLayout } from "@/pages/_app";
 import { Button, Form } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { createSeller } from "@/tools/sellers/create";
+import { disableSeller, editSeller } from "@/tools/sellers/edit";
 import {
   FormEvent,
   ReactElement,
@@ -24,7 +25,17 @@ const Page: NextPageWithLayout = () => {
   const [defaultSelected, setDefaultSelected] = useState<string | undefined>(
     undefined
   );
+  const [timeOut, setTimeOut] = useState<NodeJS.Timeout | undefined>();
   const formRef = useRef<HTMLFormElement>(null);
+
+  async function hideSeller() {
+    const out = setTimeout(() => {
+      if (sellerSelected) disableSeller(sellerSelected.ref);
+      if (setSellerSelected) setSellerSelected(undefined);
+    }, 5000);
+
+    setTimeOut(out);
+  }
 
   async function handlerCreateSeller(e: FormEvent) {
     e.preventDefault();
@@ -34,10 +45,18 @@ const Page: NextPageWithLayout = () => {
       hasInventoryString: HTMLInputElement;
     };
 
-    await createSeller(
-      sellerName.value,
-      Number(hasInventoryString.value) ? true : false
-    );
+    if (sellerSelected) {
+      await editSeller(
+        sellerSelected.ref,
+        sellerName.value,
+        Number(hasInventoryString.value) ? true : false
+      );
+    } else {
+      await createSeller(
+        sellerName.value,
+        Number(hasInventoryString.value) ? true : false
+      );
+    }
 
     formRef.current?.reset();
   }
@@ -95,6 +114,19 @@ const Page: NextPageWithLayout = () => {
           </Select>
           <Button $primary>{sellerSelected ? "Editar" : "Agregar"}</Button>
         </FlexContainer>
+        {sellerSelected && (
+          <Button
+            onPointerDown={hideSeller}
+            onPointerUp={() => clearTimeout(timeOut)}
+            onMouseUp={() => clearTimeout(timeOut)}
+            onMouseLeave={() => clearTimeout(timeOut)}
+            $warn
+            $hold
+            style={{ marginTop: "10px" }}
+          >
+            Eliminar
+          </Button>
+        )}
       </Form>
     </Container>
   );

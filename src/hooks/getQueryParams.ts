@@ -1,19 +1,16 @@
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 
 function useQueryParams() {
-  const queryParams = useMemo(() => {
+  const [queryParams, setQueryParams] = useState<Record<string, string>>({});
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-
     const result: Record<string, string> = {};
-
     params.forEach((value, key) => {
       result[key] = value;
     });
-
-    return result;
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [window.location.search]);
+    setQueryParams(result);
+  }, []);
 
   return queryParams;
 }

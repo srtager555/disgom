@@ -5,6 +5,7 @@ import { SellersCollection } from "../firestore/CollectionTyping";
 export type SellerType = {
   name: string;
   hasInventory: boolean;
+  disabled: boolean;
 };
 
 export interface SellersDoc extends SellerType {
@@ -20,5 +21,6 @@ export async function createSeller(name: string, hasInventory: boolean) {
     name,
     hasInventory,
     created_at: new Date(),
+    disabled: false,
   });
 }

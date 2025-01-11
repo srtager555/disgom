@@ -155,10 +155,7 @@ const Page: NextPageWithLayout = () => {
           sellerData={sellerData}
           setClient={setClient}
         />
-        <ProductList
-          sellerDoc={sellerDoc}
-          setProductsResults={setProductsResults}
-        />
+        <ProductList setProductsResults={setProductsResults} />
         <Result
           hasInventory={sellerData?.hasInventory}
           productsResults={productsResults}

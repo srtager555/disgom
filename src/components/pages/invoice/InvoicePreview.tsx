@@ -1,6 +1,8 @@
 import { globalCSSVars } from "@/styles/colors";
+import { Button } from "@/styles/Form.styles";
 import { Container } from "@/styles/index.styles";
 import { invoiceType } from "@/tools/invoices/createInvoice";
+import { numberParser } from "@/tools/numberPaser";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client } from "@/tools/sellers/createClient";
 import {
@@ -8,6 +10,7 @@ import {
   getDoc,
   QueryDocumentSnapshot,
 } from "firebase/firestore";
+import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 
@@ -24,9 +27,18 @@ const InvoiceComponent = styled.div`
   align-items: center;
   width: 100%;
   height: 100%;
-  padding: 10px;
+  padding-left: 10px;
   border: 1px solid ${globalCSSVars["--detail"]};
   border-radius: 10px;
+  overflow: hidden;
+`;
+
+const ButtonBro = styled(Button)`
+  height: 100%;
+  border: none;
+  border-radius: 0px;
+  padding: 0px 10px;
+  margin-left: 10px;
 `;
 
 type props = {
@@ -39,6 +51,7 @@ export function InvoicePreview({ doc }: props) {
   const [client, setClient] = useState<DocumentSnapshot<client>>();
   const data = useMemo(() => doc.data(), [doc]);
   const sellerData = useMemo(() => seller?.data(), [seller]);
+  const router = useRouter();
 
   // effect to get the seller
   useEffect(() => {
@@ -65,12 +78,41 @@ export function InvoicePreview({ doc }: props) {
     <InvoiceComponent>
       {client ? (
         <Container>
-          <small>{sellerData?.name}</small>
+          <small>
+            {sellerData?.name} -{" "}
+            {data.credit?.paid ? "credito pagado" : "en credito"}
+          </small>
           <p>{client.data()?.name}</p>
         </Container>
       ) : (
         <p>{sellerData?.name}</p>
       )}
+      <Container styles={{ height: "100%" }}>
+        {numberParser(data.total_sold.normal)}
+        {client ? (
+          <ButtonBro
+            $primary
+            onClick={() => {
+              router.push("/invoices/preview?id=" + doc.id);
+            }}
+          >
+            Más
+          </ButtonBro>
+        ) : (
+          <ButtonBro
+            $primary
+            onClick={() => {
+              if (!data.inventory_ref) {
+                router.push("/invoices/closing?id=" + doc.id);
+              } else {
+                router.push("/invoices/closed?id=" + doc.id);
+              }
+            }}
+          >
+            {!data.inventory_ref ? "Cierre" : "Más"}
+          </ButtonBro>
+        )}
+      </Container>
     </InvoiceComponent>
   );
 }

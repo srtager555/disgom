@@ -1,12 +1,14 @@
 import { productResult } from "@/components/pages/invoice/ProductList";
 import {
   addDoc,
+  arrayUnion,
   collection,
   CollectionReference,
   doc,
   DocumentReference,
   getDoc,
   Timestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { Firestore } from "../firestore";
 import { ProductsCollection } from "../firestore/CollectionTyping";
@@ -18,7 +20,12 @@ export type outputType = {
   created_at: Timestamp;
   amount: number;
   cost_price: number;
+  purchase_cost: number;
   sale_prices: {
+    normal: number;
+    seller: number;
+  };
+  sales_values: {
     normal: number;
     seller: number;
   };
@@ -28,6 +35,7 @@ export type outputType = {
 };
 
 export async function addOutputs(
+  invoice_ref: DocumentReference<invoiceType>,
   product_id: string,
   productOutputData: productResult
 ) {
@@ -49,20 +57,42 @@ export async function addOutputs(
   productOutputData.sold.variations.forEach(async (element, index) => {
     let remainingAmount = element.amount;
     if (remainingAmount <= 0) return;
-    let finalData;
+    // const finalData = [];
 
-    const data = (amount: number, entry_ref: DocumentReference<entryDoc>) => ({
-      created_at: Timestamp.fromDate(new Date()),
-      amount,
-      cost_price: productOutputData.cost,
-      sale_prices: {
-        normal: element.amount,
-        seller: productOutputData.seller_sold.variations[index].price,
-      },
-      entry_ref,
-      invoice_ref: null,
-      disabled: false,
-    });
+    const data = (
+      amount: number,
+      cost_price: number,
+      entry_ref: DocumentReference<entryDoc>
+    ) => {
+      const purchase_cost = amount * cost_price;
+      const normal_price = element.price;
+      const seller_price =
+        productOutputData.seller_sold.variations[index].price;
+      const normal_sale_value = normal_price * amount;
+      const seller_sale_value = seller_price * amount;
+
+      return {
+        created_at: Timestamp.fromDate(new Date()),
+        amount,
+        cost_price,
+        purchase_cost,
+        sale_prices: {
+          normal: normal_price,
+          seller: seller_price,
+        },
+        sales_values: {
+          normal: normal_sale_value,
+          seller: seller_sale_value,
+        },
+        profit: {
+          normal: normal_sale_value - purchase_cost,
+          seller: seller_sale_value - normal_sale_value,
+        },
+        entry_ref,
+        invoice_ref,
+        disabled: false,
+      };
+    };
 
     for (let index = 0; index < stocks.length; index++) {
       const stock = stocks[index];
@@ -72,18 +102,27 @@ export async function addOutputs(
       if (remaining > 0) {
         remainingAmount = remaining;
 
-        finalData = data(stock.amount, stock.entry_ref);
-        console.log(finalData);
+        const outputRef = await addDoc(
+          outputColl,
+          data(stock.amount, stock.purchase_price, stock.entry_ref)
+        );
+
+        await updateDoc(invoice_ref, {
+          products_outputs: arrayUnion(outputRef),
+        });
       } else {
-        finalData = data(remainingAmount, stock.entry_ref);
-        console.log(finalData);
+        const outputRef = await addDoc(
+          outputColl,
+          data(remainingAmount, stock.purchase_price, stock.entry_ref)
+        );
+
+        await updateDoc(invoice_ref, {
+          products_outputs: arrayUnion(outputRef),
+        });
 
         break;
       }
     }
-
-    return;
-    await addDoc(outputColl, finalData);
   });
 }
 

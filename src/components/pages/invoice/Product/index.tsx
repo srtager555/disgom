@@ -111,11 +111,16 @@ function ColumnBase({
 
 export const Column = styled(ColumnBase)<{
   $removeBorder?: boolean;
+  $left?: boolean;
 }>`
   ${(props) =>
     !props.$removeBorder &&
     `border-right: solid 1px ${globalCSSVars["--detail"]};`}
 
+  @media print {
+    padding-right: 10px;
+    ${(props) => props.$left && `text-align: end;`}
+  }
   width: 100%;
   height: 100%;
   white-space: nowrap;

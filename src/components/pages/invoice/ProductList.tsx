@@ -1,5 +1,5 @@
 import { useGetProducts } from "@/hooks/products/getProducts";
-import { Product } from "./Product";
+import { Column, Product } from "./Product";
 import { Container } from "@/styles/index.styles";
 import styled, { css } from "styled-components";
 import { Dispatch, SetStateAction, useContext } from "react";
@@ -43,6 +43,10 @@ export const ProductContainer = styled.div<{
   grid-template-columns: repeat(
     ${(props) => (props.$hasInventory ? "13, 60px" : "10, 75px")}
   );
+  @media print {
+    grid-template-columns: repeat(20, 1fr);
+  }
+
   ${(props) =>
     !props.$children
       ? css`
@@ -73,12 +77,6 @@ export const ProductContainer = styled.div<{
       opacity: 0.5;
       pointer-events: none;
     `}
-`;
-
-const Column = styled(Container)<{ $gridColumn: string }>`
-  grid-column: ${(props) => props.$gridColumn};
-  justify-items: center;
-  border-right: solid 1px #000;
 `;
 
 type props = {
@@ -115,20 +113,28 @@ export const Descriptions = ({
   hasInventory: boolean | undefined;
 }) => (
   <ProductContainer $header $withoutStock={1} $hasInventory={hasInventory}>
-    <Column $gridColumn="1 / 4">Nombre del producto</Column>
-    <Column $gridColumn="4 / 5">Cant</Column>
-    <Column $gridColumn="5 / 6">P Costo</Column>
-    <Column $gridColumn="6 / 7">T Costo</Column>
-    <Column $gridColumn="7 / 8">P Venta</Column>
-    <Column $gridColumn="8 / 9">T Venta</Column>
-    <Column $gridColumn="9 / 10">Ganan</Column>
+    <Column gridColumn="1 / 4" printGridColumn="1 / 8">
+      Nombre del producto
+    </Column>
+    <Column gridColumn="4 / 5" printGridColumn="8 / 10">
+      Cant
+    </Column>
+    <Column gridColumn="5 / 6">P Costo</Column>
+    <Column gridColumn="6 / 7">T Costo</Column>
+    <Column gridColumn="7 / 8" printGridColumn="-4 / -6">
+      P Venta
+    </Column>
+    <Column gridColumn="8 / 9" printGridColumn="-1 / -4">
+      Total
+    </Column>
+    <Column gridColumn="9 / 10">Ganan</Column>
     {hasInventory && (
       <>
-        <Column $gridColumn="10 / 11">P Vend</Column>
-        <Column $gridColumn="11 / 12">V Vend</Column>
-        <Column $gridColumn="12 / 13">G Vend</Column>
+        <Column gridColumn="10 / 11">P Vend</Column>
+        <Column gridColumn="11 / 12">V Vend</Column>
+        <Column gridColumn="12 / 13">G Vend</Column>
       </>
     )}
-    <Column $gridColumn="-1 / -2">Extra</Column>
+    <Column gridColumn="-1 / -2">Extra</Column>
   </ProductContainer>
 );

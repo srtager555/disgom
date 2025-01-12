@@ -63,6 +63,10 @@ export const Nav = styled.nav`
   background: ${globalCSSVars["--background"]};
   border: 2px ${globalCSSVars["--foreground"]} solid;
   border-radius: 15px;
+
+  @media print {
+    display: none;
+  }
 `;
 
 export const NavAnchor = styled(Link)<{ $active?: boolean }>`
@@ -110,6 +114,11 @@ export const NavContainer = styled.div<{ $deployNav: boolean }>`
   overflow: scroll;
   transition: all 200ms ease;
   padding: 10px;
+
+  @media print {
+    display: block;
+    padding: 0px;
+  }
 `;
 
 export const AnchorNavigators = styled(CustomLink)`

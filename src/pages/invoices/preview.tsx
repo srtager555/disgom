@@ -1,7 +1,11 @@
+import { ProductPreview } from "@/components/pages/invoice/Product/preview";
 import useQueryParams from "@/hooks/getQueryParams";
+import { Container } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { invoiceType } from "@/tools/invoices/createInvoice";
+import { SellersDoc } from "@/tools/sellers/create";
+import { client } from "@/tools/sellers/createClient";
 import {
   doc,
   DocumentReference,
@@ -10,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 
-type rawProduct = {
+export type rawProduct = {
   purchases_amounts: Array<{
     amount: number;
     price: number;
@@ -25,12 +29,18 @@ type rawProduct = {
   }>;
 };
 
+export type invoiceOwners = {
+  seller: DocumentSnapshot<SellersDoc>;
+  client: DocumentSnapshot<client> | undefined;
+};
+
 export default function Page() {
   const { id } = useQueryParams();
   const [invoiceDoc, setInvoiceDoc] = useState<DocumentSnapshot<invoiceType>>();
   const [rawProducts, setRawProducts] = useState<
     Record<string, rawProduct> | undefined
   >();
+  const [owners, setOwners] = useState<invoiceOwners>();
   const data = useMemo(() => invoiceDoc?.data(), [invoiceDoc]);
 
   // effect to get the invoice
@@ -52,9 +62,25 @@ export default function Page() {
     getInvoice();
   }, [id]);
 
+  // effect to get the seller
   useEffect(() => {
-    console.log(rawProducts);
-  }, [rawProducts]);
+    async function getOwners() {
+      if (!data) return;
+      let client;
+
+      if (data.client_ref) {
+        client = await getDoc(data.client_ref);
+      }
+      const seller = await getDoc(data.seller_ref);
+
+      setOwners({
+        seller,
+        client,
+      });
+    }
+
+    getOwners();
+  }, [data]);
 
   // effect to get outputs
   useEffect(() => {
@@ -63,14 +89,15 @@ export default function Page() {
       const data = output.data();
 
       if (!data) return;
+      const product_id = data.entry_ref.path.split("/")[1];
 
       setRawProducts((props) => {
         return {
           ...props,
-          [element.id]: {
+          [product_id]: {
             purchases_amounts: props
               ? [
-                  ...(props[element.id]?.purchases_amounts || []),
+                  ...(props[product_id]?.purchases_amounts || []),
                   {
                     amount: data.amount,
                     price: data.cost_price,
@@ -86,7 +113,7 @@ export default function Page() {
                 ],
             sales_amounts: props
               ? [
-                  ...(props[element.id]?.sales_amounts || []),
+                  ...(props[product_id]?.sales_amounts || []),
                   {
                     amount: data.amount,
                     normal_price: data.sale_prices.normal,
@@ -108,7 +135,31 @@ export default function Page() {
         };
       });
     });
+
+    return () => {
+      setRawProducts(undefined);
+    };
   }, [data?.products_outputs]);
 
-  return <>{id}</>;
+  if (!owners || !rawProducts) return <h2>Cargando...</h2>;
+
+  return (
+    <Container>
+      {id}
+      <Container>
+        {Object.entries(rawProducts).map((el, i) => {
+          const product_id = el[0];
+          const data = el[1];
+          return (
+            <ProductPreview
+              owners={owners}
+              product_id={product_id}
+              data={data}
+              key={i}
+            />
+          );
+        })}
+      </Container>
+    </Container>
+  );
 }

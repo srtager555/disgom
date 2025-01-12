@@ -91,10 +91,12 @@ export function ProductPreview({ data, owners, product_id }: props) {
 
   return (
     <ProductContainer $hasInventory={sellerData.hasInventory} $withoutStock={1}>
-      <Column gridColumn="1 / 4">
+      <Column gridColumn="1 / 4" printGridColumn="1 / 8">
         <ProductName>{productData?.name}</ProductName>
       </Column>
-      <Column gridColumn="4 / 5">{totalAmounts.amount}</Column>
+      <Column gridColumn="4 / 5" printGridColumn="8 / 10">
+        {totalAmounts.amount}
+      </Column>
       <Column gridColumn="5 / 6">
         {costPrices.length > 1 ? "~" : numberParser(costPrices[0])}
       </Column>
@@ -104,8 +106,14 @@ export function ProductPreview({ data, owners, product_id }: props) {
       >
         {numberParser(totalAmounts.purchase_cost)}
       </Column>
-      <Column gridColumn="7 / 8">{numberParser(normalSalePrices[0])}</Column>
-      <Column gridColumn="8 / 9" title={numberParser(totalSales.sale)}>
+      <Column gridColumn="7 / 8" printGridColumn="-4 / -6">
+        {numberParser(normalSalePrices[0])}
+      </Column>
+      <Column
+        gridColumn="8 / 9"
+        printGridColumn="-1 / -4"
+        title={numberParser(totalSales.sale)}
+      >
         {numberParser(totalSales.sale)}
       </Column>
       <Column

@@ -178,7 +178,7 @@ export default function Page() {
       <Container styles={{ marginBottom: "20px" }}>
         <h2>Factura de {owners.client?.data()?.name}</h2>
         <p>
-          Esta factura se el hizo el{" "}
+          Esta factura se hizo el{" "}
           {data.created_at.toDate().toLocaleDateString()}
         </p>
         {data.credit?.paid ? (

@@ -1,4 +1,6 @@
 import { ProductPreview } from "@/components/pages/invoice/Product/preview";
+import { Result } from "@/components/pages/invoice/Product/preview/Result";
+import { Descriptions } from "@/components/pages/invoice/ProductList";
 import useQueryParams from "@/hooks/getQueryParams";
 import { Container } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
@@ -149,8 +151,20 @@ export default function Page() {
 
   return (
     <Container>
-      {id}
+      <Container styles={{ marginBottom: "20px" }}>
+        <h2>Factura de {owners.client?.data()?.name}</h2>
+        <p>
+          Esta factura se el hizo el{" "}
+          {data?.created_at.toDate().toLocaleDateString()}
+        </p>
+        {data?.credit?.paid ? (
+          <p>La factura esta actualmente pagadá</p>
+        ) : (
+          <p>La factura esta pendiente</p>
+        )}
+      </Container>
       <Container>
+        <Descriptions hasInventory={owners.seller.data()?.hasInventory} />
         {Object.entries(rawProducts).map((el, i) => {
           const product_id = el[0];
           const data = el[1];
@@ -164,6 +178,10 @@ export default function Page() {
           );
         })}
       </Container>
+      <Result
+        hasInventory={owners.seller.data()?.hasInventory}
+        rawProducts={rawProducts}
+      />
     </Container>
   );
 }

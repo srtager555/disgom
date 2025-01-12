@@ -18,7 +18,8 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/router";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import styled from "styled-components";
 
 export type purchases_amounts = {
   amount: number;
@@ -43,6 +44,13 @@ export type invoiceOwners = {
   seller: DocumentSnapshot<SellersDoc>;
   client: DocumentSnapshot<client> | undefined;
 };
+
+const Small = styled.small`
+  display: none;
+  @media print {
+    display: block;
+  }
+`;
 
 export default function Page() {
   const { id } = useQueryParams();
@@ -179,14 +187,19 @@ export default function Page() {
         <FlexContainer
           styles={{ justifyContent: "space-between", alignItems: "center" }}
         >
-          <h2>Factura de {owners.client?.data()?.name}</h2>
-          <Button
-            onClick={() => {
-              window.print();
-            }}
-          >
-            Imprimir
-          </Button>
+          <Container>
+            <Small>Disgom</Small>
+            <h2>Factura de {owners.client?.data()?.name}</h2>
+          </Container>
+          {!print && (
+            <Button
+              onClick={() => {
+                window.print();
+              }}
+            >
+              Imprimir
+            </Button>
+          )}
         </FlexContainer>
         <p>
           Esta factura se hizo el{" "}
@@ -220,8 +233,12 @@ export default function Page() {
         hasInventory={owners.seller.data()?.hasInventory}
         rawProducts={rawProducts}
       />
+
       <FlexContainer
-        styles={{ justifyContent: "space-between", marginBottom: "200px" }}
+        styles={{
+          justifyContent: "space-between",
+          marginBottom: "200px",
+        }}
       >
         <Button disabled={data.credit?.paid} onClick={paid}>
           Pagar factura

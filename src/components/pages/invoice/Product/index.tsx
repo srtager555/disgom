@@ -42,10 +42,19 @@ export type priceRequestDescription = {
   totalSellerSold: number;
 };
 
-const ColumnGrid = styled(Container)<{ $gridColumn: string; $title?: string }>`
+const ColumnGrid = styled(Container)<{
+  $gridColumn: string;
+  $printGridColumn?: string;
+  $title?: string;
+}>`
   grid-column: ${(props) => props.$gridColumn};
   width: 100%;
   height: 25px;
+
+  @media print {
+    display: ${(props) => (props.$printGridColumn ? "block" : "none")};
+    grid-column: ${(props) => props.$printGridColumn};
+  }
 
   background-color: inherit;
 
@@ -79,17 +88,20 @@ function ColumnBase({
   children,
   className,
   gridColumn: $gridColumn,
+  printGridColumn,
   title,
 }: {
   children: children;
   className?: string;
   gridColumn: string;
+  printGridColumn?: string;
   title?: string;
 }) {
   return (
     <ColumnGrid
       $title={title}
       $gridColumn={$gridColumn}
+      $printGridColumn={printGridColumn}
       styles={{ width: "100%", height: "100%" }}
     >
       <Container className={className}>{children}</Container>

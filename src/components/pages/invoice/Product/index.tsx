@@ -142,7 +142,7 @@ export const Input = styled.input`
   font-size: 1rem;
 `;
 
-const ExtraButton = styled.button`
+export const ExtraButton = styled.button`
   width: 100%;
   height: 100%;
   border: none;

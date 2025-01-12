@@ -104,9 +104,7 @@ export function ProductPreview({ data, owners, product_id }: props) {
       >
         {numberParser(totalAmounts.purchase_cost)}
       </Column>
-      <Column gridColumn="7 / 8">
-        {normalSalePrices.length > 1 ? "~" : numberParser(normalSalePrices[0])}
-      </Column>
+      <Column gridColumn="7 / 8">{numberParser(normalSalePrices[0])}</Column>
       <Column gridColumn="8 / 9" title={numberParser(totalSales.sale)}>
         {numberParser(totalSales.sale)}
       </Column>

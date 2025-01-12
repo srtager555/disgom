@@ -13,6 +13,8 @@ import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
 import { productDoc } from "@/tools/products/create";
 import { numberParser } from "@/tools/numberPaser";
 import { Icon } from "@/components/Icons";
+import { Price } from "./Price";
+import { Cost } from "./Cost";
 
 type props = {
   owners: invoiceOwners;
@@ -24,7 +26,6 @@ export function ProductPreview({ data, owners, product_id }: props) {
   const [product, setProduct] = useState<DocumentSnapshot<productDoc>>();
   const productData = useMemo(() => product?.data(), [product]);
   const sellerData = useMemo(() => owners.seller.data(), [owners.seller]);
-  const clientData = useMemo(() => owners.client?.data(), [owners.client]);
 
   const [fold, setFold] = useState(false);
 
@@ -86,11 +87,10 @@ export function ProductPreview({ data, owners, product_id }: props) {
     getProduct();
   }, [product_id]);
 
+  if (!sellerData) return <>Cargando...</>;
+
   return (
-    <ProductContainer
-      $hasInventory={sellerData?.hasInventory}
-      $withoutStock={1}
-    >
+    <ProductContainer $hasInventory={sellerData.hasInventory} $withoutStock={1}>
       <Column gridColumn="1 / 4">
         <ProductName>{productData?.name}</ProductName>
       </Column>
@@ -116,7 +116,7 @@ export function ProductPreview({ data, owners, product_id }: props) {
       >
         {numberParser(totalSales.sale - totalAmounts.purchase_cost)}
       </Column>
-      {sellerData?.hasInventory && (
+      {sellerData.hasInventory && (
         <>
           <Column gridColumn="10 / 11">
             {sellerSalePrices.length > 1 ? "~" : sellerSalePrices[0]}
@@ -141,55 +141,25 @@ export function ProductPreview({ data, owners, product_id }: props) {
         </ExtraButton>
       </Column>
 
-      {/* <ProductContainer
+      <ProductContainer
         $children
-        $hasInventory={hasInventory}
-        $withoutStock={stockAmount}
+        $hasInventory={sellerData?.hasInventory}
+        $withoutStock={1}
         $fold={!fold}
       >
         <Column gridColumn="1 / -1" $removeBorder>
           <b>Precios de la salida detallados</b>
         </Column>
-        {currentStock &&
-          requestPricesValues.map((el, i) => (
-            <Price
-              key={i}
-              hasInventory={hasInventory}
-              stockInfo={currentStock}
-              priceRequestLength={requestPricesValues.length}
-              thePrice={salePrice}
-              theSellerPrice={sellerPrice}
-              priceRequest={el}
-              setSaleData={setPriceRequestDescription}
-              saleData={priceRequestDescription}
-              setRequestData={setRequestPricesValues}
-              index={i}
-            />
-          ))}
-        <ProductContainer
-          $children
-          $hasInventory={hasInventory}
-          $withoutStock={stockAmount}
-        >
-          <Column gridColumn="4 / 8" $removeBorder>
-            <Button onClick={addNewPriceRequest}>Agregar variaciones</Button>
-          </Column>
-        </ProductContainer>
+        {data.sales_amounts.map((el, i) => (
+          <Price key={i} data={el} sellerData={sellerData} />
+        ))}
         <Column gridColumn="1 / -1" $removeBorder>
           <b>Costos de la salida detallados</b>
         </Column>
-        {stocks &&
-          costRequestsData.map((el, i) => (
-            <Cost
-              key={i}
-              outputRequest={el}
-              stockInfo={stocks[el.stockPosition]}
-              hasInventory={hasInventory}
-              setState={setCostValues}
-              index={i}
-            />
-          ))}
-      </ProductContainer> */}
+        {data.purchases_amounts.map((el, i) => (
+          <Cost key={i} data={el} />
+        ))}
+      </ProductContainer>
     </ProductContainer>
   );
 }

@@ -122,4 +122,8 @@ export const Button = styled.button<{
         border: 2px solid ${globalCSSVars["--foreground"]};
       `;
   }};
+
+  @media print {
+    display: none;
+  }
 `;

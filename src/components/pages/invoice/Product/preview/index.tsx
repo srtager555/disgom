@@ -1,6 +1,6 @@
 import { invoiceOwners, rawProduct } from "@/pages/invoices/preview";
-import { Column, ExtraButton, ProductName } from ".";
-import { ProductContainer } from "../ProductList";
+import { Column, ExtraButton, ProductName } from "..";
+import { ProductContainer } from "../../ProductList";
 import { useEffect, useMemo, useState } from "react";
 import { Firestore } from "@/tools/firestore";
 import {
@@ -140,8 +140,8 @@ export function ProductPreview({ data, owners, product_id }: props) {
           <Icon iconType={fold ? "fold" : "unfold"} />
         </ExtraButton>
       </Column>
-      {/*
-      <ProductContainer
+
+      {/* <ProductContainer
         $children
         $hasInventory={hasInventory}
         $withoutStock={stockAmount}

@@ -122,7 +122,7 @@ export const Descriptions = ({
     <Column gridColumn="5 / 6">P Costo</Column>
     <Column gridColumn="6 / 7">T Costo</Column>
     <Column gridColumn="7 / 8" printGridColumn="-4 / -6">
-      P Venta
+      Precio
     </Column>
     <Column gridColumn="8 / 9" printGridColumn="-1 / -4">
       Total

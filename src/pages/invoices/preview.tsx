@@ -2,10 +2,13 @@ import { ProductPreview } from "@/components/pages/invoice/Product/preview";
 import { Result } from "@/components/pages/invoice/Product/preview/Result";
 import { Descriptions } from "@/components/pages/invoice/ProductList";
 import useQueryParams from "@/hooks/getQueryParams";
-import { Container } from "@/styles/index.styles";
+import { Button } from "@/styles/Form.styles";
+import { Container, FlexContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { invoiceType } from "@/tools/invoices/createInvoice";
+import { disableInvoice } from "@/tools/invoices/disableInvoice";
+import { paidInvoice } from "@/tools/invoices/paid";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client } from "@/tools/sellers/createClient";
 import {
@@ -14,6 +17,7 @@ import {
   DocumentSnapshot,
   getDoc,
 } from "firebase/firestore";
+import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 
 export type purchases_amounts = {
@@ -47,7 +51,27 @@ export default function Page() {
     Record<string, rawProduct> | undefined
   >();
   const [owners, setOwners] = useState<invoiceOwners>();
+  const [timeOut, setTimeOut] = useState<NodeJS.Timeout>();
   const data = useMemo(() => invoiceDoc?.data(), [invoiceDoc]);
+  const router = useRouter();
+
+  async function paid() {
+    if (invoiceDoc) await paidInvoice(invoiceDoc.ref);
+
+    router.push("/invoices");
+  }
+
+  function removeInvoice() {
+    setTimeOut(
+      setTimeout(async () => {
+        if (!invoiceDoc) return;
+
+        await disableInvoice(invoiceDoc);
+
+        router.push("/invoices");
+      }, 5000)
+    );
+  }
 
   // effect to get the invoice
   useEffect(() => {
@@ -147,7 +171,7 @@ export default function Page() {
     };
   }, [data?.products_outputs]);
 
-  if (!owners || !rawProducts) return <h2>Cargando...</h2>;
+  if (!owners || !rawProducts || !data) return <h2>Cargando...</h2>;
 
   return (
     <Container>
@@ -155,10 +179,13 @@ export default function Page() {
         <h2>Factura de {owners.client?.data()?.name}</h2>
         <p>
           Esta factura se el hizo el{" "}
-          {data?.created_at.toDate().toLocaleDateString()}
+          {data.created_at.toDate().toLocaleDateString()}
         </p>
-        {data?.credit?.paid ? (
-          <p>La factura esta actualmente pagadá</p>
+        {data.credit?.paid ? (
+          <p>
+            La factura esta actualmente pagadá, se pagó el{" "}
+            {data.credit.paid_at?.toDate().toLocaleDateString()}
+          </p>
         ) : (
           <p>La factura esta pendiente</p>
         )}
@@ -182,6 +209,23 @@ export default function Page() {
         hasInventory={owners.seller.data()?.hasInventory}
         rawProducts={rawProducts}
       />
+      <FlexContainer
+        styles={{ justifyContent: "space-between", marginBottom: "200px" }}
+      >
+        <Button disabled={data.credit?.paid} onClick={paid}>
+          Pagar factura
+        </Button>
+        <Button
+          onPointerDown={removeInvoice}
+          onPointerUp={() => clearTimeout(timeOut)}
+          onMouseUp={() => clearTimeout(timeOut)}
+          onMouseLeave={() => clearTimeout(timeOut)}
+          $warn
+          $hold
+        >
+          Eliminar factura
+        </Button>
+      </FlexContainer>
     </Container>
   );
 }

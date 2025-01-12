@@ -18,7 +18,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 
 export type purchases_amounts = {
   amount: number;
@@ -176,7 +176,18 @@ export default function Page() {
   return (
     <Container>
       <Container styles={{ marginBottom: "20px" }}>
-        <h2>Factura de {owners.client?.data()?.name}</h2>
+        <FlexContainer
+          styles={{ justifyContent: "space-between", alignItems: "center" }}
+        >
+          <h2>Factura de {owners.client?.data()?.name}</h2>
+          <Button
+            onClick={() => {
+              window.print();
+            }}
+          >
+            Imprimir
+          </Button>
+        </FlexContainer>
         <p>
           Esta factura se hizo el{" "}
           {data.created_at.toDate().toLocaleDateString()}

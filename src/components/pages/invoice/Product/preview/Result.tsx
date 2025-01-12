@@ -58,14 +58,20 @@ export function Result({ hasInventory, rawProducts }: props) {
     <Container styles={{ margin: "50px 0" }}>
       <ProductContainer $hasInventory={hasInventory} $withoutStock={1}>
         <Column gridColumn="4 / 6">Costo </Column>
-        <Column gridColumn="6 / 8">Total a pagar</Column>
+        <Column gridColumn="6 / 8" printGridColumn="-1 / -5" $left>
+          Total a pagar
+        </Column>
         <Column gridColumn="8 / 10">Ganancias</Column>
       </ProductContainer>
       <ProductContainer $hasInventory={hasInventory} $withoutStock={1}>
         <Column gridColumn="4 / 6" title={numberParser(purchaseValue)}>
           {numberParser(purchaseValue)}
         </Column>
-        <Column gridColumn="6 / 8" title={numberParser(salesValues.normal)}>
+        <Column
+          gridColumn="6 / 8"
+          printGridColumn="-1 / -4"
+          title={numberParser(salesValues.normal)}
+        >
           {numberParser(salesValues.normal)}
         </Column>
         <Column

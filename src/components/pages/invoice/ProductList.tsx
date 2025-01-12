@@ -91,13 +91,8 @@ export function ProductList({ setProductsResults }: props) {
 
   return (
     <Container styles={{ margin: "50px 0" }}>
-      <ProductContainer
-        $header
-        $withoutStock={1}
-        $hasInventory={selectedSeller?.data().hasInventory}
-      >
-        <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
-      </ProductContainer>
+      <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
+
       {products.docs?.length === 0 ? (
         <>no hay productos</>
       ) : (
@@ -114,12 +109,12 @@ export function ProductList({ setProductsResults }: props) {
   );
 }
 
-const Descriptions = ({
+export const Descriptions = ({
   hasInventory,
 }: {
   hasInventory: boolean | undefined;
 }) => (
-  <>
+  <ProductContainer $header $withoutStock={1} $hasInventory={hasInventory}>
     <Column $gridColumn="1 / 4">Nombre del producto</Column>
     <Column $gridColumn="4 / 5">Cant</Column>
     <Column $gridColumn="5 / 6">P Costo</Column>
@@ -135,5 +130,5 @@ const Descriptions = ({
       </>
     )}
     <Column $gridColumn="-1 / -2">Extra</Column>
-  </>
+  </ProductContainer>
 );

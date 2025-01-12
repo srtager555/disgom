@@ -191,15 +191,14 @@ export default function Page() {
             <Small>Disgom</Small>
             <h2>Factura de {owners.client?.data()?.name}</h2>
           </Container>
-          {!print && (
-            <Button
-              onClick={() => {
-                window.print();
-              }}
-            >
-              Imprimir
-            </Button>
-          )}
+
+          <Button
+            onClick={() => {
+              window.print();
+            }}
+          >
+            Imprimir
+          </Button>
         </FlexContainer>
         <p>
           Esta factura se hizo el{" "}

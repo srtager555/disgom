@@ -124,7 +124,7 @@ export const Column = styled(ColumnBase)<{
   }
 `;
 
-const ProductName = styled.span`
+export const ProductName = styled.span`
   display: inline-block;
   width: 100%; // Define el ancho máximo del contenedor
   white-space: nowrap; /* Evita que el texto haga saltos de línea */

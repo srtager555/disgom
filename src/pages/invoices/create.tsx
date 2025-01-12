@@ -14,7 +14,7 @@ import { createInvoice, invoiceType } from "@/tools/invoices/createInvoice";
 import { addOutputs } from "@/tools/products/addOutputs";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client } from "@/tools/sellers/createClient";
-import { QueryDocumentSnapshot } from "firebase/firestore";
+import { QueryDocumentSnapshot, Timestamp } from "firebase/firestore";
 import { useRouter } from "next/router";
 import {
   ChangeEvent,
@@ -103,7 +103,7 @@ const Page: NextPageWithLayout = () => {
         ? null
         : {
             paid: isCredit,
-            paid_at: null,
+            paid_at: isCredit ? Timestamp.fromDate(new Date()) : null,
           },
     };
 

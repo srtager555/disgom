@@ -14,19 +14,23 @@ import {
 } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
 
+export type purchases_amounts = {
+  amount: number;
+  price: number;
+  total: number;
+};
+
+export type sales_amounts = {
+  amount: number;
+  normal_price: number;
+  normal_total: number;
+  seller_price: number;
+  seller_total: number;
+};
+
 export type rawProduct = {
-  purchases_amounts: Array<{
-    amount: number;
-    price: number;
-    total: number;
-  }>;
-  sales_amounts: Array<{
-    amount: number;
-    normal_price: number;
-    normal_total: number;
-    seller_price: number;
-    seller_total: number;
-  }>;
+  purchases_amounts: Array<purchases_amounts>;
+  sales_amounts: Array<sales_amounts>;
 };
 
 export type invoiceOwners = {

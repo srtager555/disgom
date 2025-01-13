@@ -155,83 +155,97 @@ const Page: NextPageWithLayout = () => {
           sellerData={sellerData}
           setClient={setClient}
         />
-        <ProductList setProductsResults={setProductsResults} />
-        <Result
-          hasInventory={sellerData?.hasInventory}
-          productsResults={productsResults}
-        />
-        <Container styles={{ marginTop: "20px", marginBottom: "100px" }}>
-          {!sellerDoc ? (
-            <h2>
-              <i>Se debe de seleccionar un vendedor para crear la factura</i>
-            </h2>
-          ) : (
-            <>
-              <h2>Resumen</h2>
-              <p style={{ marginBottom: "10px" }}>
-                Factura de {sellerData?.name}
-                {!sellerData?.hasInventory &&
-                  (client ? (
-                    ` para ${client?.data().name}`
-                  ) : (
-                    <i>
-                      <b>
-                        . Se debe seleccionar el cliente que pertenecera esta
-                        factura
-                      </b>
-                    </i>
-                  ))}
-              </p>
-              <p style={{ marginBottom: "10px" }}>
-                {sellerData?.hasInventory ? (
-                  "Esta factura esperará a futuro un inventario para hacer un cierre"
-                ) : (
-                  <label>
-                    <input
-                      type="checkbox"
-                      onChange={(e) => {
-                        setIsCredit(e.target.checked);
-                      }}
-                    />
-                    <span
-                      style={{ display: "inline-block", marginLeft: "10px" }}
-                    >
-                      ¿Esta factura será cancelada ahorá?
-                    </span>
-                  </label>
-                )}
-              </p>
-            </>
-          )}
-          {Object.values(productsResults).length === 0 && (
-            <p
-              style={{
-                marginBottom: "10px",
-                fontWeight: "bold",
-                fontStyle: "italic",
-              }}
-            >
-              La Factura no tiene ningun producto seleccionado
-            </p>
-          )}
-          <Button
-            style={{ marginTop: "10px" }}
-            onClick={handlerCreateInvoice}
-            disabled={
-              Object.values(productsResults).length === 0
-                ? true
-                : !sellerData
-                ? true
-                : !sellerData.hasInventory
-                ? !client
-                  ? true
-                  : false
-                : false
-            }
-          >
-            Crear factura
-          </Button>
-        </Container>
+        {!selectedSeller ? (
+          <h3 style={{ marginTop: "10px" }}>
+            Para empezar selecciona para quien será la factura
+          </h3>
+        ) : (
+          <>
+            <ProductList setProductsResults={setProductsResults} />
+
+            <Result
+              hasInventory={sellerData?.hasInventory}
+              productsResults={productsResults}
+            />
+            <Container styles={{ marginTop: "20px", marginBottom: "100px" }}>
+              {!sellerDoc ? (
+                <h2>
+                  <i>
+                    Se debe de seleccionar un vendedor para crear la factura
+                  </i>
+                </h2>
+              ) : (
+                <>
+                  <h2>Resumen</h2>
+                  <p style={{ marginBottom: "10px" }}>
+                    Factura de {sellerData?.name}
+                    {!sellerData?.hasInventory &&
+                      (client ? (
+                        ` para ${client?.data().name}`
+                      ) : (
+                        <i>
+                          <b>
+                            . Se debe seleccionar el cliente que pertenecera
+                            esta factura
+                          </b>
+                        </i>
+                      ))}
+                  </p>
+                  <p style={{ marginBottom: "10px" }}>
+                    {sellerData?.hasInventory ? (
+                      "Esta factura esperará a futuro un inventario para hacer un cierre"
+                    ) : (
+                      <label>
+                        <input
+                          type="checkbox"
+                          onChange={(e) => {
+                            setIsCredit(e.target.checked);
+                          }}
+                        />
+                        <span
+                          style={{
+                            display: "inline-block",
+                            marginLeft: "10px",
+                          }}
+                        >
+                          ¿Esta factura será cancelada ahorá?
+                        </span>
+                      </label>
+                    )}
+                  </p>
+                </>
+              )}
+              {Object.values(productsResults).length === 0 && (
+                <p
+                  style={{
+                    marginBottom: "10px",
+                    fontWeight: "bold",
+                    fontStyle: "italic",
+                  }}
+                >
+                  La Factura no tiene ningun producto seleccionado
+                </p>
+              )}
+              <Button
+                style={{ marginTop: "10px" }}
+                onClick={handlerCreateInvoice}
+                disabled={
+                  Object.values(productsResults).length === 0
+                    ? true
+                    : !sellerData
+                    ? true
+                    : !sellerData.hasInventory
+                    ? !client
+                      ? true
+                      : false
+                    : false
+                }
+              >
+                Crear factura
+              </Button>
+            </Container>
+          </>
+        )}
       </Container>
     </InvoiceContext.Provider>
   );

@@ -104,11 +104,14 @@ export const NavAnchor = styled(Link)<{ $active?: boolean }>`
   }
 `;
 
-export const NavContainer = styled.div<{ $deployNav: boolean }>`
+export const NavContainer = styled.div<{
+  $deployNav: boolean;
+  $removeMaxWith: boolean;
+}>`
   display: grid;
   grid-template-columns: ${({ $deployNav }) => ($deployNav ? "200px" : "60px")} 1fr 60px;
+  max-width: ${({ $removeMaxWith }) => ($removeMaxWith ? "100%" : "1100px")};
   width: 100%;
-  max-width: 1100px;
   margin: 0 auto;
   height: 100vh;
   overflow: scroll;

@@ -34,6 +34,7 @@ export function NavLayout({ children }: { children: children }) {
     //   active: false,
     // },
   ]);
+  const [removeMaxWith, setRemoveMaxWith] = useState(false);
   const { asPath } = useRouter();
 
   useEffect(() => {
@@ -49,8 +50,16 @@ export function NavLayout({ children }: { children: children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [asPath]);
 
+  useEffect(() => {
+    if (asPath.match("invoices")) {
+      setRemoveMaxWith(true);
+    } else {
+      setRemoveMaxWith(false);
+    }
+  }, [asPath]);
+
   return (
-    <NavContainer $deployNav={false}>
+    <NavContainer $deployNav={false} $removeMaxWith={removeMaxWith}>
       <Container>
         <Nav>
           {url.map((el, i) => (

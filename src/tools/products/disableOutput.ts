@@ -28,7 +28,7 @@ export async function disableOutput(ref: DocumentReference<outputType>) {
   await addToStock(productRef, {
     ...lastStock,
     amount: output.amount,
-    purchase_price: output.purchase_cost,
+    purchase_price: output.cost_price,
     entry_ref: output.entry_ref,
   });
 }

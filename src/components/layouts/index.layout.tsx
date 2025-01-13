@@ -30,7 +30,9 @@ export function Layout({ children }: { children: children }) {
     <PrintContext.Provider value={print}>
       <InitApp>
         <NavLayout>
-          <Container styles={{ padding: "0 2.5%" }}>{children}</Container>
+          <Container styles={{ padding: "0 2.5%", margin: "0 auto" }}>
+            {children}
+          </Container>
         </NavLayout>
       </InitApp>
     </PrintContext.Provider>

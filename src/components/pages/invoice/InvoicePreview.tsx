@@ -16,7 +16,7 @@ import styled from "styled-components";
 
 export const InvoiceContainer = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, 350px);
   grid-auto-rows: 50px;
   gap: 10px;
 `;
@@ -79,8 +79,7 @@ export function InvoicePreview({ doc }: props) {
       {client ? (
         <Container>
           <small>
-            {sellerData?.name} -{" "}
-            {data.credit?.paid ? "credito pagado" : "en credito"}
+            {sellerData?.name} - {data.credit?.paid ? "pagado" : "en credito"}
           </small>
           <p>{client.data()?.name}</p>
         </Container>

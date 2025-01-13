@@ -29,6 +29,7 @@ export const ProductContainer = styled.div<{
   $header?: boolean;
   $fold?: boolean;
   $children?: boolean;
+  $closing?: boolean;
 }>`
   ${(props) =>
     props.$header &&
@@ -41,7 +42,14 @@ export const ProductContainer = styled.div<{
   display: grid;
   grid-column: 1 / -1;
   grid-template-columns: repeat(
-    ${(props) => (props.$hasInventory ? "13, 60px" : "10, 75px")}
+    ${(props) => {
+      if (props.$closing) return "16, 75px";
+      if (props.$hasInventory) {
+        return "13, 75px";
+      } else {
+        return "10, 75px";
+      }
+    }}
   );
   @media print {
     grid-template-columns: repeat(20, 1fr);

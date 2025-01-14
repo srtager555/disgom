@@ -1,8 +1,21 @@
-import { Container } from "@/styles/index.styles";
-import { Column, Input } from "..";
+import { Column, ExtraButton, Input } from "..";
 import { ProductContainer } from "../../ProductList";
 import { rawProductWithInventory } from "@/pages/invoices/closing";
-import { useMemo } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
+import { productDoc } from "@/tools/products/create";
+import {
+  doc,
+  DocumentReference,
+  DocumentSnapshot,
+  getDoc,
+} from "firebase/firestore";
+import { Firestore } from "@/tools/firestore";
+import { Icon } from "@/components/Icons";
+import { numberParser } from "@/tools/numberPaser";
+import { Price } from "./Price";
+import { Cost } from "./Cost";
+import { Inv } from "./Inv";
 
 type props = {
   data: rawProductWithInventory;
@@ -10,42 +23,186 @@ type props = {
 };
 
 export function ProductClosing({ product_id, data }: props) {
-  const inventoryAmount = useMemo(() => {
-    if (data.inventory.length === 0) return 0;
+  const [product, setProduct] = useState<DocumentSnapshot<productDoc>>();
+  const productData = useMemo(() => product?.data(), [product]);
+  const [fold, setFold] = useState(false);
+  const [amoutnSold, setAmoutnSold] = useState(0);
 
-    return data.inventory.reduce((before, now) => {
-      return before + now.amount;
-    }, 0);
-  }, [data.inventory]);
+  const costPrices = useMemo(() => {
+    const ioqnfjwn = [...data.purchases_amounts, ...data.inventory];
+    const prices = ioqnfjwn.map((el) => {
+      if ("price" in el) return el.price;
+
+      return el.purchase_price;
+    });
+    const diff = prices.filter((el) => el != prices[0]);
+
+    return diff.length > 0 ? "~" : numberParser(prices[0]);
+  }, [data]);
+
+  const normalSalePrices = useMemo(() => {
+    const prices = data.sales_amounts.map((el) => el.normal_price);
+    const diff = prices.filter((el) => el != prices[0]);
+
+    return diff.length > 0 ? "~" : numberParser(prices[0]);
+  }, [data]);
+  const sellerSalePrices = useMemo(() => {
+    const prices = data.sales_amounts.map((el) => el.seller_price);
+    const diff = prices.filter((el) => el != prices[0]);
+
+    return diff.length > 0 ? "~" : numberParser(prices[0]);
+  }, [data]);
+
+  const inventoryAmount = useMemo(() => {
+    return data.inventory.reduce(
+      (before, now) => {
+        return {
+          amount: before.amount + now.amount,
+          total: before.total + now.purchase_price * (now.amount - amoutnSold),
+        };
+      },
+      {
+        amount: 0,
+        total: 0,
+      }
+    );
+  }, [amoutnSold, data.inventory]);
 
   const load = useMemo(() => {
-    if (data.purchases_amounts.length === 0) return 0;
+    return data.purchases_amounts.reduce(
+      (before, now) => {
+        return {
+          amount: before.amount + now.amount,
+          total: before.total + now.price * (now.amount - amoutnSold),
+        };
+      },
+      {
+        amount: 0,
+        total: 0,
+      }
+    );
+  }, [amoutnSold, data.purchases_amounts]);
 
-    return data.purchases_amounts.reduce((before, now) => {
-      return before + now.amount;
-    }, 0);
-  }, [data.purchases_amounts]);
+  const totalSales = useMemo(() => {
+    return data.sales_amounts.reduce(
+      (before, now) => {
+        return {
+          sale:
+            before.sale +
+            now.normal_price *
+              (inventoryAmount.amount + load.amount - amoutnSold),
+          seller_sale:
+            before.seller_sale +
+            now.seller_price *
+              (load.amount + inventoryAmount.amount - amoutnSold),
+        };
+      },
+      {
+        sale: 0,
+        seller_sale: 0,
+      }
+    );
+  }, [amoutnSold, data.sales_amounts, inventoryAmount.amount, load.amount]);
+
+  function onChangeAmountSold(e: ChangeEvent<HTMLInputElement>) {
+    setAmoutnSold(e.target.value != "" ? Number(e.target.value) : 0);
+  }
+
+  // effect to get the product
+  useEffect(() => {
+    async function getProduct() {
+      const db = Firestore();
+      const prodRef = doc(
+        db,
+        ProductsCollection.root,
+        product_id
+      ) as DocumentReference<productDoc>;
+      const p = await getDoc(prodRef);
+      setProduct(p);
+    }
+
+    getProduct();
+  }, [product_id]);
 
   return (
     <ProductContainer $header $withoutStock={1} $hasInventory $closing>
-      <Column gridColumn="1 / 4">Nombre del producto</Column>
-      <Column gridColumn="">{inventoryAmount}</Column>
-      <Column gridColumn="">{load}</Column>
-      <Column gridColumn="">{inventoryAmount + load}</Column>
+      <Column gridColumn="1 / 4">{productData?.name}</Column>
+      <Column gridColumn="">{numberParser(inventoryAmount.amount)}</Column>
+      <Column gridColumn="">{numberParser(load.amount)}</Column>
       <Column gridColumn="">
-        <Input />
+        {numberParser(inventoryAmount.amount + load.amount)}
       </Column>
-      <Column gridColumn="">P Costo</Column>
-      <Column gridColumn="">T Costo</Column>
-      <Column gridColumn="">Precio</Column>
-      <Column gridColumn="">Total</Column>
-      <Column gridColumn="">Ganan</Column>
+      <Column gridColumn="">
+        <Input
+          type="number"
+          onChange={onChangeAmountSold}
+          step={productData?.step}
+          min={0}
+        />
+      </Column>
+      <Column gridColumn="">
+        {numberParser(inventoryAmount.amount + load.amount - amoutnSold)}
+      </Column>
+      <Column gridColumn="">{costPrices}</Column>
+      <Column
+        gridColumn=""
+        title={numberParser(inventoryAmount.total + load.total)}
+      >
+        {numberParser(inventoryAmount.total + load.total)}
+      </Column>
+      <Column gridColumn="">{normalSalePrices}</Column>
+      <Column gridColumn="" title={numberParser(totalSales.sale)}>
+        {numberParser(totalSales.sale)}
+      </Column>
+      <Column
+        gridColumn=""
+        title={numberParser(
+          totalSales.sale - inventoryAmount.total - load.total
+        )}
+      >
+        {numberParser(totalSales.sale - inventoryAmount.total - load.total)}
+      </Column>
 
-      <Column gridColumn="">P Vend</Column>
-      <Column gridColumn="">V Vend</Column>
-      <Column gridColumn="">G Vend</Column>
+      <Column gridColumn="">{sellerSalePrices}</Column>
+      <Column gridColumn="" title={numberParser(totalSales.seller_sale)}>
+        {numberParser(totalSales.seller_sale)}
+      </Column>
+      <Column
+        gridColumn=""
+        title={numberParser(totalSales.seller_sale - totalSales.sale)}
+      >
+        {numberParser(totalSales.seller_sale - totalSales.sale)}
+      </Column>
 
-      <Column gridColumn="">Extra</Column>
+      <Column gridColumn="">
+        <ExtraButton onClick={() => setFold(!fold)}>
+          <Icon iconType={fold ? "fold" : "unfold"} />
+        </ExtraButton>
+      </Column>
+
+      <ProductContainer
+        $children
+        $hasInventory={true}
+        $closing
+        $withoutStock={1}
+        $fold={!fold}
+      >
+        <Column gridColumn="1 / -1" $removeBorder>
+          <b>Precios de la salida detallados</b>
+        </Column>
+        {data.sales_amounts.map((el, i) => (
+          <Price key={i} data={el} />
+        ))}
+        <Column gridColumn="1 / -1" $removeBorder>
+          <b>Costos de la salida detallados</b>
+        </Column>
+        {data.purchases_amounts.map((el, i) => (
+          <Cost key={i} data={el} />
+        ))}
+        {data.inventory.map((el, i) => (
+          <Inv key={i} data={el} />
+        ))}
+      </ProductContainer>
     </ProductContainer>
   );
 }

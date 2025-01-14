@@ -48,6 +48,7 @@ export function ProductPreview({ data, owners, product_id }: props) {
   const costPrices = useMemo(() => {
     return data.purchases_amounts.map((el) => el.price);
   }, [data]);
+
   const totalSales = useMemo(
     () =>
       data.sales_amounts.reduce(

@@ -203,6 +203,7 @@ export const Descriptions = () => (
     <Column gridColumn="">Carga</Column>
     <Column gridColumn="">Total</Column>
     <Column gridColumn="">Devolu</Column>
+    <Column gridColumn="">Vendido</Column>
     <Column gridColumn="">P Costo</Column>
     <Column gridColumn="">T Costo</Column>
     <Column gridColumn="">Precio</Column>

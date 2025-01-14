@@ -43,7 +43,7 @@ export const ProductContainer = styled.div<{
   grid-column: 1 / -1;
   grid-template-columns: repeat(
     ${(props) => {
-      if (props.$closing) return "16, 75px";
+      if (props.$closing) return "17, 75px";
       if (props.$hasInventory) {
         return "13, 75px";
       } else {

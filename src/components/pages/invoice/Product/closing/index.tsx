@@ -275,7 +275,6 @@ export function ProductClosing({
 
   return (
     <ProductContainer
-      $header
       $withoutStock={1}
       $hasInventory
       $closing

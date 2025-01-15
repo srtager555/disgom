@@ -19,6 +19,7 @@ import { SellersDoc } from "../sellers/create";
 import { client } from "../sellers/createClient";
 import { outputType } from "../products/addOutputs";
 import { bill } from "@/components/pages/invoice/Product/closing/Bills";
+import { inventory } from "../sellers/invetory/create";
 
 export type invoiceType = {
   created_at: Timestamp;
@@ -26,19 +27,10 @@ export type invoiceType = {
   client_ref: DocumentReference<client> | null;
   products_outputs: Array<DocumentReference<outputType>> | null;
   inventory_ref: null;
-  last_inventory_ref: null;
-  total_sold: {
-    normal: number;
-    withInventory: number;
-  };
-  total_cost: {
-    normal: number;
-    withInventory: number;
-  };
-  total_proft: {
-    normal: number;
-    withInventory: number;
-  };
+  last_inventory_ref: DocumentReference<inventory> | null;
+  total_sold: number;
+  total_cost: number;
+  total_proft: number;
   route: number | null;
   bills: Array<bill> | null;
   money: {
@@ -62,7 +54,10 @@ export async function createInvoice(data: Omit<invoiceType, "created_at">) {
   let last_inventory = null;
 
   if (sellerDoc.data()?.hasInventory) {
-    const coll = collection(sellerDoc.ref, SellersCollection.inventories.root);
+    const coll = collection(
+      sellerDoc.ref,
+      SellersCollection.inventories.root
+    ) as CollectionReference<inventory>;
     const q = query(coll, orderBy("created_at", "desc"), limit(1));
     const inventories = await getDocs(q);
 

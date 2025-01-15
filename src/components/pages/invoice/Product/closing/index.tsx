@@ -297,7 +297,7 @@ export function ProductClosing({
       <Column gridColumn="">
         {numberParser(inventoryAmount.amount + load.amount - amoutnSold)}
       </Column>
-      <Column gridColumn="">a{costPrices}</Column>
+      <Column gridColumn="">{costPrices}</Column>
       <Column
         gridColumn=""
         title={numberParser(inventoryAmount.total + load.total)}

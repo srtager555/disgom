@@ -1,7 +1,15 @@
 import { Column, ExtraButton, Input } from "..";
 import { ProductContainer } from "../../ProductList";
 import { rawProductWithInventory } from "@/pages/invoices/closing";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import {
+  ChangeEvent,
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
 import { productDoc } from "@/tools/products/create";
 import {
@@ -16,13 +24,21 @@ import { numberParser } from "@/tools/numberPaser";
 import { Price } from "./Price";
 import { Cost } from "./Cost";
 import { Inv } from "./Inv";
+import { inventory_product_data } from "@/tools/sellers/invetory/addProduct";
 
 type props = {
   data: rawProductWithInventory;
   product_id: string;
+  setNewInventoryToCreate: Dispatch<
+    SetStateAction<Record<string, inventory_product_data[]>>
+  >;
 };
 
-export function ProductClosing({ product_id, data }: props) {
+export function ProductClosing({
+  product_id,
+  data,
+  setNewInventoryToCreate,
+}: props) {
   const [product, setProduct] = useState<DocumentSnapshot<productDoc>>();
   const productData = useMemo(() => product?.data(), [product]);
   const [fold, setFold] = useState(false);
@@ -104,6 +120,75 @@ export function ProductClosing({ product_id, data }: props) {
     );
   }, [amoutnSold, data.sales_amounts, inventoryAmount.amount, load.amount]);
 
+  const amountListener = useCallback(
+    function (n: number) {
+      let remainingAmount = n;
+
+      const stocks = [...data.inventory, ...data.purchases_amounts];
+
+      if (remainingAmount <= 0) return;
+      if (!product) return;
+
+      setNewInventoryToCreate((props) => {
+        const all = { ...props };
+        delete all[product.id];
+        return all;
+      });
+
+      for (let index = 0; index < stocks.length; index++) {
+        const stock = stocks[index];
+
+        const remaining = remainingAmount - stock.amount;
+
+        if (remaining > 0) {
+          remainingAmount = remaining;
+          const same = {
+            amount: stock.amount,
+            product_ref: product.ref,
+          };
+
+          setNewInventoryToCreate((props) => {
+            return {
+              ...props,
+              [product.id]:
+                "price" in stock
+                  ? [
+                      ...(props[product.id] || []),
+                      { ...same, purchase_price: stock.price },
+                    ]
+                  : [
+                      ...(props[product.id] || []),
+                      { ...same, purchase_price: stock.purchase_price },
+                    ],
+            };
+          });
+        } else {
+          const same = {
+            amount: remainingAmount,
+            product_ref: product.ref,
+          };
+          setNewInventoryToCreate((props) => {
+            return {
+              ...props,
+              [product.id]:
+                "price" in stock
+                  ? [
+                      ...(props[product.id] || []),
+                      { ...same, purchase_price: stock.price },
+                    ]
+                  : [
+                      ...(props[product.id] || []),
+                      { ...same, purchase_price: stock.purchase_price },
+                    ],
+            };
+          });
+          break;
+        }
+      }
+    },
+    [data.inventory, data.purchases_amounts, product, setNewInventoryToCreate]
+  );
+
   function onChangeAmountSold(e: ChangeEvent<HTMLInputElement>) {
     setAmoutnSold(e.target.value != "" ? Number(e.target.value) : 0);
   }
@@ -123,6 +208,15 @@ export function ProductClosing({ product_id, data }: props) {
 
     getProduct();
   }, [product_id]);
+
+  // effect to manage the new inventory
+  useEffect(() => {
+    const cargaTotal = inventoryAmount.amount + load.amount;
+    const restante = cargaTotal - amoutnSold;
+
+    if (restante !== cargaTotal)
+      amountListener(inventoryAmount.amount + load.amount - amoutnSold);
+  }, [amountListener, amoutnSold, inventoryAmount.amount, load.amount]);
 
   return (
     <ProductContainer

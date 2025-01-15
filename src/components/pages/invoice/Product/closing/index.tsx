@@ -74,10 +74,20 @@ export function ProductClosing({
       (before, now) => {
         return {
           amount: before.amount + now.amount,
-          total: before.total + now.purchase_price * (now.amount - amoutnSold),
+          total:
+            before.total +
+            now.purchase_price *
+              (before.reducedAmountSold > now.amount
+                ? 0
+                : now.amount - before.reducedAmountSold),
+          reducedAmountSold:
+            before.reducedAmountSold < now.amount
+              ? 0
+              : before.reducedAmountSold - now.amount,
         };
       },
       {
+        reducedAmountSold: amoutnSold,
         amount: 0,
         total: 0,
       }
@@ -89,10 +99,20 @@ export function ProductClosing({
       (before, now) => {
         return {
           amount: before.amount + now.amount,
-          total: before.total + now.price * (now.amount - amoutnSold),
+          total:
+            before.total +
+            now.price *
+              (before.reducedAmountSold > now.amount
+                ? 0
+                : now.amount - before.reducedAmountSold),
+          reducedAmountSold:
+            before.reducedAmountSold < now.amount
+              ? 0
+              : before.reducedAmountSold - now.amount,
         };
       },
       {
+        reducedAmountSold: amoutnSold,
         amount: 0,
         total: 0,
       }
@@ -106,19 +126,28 @@ export function ProductClosing({
           sale:
             before.sale +
             now.normal_price *
-              (inventoryAmount.amount + load.amount - amoutnSold),
+              (before.reducedAmountSold > now.amount
+                ? 0
+                : now.amount - before.reducedAmountSold),
           seller_sale:
             before.seller_sale +
             now.seller_price *
-              (load.amount + inventoryAmount.amount - amoutnSold),
+              (before.reducedAmountSold > now.amount
+                ? 0
+                : now.amount - before.reducedAmountSold),
+          reducedAmountSold:
+            before.reducedAmountSold < now.amount
+              ? 0
+              : before.reducedAmountSold - now.amount,
         };
       },
       {
         sale: 0,
         seller_sale: 0,
+        reducedAmountSold: amoutnSold,
       }
     );
-  }, [amoutnSold, data.sales_amounts, inventoryAmount.amount, load.amount]);
+  }, [amoutnSold, data.sales_amounts]);
 
   const amountListener = useCallback(
     function (n: number) {
@@ -243,7 +272,7 @@ export function ProductClosing({
       <Column gridColumn="">
         {numberParser(inventoryAmount.amount + load.amount - amoutnSold)}
       </Column>
-      <Column gridColumn="">{costPrices}</Column>
+      <Column gridColumn="">a{costPrices}</Column>
       <Column
         gridColumn=""
         title={numberParser(inventoryAmount.total + load.total)}

@@ -125,7 +125,13 @@ export function ProductClosing({ product_id, data }: props) {
   }, [product_id]);
 
   return (
-    <ProductContainer $header $withoutStock={1} $hasInventory $closing>
+    <ProductContainer
+      $header
+      $withoutStock={1}
+      $hasInventory
+      $closing
+      $warn={inventoryAmount.amount + load.amount - amoutnSold < 0}
+    >
       <Column gridColumn="1 / 4">{productData?.name}</Column>
       <Column gridColumn="">{numberParser(inventoryAmount.amount)}</Column>
       <Column gridColumn="">{numberParser(load.amount)}</Column>

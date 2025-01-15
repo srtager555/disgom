@@ -30,6 +30,7 @@ export const ProductContainer = styled.div<{
   $fold?: boolean;
   $children?: boolean;
   $closing?: boolean;
+  $warn?: boolean;
 }>`
   ${(props) =>
     props.$header &&
@@ -51,6 +52,15 @@ export const ProductContainer = styled.div<{
       }
     }}
   );
+
+  ${(props) =>
+    props.$warn &&
+    css`
+      color: red;
+      font-weight: bold;
+      text-decoration: underline;
+    `}
+
   @media print {
     grid-template-columns: repeat(20, 1fr);
   }

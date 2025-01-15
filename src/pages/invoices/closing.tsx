@@ -1,6 +1,6 @@
 import { ProductClosing } from "@/components/pages/invoice/Product/closing";
 import useQueryParams from "@/hooks/getQueryParams";
-import { Container } from "@/styles/index.styles";
+import { Container, FlexContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
 import {
   InvoiceCollection,
@@ -21,7 +21,10 @@ import {
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
 import { purchases_amounts, rawProduct, sales_amounts } from "./preview";
-import { inventoryProductDoc } from "@/tools/sellers/invetory/addProduct";
+import {
+  inventory_product_data,
+  inventoryProductDoc,
+} from "@/tools/sellers/invetory/addProduct";
 import { outputType } from "@/tools/products/addOutputs";
 import { Column } from "@/components/pages/invoice/Product";
 import { ProductContainer } from "@/components/pages/invoice/ProductList";
@@ -30,6 +33,13 @@ import {
   creditToUpdate,
   newCredits,
 } from "@/components/pages/invoice/Credit";
+import {
+  ProductManager,
+  totals_sold,
+} from "@/components/pages/invoice/Product/closing/manager";
+import { bill, Bills } from "@/components/pages/invoice/Product/closing/Bills";
+import { Close } from "@/components/pages/invoice/Product/closing/Close";
+import { Button } from "@/styles/Form.styles";
 
 export interface rawProductWithInventory extends rawProduct {
   inventory: Array<inventoryProductDoc>;
@@ -49,6 +59,11 @@ export default function Page() {
   const [totalCredits, setTotalCredits] = useState(0);
   const [newCreditsToCreate, setNewCreditsToCreate] = useState<newCredits[]>();
   const [creditsToUpdate, setCreditsToUpdate] = useState<creditToUpdate[]>();
+  const [newInventoriesToCreate, setNewInventoriesToCreate] =
+    useState<Record<string, inventory_product_data[]>>();
+  const [productsTotals, setProductsTotals] = useState<totals_sold>();
+  const [bills, setBills] = useState<Record<string, bill>>({});
+  const [money, setMoney] = useState({ cash: 0, deposit: 0 });
 
   // effect to get The invoice
   useEffect(() => {
@@ -193,16 +208,13 @@ export default function Page() {
         <p>Cierre del {data.created_at.toDate().toLocaleDateString()}</p>
       </Container>
 
+      <ProductManager
+        rawProducts={rawProducts}
+        setInventories={setNewInventoriesToCreate}
+        setProductTotals={setProductsTotals}
+      />
+
       <Container styles={{ marginBottom: "30px" }}>
-        <Descriptions />
-        {Object.entries(rawProducts).map((el, i) => {
-          const data = el[1];
-
-          return <ProductClosing key={i} data={data} product_id={el[0]} />;
-        })}
-      </Container>
-
-      <Container styles={{ marginBottom: "10px" }}>
         <Credit
           seller_ref={seller?.ref}
           setCreditTotal={setTotalCredits}
@@ -210,6 +222,19 @@ export default function Page() {
           setCreditsToUpdate={setCreditsToUpdate}
         />
       </Container>
+
+      <Bills bills={bills} setBills={setBills} />
+
+      <Close
+        totals={productsTotals}
+        credits={totalCredits}
+        bills={bills}
+        setMoney={setMoney}
+      />
+
+      <FlexContainer styles={{ justifyContent: "center" }}>
+        <Button $primary>¡Terminar!</Button>
+      </FlexContainer>
     </Container>
   );
 }

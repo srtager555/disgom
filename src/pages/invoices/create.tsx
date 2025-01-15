@@ -87,18 +87,12 @@ const Page: NextPageWithLayout = () => {
       inventory_ref: null,
       products_outputs: [],
       last_inventory_ref: null,
-      total_cost: {
-        normal: totals.total_cost,
-        withInventory: totals.total_cost,
-      },
-      total_sold: {
-        normal: totals.total_sold,
-        withInventory: totals.total_sold,
-      },
-      total_proft: {
-        normal: totals.total_profit,
-        withInventory: totals.total_profit,
-      },
+      total_cost: totals.total_cost,
+      total_sold: totals.total_sold,
+      total_proft: totals.total_profit,
+      route: null,
+      bills: null,
+      money: null,
       credit: sellerDoc.data().hasInventory
         ? null
         : {

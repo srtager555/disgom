@@ -28,9 +28,18 @@ export type invoiceType = {
   products_outputs: Array<DocumentReference<outputType>> | null;
   inventory_ref: null;
   last_inventory_ref: DocumentReference<inventory> | null;
-  total_sold: number;
-  total_cost: number;
-  total_proft: number;
+  total_sold: {
+    normal: number;
+    withInventory: number;
+  };
+  total_cost: {
+    normal: number;
+    withInventory: number;
+  };
+  total_proft: {
+    normal: number;
+    withInventory: number;
+  };
   route: number | null;
   bills: Array<bill> | null;
   money: {

@@ -30,6 +30,7 @@ type props = {
   setCreditTotal: Dispatch<SetStateAction<number>>;
   setNewCreditsToCreate: Dispatch<SetStateAction<newCredits[] | undefined>>;
   setCreditsToUpdate: Dispatch<SetStateAction<creditToUpdate[] | undefined>>;
+  setRoute: Dispatch<SetStateAction<number | undefined>>;
 };
 
 export type newCredits = {
@@ -51,6 +52,7 @@ export function Credit({
   setCreditTotal,
   setNewCreditsToCreate,
   setCreditsToUpdate,
+  setRoute: setR,
 }: props) {
   const routes = [
     {
@@ -91,8 +93,6 @@ export function Credit({
   const [total, setTotal] = useState(0);
   const [refresh, setRefresh] = useState(true);
   const formRef = useRef<HTMLFormElement>(null);
-
-  console.log(newCredits);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -188,6 +188,7 @@ export function Credit({
         options={routes}
         onChange={(e) => {
           setRoute(Number(e.target.value));
+          setR(Number(e.target.value));
           setRefresh(true);
         }}
       >

@@ -15,7 +15,12 @@ interface props
   children?: children;
   inline?: boolean;
   marginBottom?: string;
-  options: Array<{ name: string; value: string; selected?: boolean }>;
+  options: Array<{
+    name: string;
+    value: string;
+    selected?: boolean;
+    disabled?: boolean;
+  }>;
 }
 
 export function Select({
@@ -37,7 +42,12 @@ export function Select({
       <SelectStyles {...props}>
         {options.map((el, i) => {
           return (
-            <option key={i} value={el.value} selected={el.selected}>
+            <option
+              key={i}
+              value={el.value}
+              selected={el.selected}
+              disabled={el.disabled}
+            >
               {el.name}
             </option>
           );

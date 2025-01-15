@@ -20,3 +20,24 @@ export function Inv({ data }: props) {
     </>
   );
 }
+
+interface InvPriceProps extends props {
+  normal: number;
+  seller: number;
+}
+
+export function InvPrice({ data, normal, seller }: InvPriceProps) {
+  return (
+    <>
+      <Column gridColumn="4 / 5">{data.amount}</Column>
+      <Column gridColumn="11 / 12">{numberParser(normal)}</Column>
+      <Column gridColumn="12 / 13" title={numberParser(normal * data.amount)}>
+        {numberParser(normal * data.amount)}
+      </Column>
+      <Column gridColumn="14 / 15">{numberParser(seller)}</Column>
+      <Column gridColumn="15 / 16" title={numberParser(seller * data.amount)}>
+        {numberParser(seller * data.amount)}
+      </Column>
+    </>
+  );
+}

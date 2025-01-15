@@ -25,6 +25,11 @@ import { inventoryProductDoc } from "@/tools/sellers/invetory/addProduct";
 import { outputType } from "@/tools/products/addOutputs";
 import { Column } from "@/components/pages/invoice/Product";
 import { ProductContainer } from "@/components/pages/invoice/ProductList";
+import {
+  Credit,
+  creditToUpdate,
+  newCredits,
+} from "@/components/pages/invoice/Credit";
 
 export interface rawProductWithInventory extends rawProduct {
   inventory: Array<inventoryProductDoc>;
@@ -41,6 +46,9 @@ export default function Page() {
     useState<QueryDocumentSnapshot<inventoryProductDoc>[]>();
   const data = useMemo(() => invoiceDoc?.data(), [invoiceDoc]);
   const sellerData = useMemo(() => seller?.data(), [seller]);
+  const [totalCredits, setTotalCredits] = useState(0);
+  const [newCreditsToCreate, setNewCreditsToCreate] = useState<newCredits[]>();
+  const [creditsToUpdate, setCreditsToUpdate] = useState<creditToUpdate[]>();
 
   // effect to get The invoice
   useEffect(() => {
@@ -169,10 +177,11 @@ export default function Page() {
     };
   }, [data?.products_outputs, inventoriesProducts]);
 
-  if (!invoiceDoc || !data || !sellerData || !rawProducts) return "Cargando...";
+  if (!invoiceDoc || !data || !sellerData || !rawProducts || !seller)
+    return "Cargando...";
 
   return (
-    <Container>
+    <Container styles={{ marginBottom: "100px" }}>
       <Head>
         <title>
           {sellerData.name} cierre{" "}
@@ -184,13 +193,22 @@ export default function Page() {
         <p>Cierre del {data.created_at.toDate().toLocaleDateString()}</p>
       </Container>
 
-      <Container>
+      <Container styles={{ marginBottom: "30px" }}>
         <Descriptions />
         {Object.entries(rawProducts).map((el, i) => {
           const data = el[1];
 
           return <ProductClosing key={i} data={data} product_id={el[0]} />;
         })}
+      </Container>
+
+      <Container styles={{ marginBottom: "10px" }}>
+        <Credit
+          seller_ref={seller?.ref}
+          setCreditTotal={setTotalCredits}
+          setNewCreditsToCreate={setNewCreditsToCreate}
+          setCreditsToUpdate={setCreditsToUpdate}
+        />
       </Container>
     </Container>
   );

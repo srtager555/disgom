@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  CollectionReference,
   DocumentReference,
   Timestamp,
 } from "firebase/firestore";
@@ -10,7 +11,7 @@ import { invoiceType } from "@/tools/invoices/createInvoice";
 
 export type inventory = {
   created_at: Timestamp;
-  inventory_ref: DocumentReference<invoiceType>;
+  invoice_ref: DocumentReference<invoiceType>;
 };
 
 export function createInventory(
@@ -20,7 +21,7 @@ export function createInventory(
   const collInventories = collection(
     refSeller,
     SellersCollection.inventories.root
-  );
+  ) as CollectionReference<inventory>;
 
   return addDoc(collInventories, {
     created_at: Timestamp.fromDate(new Date()),

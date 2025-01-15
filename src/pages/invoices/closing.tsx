@@ -1,4 +1,3 @@
-import { ProductClosing } from "@/components/pages/invoice/Product/closing";
 import useQueryParams from "@/hooks/getQueryParams";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
@@ -17,11 +16,13 @@ import {
   getDoc,
   getDocs,
   QueryDocumentSnapshot,
+  updateDoc,
 } from "firebase/firestore";
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
 import { purchases_amounts, rawProduct, sales_amounts } from "./preview";
 import {
+  addInventoryProduct,
   inventory_product_data,
   inventoryProductDoc,
 } from "@/tools/sellers/invetory/addProduct";
@@ -40,6 +41,13 @@ import {
 import { bill, Bills } from "@/components/pages/invoice/Product/closing/Bills";
 import { Close } from "@/components/pages/invoice/Product/closing/Close";
 import { Button } from "@/styles/Form.styles";
+import { closeInvoice } from "@/tools/invoices/closeInvoice";
+import { createInventory } from "@/tools/sellers/invetory/create";
+import {
+  createClientCredit,
+  createCredit,
+} from "@/tools/sellers/credits/create";
+import { useRouter } from "next/router";
 
 export interface rawProductWithInventory extends rawProduct {
   inventory: Array<inventoryProductDoc>;
@@ -50,8 +58,8 @@ export default function Page() {
   const [invoiceDoc, setInvoiceDoc] = useState<DocumentSnapshot<invoiceType>>();
   const [seller, setSeller] = useState<DocumentSnapshot<SellersDoc>>();
   const [rawProducts, setRawProducts] = useState<
-    Record<string, rawProductWithInventory> | undefined
-  >();
+    Record<string, rawProductWithInventory>
+  >({});
   const [inventoriesProducts, setInventoriesProducts] =
     useState<QueryDocumentSnapshot<inventoryProductDoc>[]>();
   const data = useMemo(() => invoiceDoc?.data(), [invoiceDoc]);
@@ -64,6 +72,57 @@ export default function Page() {
   const [productsTotals, setProductsTotals] = useState<totals_sold>();
   const [bills, setBills] = useState<Record<string, bill>>({});
   const [money, setMoney] = useState({ cash: 0, deposit: 0 });
+  const [route, setRoute] = useState<number>();
+  const router = useRouter();
+
+  async function closeThisInvoice() {
+    if (
+      !invoiceDoc ||
+      !productsTotals ||
+      !newCreditsToCreate ||
+      !seller ||
+      !newInventoriesToCreate ||
+      !creditsToUpdate ||
+      !route
+    )
+      return;
+
+    await closeInvoice(invoiceDoc.ref, {
+      total_sold: productsTotals.total_sale,
+      total_cost: productsTotals.total_purchase,
+      total_proft: productsTotals.total_profit,
+      route,
+      bills: Object.values(bills),
+      money,
+    });
+
+    const inventory_ref = await createInventory(invoiceDoc.ref, seller.ref);
+    Object.values(newInventoriesToCreate).forEach((el) => {
+      el.forEach(async (el) => {
+        await addInventoryProduct(inventory_ref, el);
+      });
+    });
+
+    Object.values(newCreditsToCreate).forEach(async (el) => {
+      await createClientCredit(
+        el.route,
+        seller.ref,
+        el.name,
+        el.amount,
+        el.address
+      );
+    });
+
+    Object.values(creditsToUpdate).forEach(async (el) => {
+      await createCredit(el.ref, el.amount);
+    });
+
+    await updateDoc(invoiceDoc.ref, {
+      inventory_ref: inventory_ref,
+    });
+
+    router.push("/invoices");
+  }
 
   // effect to get The invoice
   useEffect(() => {
@@ -115,6 +174,10 @@ export default function Page() {
 
     getInventory();
   }, [data, seller]);
+
+  useEffect(() => {
+    console.log(rawProducts);
+  }, [rawProducts]);
 
   // effect to get outputs
   useEffect(() => {
@@ -170,25 +233,29 @@ export default function Page() {
         return {
           ...props,
           [product_id]: {
-            purchases_amounts: props
-              ? [
-                  ...(props[product_id]?.purchases_amounts || []),
-                  ...purchase_amount,
-                ]
-              : [...purchase_amount],
-            sales_amounts: props
-              ? [...(props[product_id]?.sales_amounts || []), ...sale_amount]
-              : [...sale_amount],
-            inventory: props
-              ? [...(props[product_id]?.inventory || []), ...inventory]
-              : [...inventory],
+            purchases_amounts:
+              purchase_amount.length > 0
+                ? [
+                    ...(props[product_id]?.purchases_amounts || []),
+                    ...purchase_amount,
+                  ]
+                : props[product_id]?.purchases_amounts || [],
+            sales_amounts:
+              sale_amount.length > 0
+                ? [...(props[product_id]?.sales_amounts || []), ...sale_amount]
+                : props[product_id]?.sales_amounts || [],
+
+            inventory:
+              inventory.length > 0
+                ? [...(props[product_id]?.inventory || []), ...inventory]
+                : props[product_id]?.inventory || [],
           },
         };
       });
     });
 
     return () => {
-      setRawProducts(undefined);
+      setRawProducts({});
     };
   }, [data?.products_outputs, inventoriesProducts]);
 
@@ -220,6 +287,7 @@ export default function Page() {
           setCreditTotal={setTotalCredits}
           setNewCreditsToCreate={setNewCreditsToCreate}
           setCreditsToUpdate={setCreditsToUpdate}
+          setRoute={setRoute}
         />
       </Container>
 
@@ -233,7 +301,18 @@ export default function Page() {
       />
 
       <FlexContainer styles={{ justifyContent: "center" }}>
-        <Button $primary>¡Terminar!</Button>
+        {route ? (
+          <Button $primary onClick={closeThisInvoice}>
+            ¡Terminar!
+          </Button>
+        ) : (
+          <h3>
+            <b>
+              Para terminar la factura se tienen que elegir una ruta en los
+              creditos
+            </b>
+          </h3>
+        )}
       </FlexContainer>
     </Container>
   );

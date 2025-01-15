@@ -25,6 +25,7 @@ import { Price } from "./Price";
 import { Cost } from "./Cost";
 import { Inv } from "./Inv";
 import { inventory_product_data } from "@/tools/sellers/invetory/addProduct";
+import { totals_sold } from "./manager";
 
 type props = {
   data: rawProductWithInventory;
@@ -32,12 +33,14 @@ type props = {
   setNewInventoryToCreate: Dispatch<
     SetStateAction<Record<string, inventory_product_data[]>>
   >;
+  setTotals: Dispatch<SetStateAction<Record<string, totals_sold>>>;
 };
 
 export function ProductClosing({
   product_id,
   data,
   setNewInventoryToCreate,
+  setTotals,
 }: props) {
   const [product, setProduct] = useState<DocumentSnapshot<productDoc>>();
   const productData = useMemo(() => product?.data(), [product]);
@@ -246,6 +249,29 @@ export function ProductClosing({
     if (restante !== cargaTotal)
       amountListener(inventoryAmount.amount + load.amount - amoutnSold);
   }, [amountListener, amoutnSold, inventoryAmount.amount, load.amount]);
+
+  // effect to manages the totals
+  useEffect(() => {
+    setTotals((props) => {
+      return {
+        ...props,
+        [product_id]: {
+          total_purchase: inventoryAmount.total + load.total,
+          total_sale: totalSales.sale,
+          total_profit: totalSales.sale - inventoryAmount.total - load.total,
+          total_seller_sale: totalSales.seller_sale,
+          total_seller_proft: totalSales.seller_sale - totalSales.sale,
+        },
+      };
+    });
+  }, [
+    inventoryAmount.total,
+    load.total,
+    product_id,
+    setTotals,
+    totalSales.sale,
+    totalSales.seller_sale,
+  ]);
 
   return (
     <ProductContainer

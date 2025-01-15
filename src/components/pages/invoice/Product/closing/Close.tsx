@@ -25,7 +25,7 @@ export function Close({ totals, credits, bills, setMoney }: props) {
   const [cash, setCash] = useState(0);
   const [deposit, setDeposit] = useState(0);
   const billsTotal = useMemo(
-    () => -Object.values(bills).reduce((before, now) => before + now.amount, 0),
+    () => Object.values(bills).reduce((before, now) => before + now.amount, 0),
     [bills]
   );
 
@@ -46,7 +46,7 @@ export function Close({ totals, credits, bills, setMoney }: props) {
         <Column gridColumn="">Vendedor</Column>
         <Column gridColumn="">{numberParser(totals.total_seller_proft)}</Column>
         <Column gridColumn="">Gastos</Column>
-        <Column gridColumn="">{numberParser(-billsTotal)}</Column>
+        <Column gridColumn="">{numberParser(billsTotal)}</Column>
         <Column gridColumn="">Empresa</Column>
         <Column gridColumn="">{numberParser(totals.total_profit)}</Column>
         <Column gridColumn="">Liquidación</Column>
@@ -80,24 +80,25 @@ export function Close({ totals, credits, bills, setMoney }: props) {
           />
         </Column>
         <Column gridColumn="1 / 2">
-          {deposit + cash - totals.total_sale - credits - billsTotal < 0
+          {deposit + cash - (totals.total_sale + credits - billsTotal) < 0
             ? "Faltan"
-            : deposit + cash - totals.total_sale - credits - billsTotal === 0
+            : deposit + cash - (totals.total_sale + credits - billsTotal) === 0
             ? "¡Perfecto!"
             : "Sobran"}
         </Column>
         <Column gridColumn="">
           <p
             style={
-              deposit + cash - totals.total_sale - credits - billsTotal < 0
+              deposit + cash - (totals.total_sale + credits - billsTotal) < 0
                 ? { color: "red", fontWeight: "bold" }
-                : deposit + cash - totals.total_sale - credits - billsTotal > 0
+                : deposit + cash - (totals.total_sale + credits - billsTotal) >
+                  0
                 ? { fontStyle: "italic" }
                 : { color: "green", fontWeight: "bold" }
             }
           >
             {numberParser(
-              deposit + cash - totals.total_sale - credits - billsTotal
+              deposit + cash - (totals.total_sale + credits - billsTotal)
             )}
           </p>
         </Column>

@@ -18,5 +18,12 @@ export async function closeInvoice(
   invoice_ref: DocumentReference<invoiceType>,
   data: closeInvoiceProps
 ) {
-  return await updateDoc(invoice_ref, data);
+  return await updateDoc(invoice_ref, {
+    route: data.route,
+    bills: data.bills,
+    moner: data.money,
+    "total_cost.withInventory": data.total_cost,
+    "total_sold.withInventory": data.total_sold,
+    "total_profit.withInventory": data.total_proft,
+  });
 }

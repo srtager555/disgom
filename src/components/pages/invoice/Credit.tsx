@@ -188,6 +188,7 @@ export function Credit({
         options={routes}
         onChange={(e) => {
           setRoute(Number(e.target.value));
+          setRefresh(true);
         }}
       >
         ¿De que ruta son estos creditos?

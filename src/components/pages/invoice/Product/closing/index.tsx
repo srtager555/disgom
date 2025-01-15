@@ -23,7 +23,7 @@ import { Icon } from "@/components/Icons";
 import { numberParser } from "@/tools/numberPaser";
 import { Price } from "./Price";
 import { Cost } from "./Cost";
-import { Inv } from "./Inv";
+import { Inv, InvPrice } from "./Inv";
 import { inventory_product_data } from "@/tools/sellers/invetory/addProduct";
 import { totals_sold } from "./manager";
 
@@ -63,18 +63,34 @@ export function ProductClosing({
     const prices = data.sales_amounts.map((el) => el.normal_price);
     const diff = prices.filter((el) => el != prices[0]);
 
-    return diff.length > 0 ? "~" : numberParser(prices[0]);
+    return diff.length > 0 ? "~" : prices[0] ? numberParser(prices[0]) : "~";
   }, [data]);
   const sellerSalePrices = useMemo(() => {
     const prices = data.sales_amounts.map((el) => el.seller_price);
     const diff = prices.filter((el) => el != prices[0]);
 
-    return diff.length > 0 ? "~" : numberParser(prices[0]);
+    return diff.length > 0 ? "~" : prices[0] ? numberParser(prices[0]) : "~";
   }, [data]);
 
   const inventoryAmount = useMemo(() => {
     return data.inventory.reduce(
       (before, now) => {
+        const normal_price = data.sales_amounts.sort(
+          (a, b) => b.normal_price - a.normal_price
+        )[0];
+        const seller_price = data.sales_amounts.sort(
+          (a, b) => b.seller_price - a.seller_price
+        )[0];
+
+        if (!normal_price || !seller_price)
+          return {
+            reducedAmountSold: amoutnSold,
+            amount: 0,
+            total: 0,
+            total_sales: 0,
+            total_seller_sales: 0,
+          };
+
         return {
           amount: before.amount + now.amount,
           total:
@@ -83,6 +99,18 @@ export function ProductClosing({
               (before.reducedAmountSold > now.amount
                 ? 0
                 : now.amount - before.reducedAmountSold),
+          total_sales:
+            before.total_sales +
+            normal_price.normal_price *
+              (before.reducedAmountSold > now.amount
+                ? 0
+                : now.amount - before.reducedAmountSold),
+          total_seller_sales:
+            before.total_seller_sales +
+            seller_price.seller_price *
+              (before.reducedAmountSold > now.amount
+                ? 0
+                : now.amount - before.reducedAmountSold),
           reducedAmountSold:
             before.reducedAmountSold < now.amount
               ? 0
@@ -93,64 +121,139 @@ export function ProductClosing({
         reducedAmountSold: amoutnSold,
         amount: 0,
         total: 0,
+        total_sales: 0,
+        total_seller_sales: 0,
       }
     );
-  }, [amoutnSold, data.inventory]);
+  }, [amoutnSold, data.inventory, data.sales_amounts]);
 
   const load = useMemo(() => {
-    return data.purchases_amounts.reduce(
+    const list = [...data.purchases_amounts, ...data.inventory];
+
+    return list.reduce(
       (before, now) => {
-        return {
-          amount: before.amount + now.amount,
-          total:
-            before.total +
-            now.price *
-              (before.reducedAmountSold > now.amount
+        if ("price" in now) {
+          return {
+            ...before,
+            amount: before.amount + now.amount,
+            total:
+              before.total +
+              now.price *
+                (before.reducedAmountSold > now.amount
+                  ? 0
+                  : now.amount - before.reducedAmountSold),
+            reducedAmountSold:
+              before.reducedAmountSold < now.amount
                 ? 0
-                : now.amount - before.reducedAmountSold),
-          reducedAmountSold:
-            before.reducedAmountSold < now.amount
-              ? 0
-              : before.reducedAmountSold - now.amount,
-        };
+                : before.reducedAmountSold - now.amount,
+          };
+        } else {
+          return {
+            ...before,
+            amount: before.amount + now.amount,
+            total_inventory:
+              before.total_inventory +
+              now.purchase_price *
+                (before.reducedAmountSold > now.amount
+                  ? 0
+                  : now.amount - before.reducedAmountSold),
+            // total_inve_sales:
+            //   before.total_inve_sales +
+            //   normal_price.normal_price *
+            //     (before.reducedAmountSold > now.amount
+            //       ? 0
+            //       : now.amount - before.reducedAmountSold),
+            // total_inve_seller_sales:
+            //   before.total_inve_seller_sales +
+            //   seller_price.seller_price *
+            //     (before.reducedAmountSold > now.amount
+            //       ? 0
+            //       : now.amount - before.reducedAmountSold),
+            reducedAmountSold:
+              before.reducedAmountSold < now.amount
+                ? 0
+                : before.reducedAmountSold - now.amount,
+          };
+        }
       },
       {
         reducedAmountSold: amoutnSold,
         amount: 0,
         total: 0,
+        total_inventory: 0,
+        // total_inve_sales: 0,
+        // total_inve_seller_sales: 0,
       }
     );
-  }, [amoutnSold, data.purchases_amounts]);
+  }, [amoutnSold, data.inventory, data.purchases_amounts]);
 
   const totalSales = useMemo(() => {
-    return data.sales_amounts.reduce(
+    const list = [...data.sales_amounts, ...data.inventory];
+    return list.reduce(
       (before, now) => {
-        return {
-          sale:
-            before.sale +
-            now.normal_price *
-              (before.reducedAmountSold > now.amount
+        if ("normal_price" in now) {
+          return {
+            ...before,
+            sale:
+              before.sale +
+              now.normal_price *
+                (before.reducedAmountSold > now.amount
+                  ? 0
+                  : now.amount - before.reducedAmountSold),
+            seller_sale:
+              before.seller_sale +
+              now.seller_price *
+                (before.reducedAmountSold > now.amount
+                  ? 0
+                  : now.amount - before.reducedAmountSold),
+            reducedAmountSold:
+              before.reducedAmountSold < now.amount
                 ? 0
-                : now.amount - before.reducedAmountSold),
-          seller_sale:
-            before.seller_sale +
-            now.seller_price *
-              (before.reducedAmountSold > now.amount
+                : before.reducedAmountSold - now.amount,
+          };
+        } else {
+          const normal_price = data.sales_amounts.sort(
+            (a, b) => b.normal_price - a.normal_price
+          )[0];
+          const seller_price = data.sales_amounts.sort(
+            (a, b) => b.seller_price - a.seller_price
+          )[0];
+
+          if (!normal_price || !seller_price)
+            return {
+              ...before,
+            };
+
+          return {
+            ...before,
+            total_inve_sales:
+              before.total_inve_sales +
+              normal_price.normal_price *
+                (before.reducedAmountSold > now.amount
+                  ? 0
+                  : now.amount - before.reducedAmountSold),
+            total_inve_seller_sales:
+              before.total_inve_seller_sales +
+              seller_price.seller_price *
+                (before.reducedAmountSold > now.amount
+                  ? 0
+                  : now.amount - before.reducedAmountSold),
+            reducedAmountSold:
+              before.reducedAmountSold < now.amount
                 ? 0
-                : now.amount - before.reducedAmountSold),
-          reducedAmountSold:
-            before.reducedAmountSold < now.amount
-              ? 0
-              : before.reducedAmountSold - now.amount,
-        };
+                : before.reducedAmountSold - now.amount,
+          };
+        }
       },
       {
         sale: 0,
         seller_sale: 0,
+        total_inve_sales: 0,
+        total_inve_seller_sales: 0,
         reducedAmountSold: amoutnSold,
       }
     );
-  }, [amoutnSold, data.sales_amounts]);
+  }, [amoutnSold, data.inventory, data.sales_amounts]);
 
   const amountListener = useCallback(
     function (n: number) {
@@ -256,21 +359,32 @@ export function ProductClosing({
       return {
         ...props,
         [product_id]: {
-          total_purchase: inventoryAmount.total + load.total,
-          total_sale: totalSales.sale,
-          total_profit: totalSales.sale - inventoryAmount.total - load.total,
-          total_seller_sale: totalSales.seller_sale,
-          total_seller_proft: totalSales.seller_sale - totalSales.sale,
+          total_purchase: load.total + load.total_inventory,
+          total_sale: totalSales.sale + totalSales.total_inve_sales,
+          total_profit:
+            totalSales.sale +
+            totalSales.total_inve_sales -
+            load.total_inventory -
+            load.total,
+          total_seller_sale:
+            totalSales.seller_sale + totalSales.total_inve_seller_sales,
+          total_seller_proft:
+            totalSales.seller_sale +
+            totalSales.total_inve_seller_sales -
+            totalSales.sale -
+            totalSales.total_inve_sales,
         },
       };
     });
   }, [
-    inventoryAmount.total,
     load.total,
+    load.total_inventory,
     product_id,
     setTotals,
     totalSales.sale,
     totalSales.seller_sale,
+    totalSales.total_inve_sales,
+    totalSales.total_inve_seller_sales,
   ]);
 
   return (
@@ -282,10 +396,10 @@ export function ProductClosing({
     >
       <Column gridColumn="1 / 4">{productData?.name}</Column>
       <Column gridColumn="">{numberParser(inventoryAmount.amount)}</Column>
-      <Column gridColumn="">{numberParser(load.amount)}</Column>
       <Column gridColumn="">
-        {numberParser(inventoryAmount.amount + load.amount)}
+        {numberParser(load.amount - inventoryAmount.amount)}
       </Column>
+      <Column gridColumn="">{numberParser(load.amount)}</Column>
       <Column gridColumn="">
         <Input
           type="number"
@@ -294,38 +408,62 @@ export function ProductClosing({
           min={0}
         />
       </Column>
-      <Column gridColumn="">
-        {numberParser(inventoryAmount.amount + load.amount - amoutnSold)}
-      </Column>
+      <Column gridColumn="">{numberParser(load.amount - amoutnSold)}</Column>
       <Column gridColumn="">{costPrices}</Column>
       <Column
         gridColumn=""
-        title={numberParser(inventoryAmount.total + load.total)}
+        title={numberParser(load.total + load.total_inventory)}
       >
-        {numberParser(inventoryAmount.total + load.total)}
+        {numberParser(load.total + load.total_inventory)}
       </Column>
       <Column gridColumn="">{normalSalePrices}</Column>
-      <Column gridColumn="" title={numberParser(totalSales.sale)}>
-        {numberParser(totalSales.sale)}
+      <Column
+        gridColumn=""
+        title={numberParser(totalSales.sale + totalSales.total_inve_sales)}
+      >
+        {numberParser(totalSales.sale + totalSales.total_inve_sales)}
       </Column>
       <Column
         gridColumn=""
         title={numberParser(
-          totalSales.sale - inventoryAmount.total - load.total
+          totalSales.sale +
+            totalSales.total_inve_sales -
+            load.total_inventory -
+            load.total
         )}
       >
-        {numberParser(totalSales.sale - inventoryAmount.total - load.total)}
+        {numberParser(
+          totalSales.sale +
+            totalSales.total_inve_sales -
+            load.total_inventory -
+            load.total
+        )}
       </Column>
 
       <Column gridColumn="">{sellerSalePrices}</Column>
-      <Column gridColumn="" title={numberParser(totalSales.seller_sale)}>
-        {numberParser(totalSales.seller_sale)}
+      <Column
+        gridColumn=""
+        title={numberParser(
+          totalSales.seller_sale + totalSales.total_inve_seller_sales
+        )}
+      >
+        {numberParser(
+          totalSales.seller_sale + totalSales.total_inve_seller_sales
+        )}
       </Column>
       <Column
         gridColumn=""
-        title={numberParser(totalSales.seller_sale - totalSales.sale)}
+        title={numberParser(
+          totalSales.seller_sale +
+            totalSales.total_inve_seller_sales -
+            (totalSales.sale + totalSales.total_inve_sales)
+        )}
       >
-        {numberParser(totalSales.seller_sale - totalSales.sale)}
+        {numberParser(
+          totalSales.seller_sale +
+            totalSales.total_inve_seller_sales -
+            (totalSales.sale + totalSales.total_inve_sales)
+        )}
       </Column>
 
       <Column gridColumn="">
@@ -347,6 +485,26 @@ export function ProductClosing({
         {data.sales_amounts.map((el, i) => (
           <Price key={i} data={el} />
         ))}
+        {data.inventory.map((el, i) => {
+          const normal_price = data.sales_amounts.sort(
+            (a, b) => b.normal_price - a.normal_price
+          );
+
+          const seller_price = data.sales_amounts.sort(
+            (a, b) => b.seller_price - a.seller_price
+          )[0];
+
+          if (!normal_price || !seller_price) return <></>;
+
+          return (
+            <InvPrice
+              normal={normal_price[0].normal_price}
+              seller={seller_price.seller_price}
+              key={i}
+              data={el}
+            />
+          );
+        })}
         <Column gridColumn="1 / -1" $removeBorder>
           <b>Costos de la salida detallados</b>
         </Column>

@@ -87,7 +87,7 @@ export function InvoicePreview({ doc }: props) {
         <p>{sellerData?.name}</p>
       )}
       <Container styles={{ height: "100%" }}>
-        {numberParser(data.total_sold.normal)}
+        {numberParser(data.total_sold)}
         {client ? (
           <ButtonBro
             $primary

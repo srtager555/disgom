@@ -12,6 +12,7 @@ export const InvoiceCollection = {
 export const SellersCollection = {
   root: "Sellers",
   clients: "clients",
+  credits: "credits",
   inventories: {
     root: "inventories",
     products: "products",

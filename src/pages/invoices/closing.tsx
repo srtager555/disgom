@@ -175,10 +175,6 @@ export default function Page() {
     getInventory();
   }, [data, seller]);
 
-  useEffect(() => {
-    console.log(rawProducts);
-  }, [rawProducts]);
-
   // effect to get outputs
   useEffect(() => {
     if (!data?.products_outputs) return;

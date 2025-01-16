@@ -346,12 +346,11 @@ export function ProductClosing({
 
   // effect to manage the new inventory
   useEffect(() => {
-    const cargaTotal = inventoryAmount.amount + load.amount;
+    const cargaTotal = load.amount;
     const restante = cargaTotal - amoutnSold;
 
-    if (restante !== cargaTotal)
-      amountListener(inventoryAmount.amount + load.amount - amoutnSold);
-  }, [amountListener, amoutnSold, inventoryAmount.amount, load.amount]);
+    if (restante !== cargaTotal) amountListener(amoutnSold);
+  }, [amountListener, amoutnSold, load.amount]);
 
   // effect to manages the totals
   useEffect(() => {

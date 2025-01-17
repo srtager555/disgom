@@ -15,6 +15,9 @@ import {
   DocumentSnapshot,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
+  query,
   QueryDocumentSnapshot,
   updateDoc,
 } from "firebase/firestore";
@@ -46,6 +49,7 @@ import { createInventory } from "@/tools/sellers/invetory/create";
 import {
   createClientCredit,
   createCredit,
+  credit,
 } from "@/tools/sellers/credits/create";
 import { useRouter } from "next/router";
 
@@ -87,24 +91,8 @@ export default function Page() {
     )
       return;
 
-    await closeInvoice(invoiceDoc.ref, {
-      total_sold: productsTotals.total_sale,
-      total_cost: productsTotals.total_purchase,
-      total_proft: productsTotals.total_profit,
-      route,
-      bills: Object.values(bills),
-      money,
-    });
-
-    const inventory_ref = await createInventory(invoiceDoc.ref, seller.ref);
-    Object.values(newInventoriesToCreate).forEach((el) => {
-      el.forEach(async (el) => {
-        await addInventoryProduct(inventory_ref, el);
-      });
-    });
-
-    Object.values(newCreditsToCreate).forEach(async (el) => {
-      await createClientCredit(
+    const creditsCreated = Object.values(newCreditsToCreate).map(async (el) => {
+      return await createClientCredit(
         el.route,
         seller.ref,
         el.name,
@@ -113,8 +101,29 @@ export default function Page() {
       );
     });
 
-    Object.values(creditsToUpdate).forEach(async (el) => {
-      await createCredit(el.ref, el.amount);
+    const creditsUpdated = Object.values(creditsToUpdate).map(async (el) => {
+      const coll = collection(el.ref, "credits") as CollectionReference<credit>;
+      const q = query(coll, orderBy("created_at", "desc"), limit(1));
+      const credits = await getDocs(q);
+      const last_credit = credits.docs[0].data();
+      return await createCredit(el.ref, el.amount, last_credit.amount);
+    });
+
+    await closeInvoice(invoiceDoc.ref, {
+      total_sold: productsTotals.total_sale,
+      total_cost: productsTotals.total_purchase,
+      total_proft: productsTotals.total_profit,
+      route,
+      bills: Object.values(bills),
+      money,
+      newCredits: await Promise.all([...creditsCreated, ...creditsUpdated]),
+    });
+
+    const inventory_ref = await createInventory(invoiceDoc.ref, seller.ref);
+    Object.values(newInventoriesToCreate).forEach((el) => {
+      el.forEach(async (el) => {
+        await addInventoryProduct(inventory_ref, el);
+      });
     });
 
     await updateDoc(invoiceDoc.ref, {

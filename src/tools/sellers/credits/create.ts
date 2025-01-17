@@ -17,6 +17,7 @@ export type clientCredit = {
 
 export type credit = {
   amount: number;
+  last_amount: number;
   created_at: Timestamp;
 };
 
@@ -39,17 +40,19 @@ export async function createClientCredit(
     address,
   });
 
-  await createCredit(client, amount);
+  return await createCredit(client, amount, 0);
 }
 
 export async function createCredit(
   client_ref: DocumentReference<clientCredit>,
-  amount: number
+  amount: number,
+  last_amount: number
 ) {
   const coll = collection(client_ref, "credits") as CollectionReference<credit>;
 
-  await addDoc(coll, {
+  return await addDoc(coll, {
     created_at: Timestamp.fromDate(new Date()),
     amount,
+    last_amount,
   });
 }

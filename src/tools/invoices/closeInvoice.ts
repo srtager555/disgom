@@ -24,6 +24,7 @@ export async function closeInvoice(
     route: data.route,
     bills: data.bills,
     money: data.money,
+    newCredits: data.newCredits,
     "total_cost.withInventory": data.total_cost,
     "total_sold.withInventory": data.total_sold,
     "total_profit.withInventory": data.total_proft,

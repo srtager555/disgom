@@ -28,12 +28,16 @@ import { ProductManagerPreview } from "@/components/pages/invoice/Product/closin
 import { Credit } from "@/components/pages/invoice/Product/closing/closed/Credit";
 import { Bills } from "@/components/pages/invoice/Product/closing/closed/Bills";
 import { Close } from "@/components/pages/invoice/Product/closing/closed/Close";
+import { productDoc } from "@/tools/products/create";
 
 export default function Page() {
   const { id } = useQueryParams();
   const [invoiceDoc, setInvoiceDoc] = useState<DocumentSnapshot<invoiceType>>();
   const [seller, setSeller] = useState<DocumentSnapshot<SellersDoc>>();
   const [rawProducts, setRawProducts] = useState<
+    Record<string, rawProductWithInventory>
+  >({});
+  const [sortedRawProducts, setSortedRawProducts] = useState<
     Record<string, rawProductWithInventory>
   >({});
   const [inventoriesProducts, setInventoriesProducts] =
@@ -133,16 +137,24 @@ export default function Page() {
       let inventory: Array<inventoryProductDoc> = [];
       let purchase_amount: Array<purchases_amounts> = [];
       let sale_amount: Array<sales_amounts> = [];
+      let name = "";
 
       if ("ref" in element) {
         const data = element.data();
         if (!data) return;
+
+        const product = await getDoc(data.product_ref);
+        name = product.data()?.name || "";
 
         product_id = data.product_ref.id;
         inventory = [data];
       } else {
         const output = await getDoc(element);
         const data = output.data();
+        const product = await getDoc(
+          element.parent.parent as DocumentReference<productDoc>
+        );
+        name = product.data()?.name || "";
         if (!data) return;
 
         product_id = data.entry_ref.path.split("/")[1];
@@ -169,6 +181,7 @@ export default function Page() {
         return {
           ...props,
           [product_id]: {
+            name,
             purchases_amounts:
               purchase_amount.length > 0
                 ? [
@@ -194,6 +207,20 @@ export default function Page() {
       setRawProducts({});
     };
   }, [data?.products_outputs, inventoriesProducts]);
+
+  // effecto to sort rawProduct
+  useEffect(() => {
+    const sorted = Object.fromEntries(
+      Object.entries(rawProducts).sort((a, b) => {
+        const aData = a[1];
+        const bData = b[1];
+
+        return aData.name.localeCompare(bData.name);
+      })
+    );
+
+    setSortedRawProducts(sorted);
+  }, [rawProducts]);
 
   if (
     !invoiceDoc ||
@@ -221,7 +248,7 @@ export default function Page() {
       <ProductManagerPreview
         setProductTotals={setProductsTotals}
         inventory={invoiceInventory}
-        rawProducts={rawProducts}
+        rawProducts={sortedRawProducts}
       />
 
       <Container styles={{ marginBottom: "30px" }}>

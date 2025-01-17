@@ -9,6 +9,7 @@ import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { disableInvoice } from "@/tools/invoices/disableInvoice";
 import { paidInvoice } from "@/tools/invoices/paid";
+import { productDoc } from "@/tools/products/create";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client } from "@/tools/sellers/createClient";
 import {
@@ -36,6 +37,7 @@ export type sales_amounts = {
 };
 
 export type rawProduct = {
+  name: string;
   purchases_amounts: Array<purchases_amounts>;
   sales_amounts: Array<sales_amounts>;
 };
@@ -126,6 +128,11 @@ export default function Page() {
       const output = await getDoc(element);
       const data = output.data();
 
+      const product = await getDoc(
+        element.parent.parent as DocumentReference<productDoc>
+      );
+      const name = product.data()?.name || "";
+
       if (!data) return;
       const product_id = data.entry_ref.path.split("/")[1];
 
@@ -133,6 +140,7 @@ export default function Page() {
         return {
           ...props,
           [product_id]: {
+            name,
             purchases_amounts: props
               ? [
                   ...(props[product_id]?.purchases_amounts || []),

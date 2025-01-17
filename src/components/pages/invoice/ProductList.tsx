@@ -1,10 +1,23 @@
 import { useGetProducts } from "@/hooks/products/getProducts";
 import { Column, Product } from "./Product";
-import { Container } from "@/styles/index.styles";
+import { Container, FlexContainer } from "@/styles/index.styles";
 import styled, { css } from "styled-components";
-import { Dispatch, SetStateAction, useContext } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { InvoiceContext } from "@/pages/invoices/create";
 import { globalCSSVars } from "@/styles/colors";
+import { Select } from "@/components/Inputs/select";
+import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
+import { Tag, TagsDoc } from "@/tools/products/tags";
+import { doc, DocumentReference, onSnapshot } from "firebase/firestore";
+import { Firestore } from "@/tools/firestore";
+import { Button } from "@/styles/Form.styles";
 
 export type priceVariation = {
   total: number;
@@ -102,17 +115,76 @@ type props = {
 };
 
 export function ProductList({ setProductsResults }: props) {
-  const products = useGetProducts();
+  const [tagSelected, setTagSelected] = useState("");
+  const products = useGetProducts(tagSelected);
+  const [tags, setTags] = useState<Tag>();
   const { selectedSeller } = useContext(InvoiceContext);
+  const [hideProductWithoutStock, setHideProductWithoutStock] = useState(false);
+  const productFiltered = useMemo(() => {
+    return products.docs?.filter((el) => {
+      const data = el.data();
+      const stock = data.stock.reduce((before, now) => before + now.amount, 0);
+
+      if (hideProductWithoutStock) {
+        return stock > 0;
+      } else {
+        return stock >= 0;
+      }
+    });
+  }, [hideProductWithoutStock, products.docs]);
+
+  useEffect(() => {
+    const db = Firestore();
+    const ref = doc(
+      db,
+      ProductsCollection.root,
+      ProductsCollection.tags
+    ) as DocumentReference<TagsDoc>;
+
+    const unsubcribe = onSnapshot(ref, (snap) => {
+      const data = snap.data();
+      if (data) setTags(data.tags);
+    });
+
+    return function () {
+      unsubcribe();
+    };
+  }, []);
 
   return (
     <Container styles={{ margin: "50px 0" }}>
+      <FlexContainer styles={{ marginBottom: "20px" }}>
+        <Container styles={{ marginRight: "20px" }}>
+          Filtrar por etiquetas{" "}
+          {tags && (
+            <Select
+              onChange={(e) => {
+                setTagSelected(e.target.value);
+              }}
+              options={[
+                { name: "Sin filtro", value: "", selected: true },
+                ...Object.values(tags).map((el) => ({
+                  name: el.name,
+                  value: el.name,
+                })),
+              ]}
+            />
+          )}
+        </Container>
+        <Container styles={{ marginRight: "20px" }}>
+          <Button
+            onClick={() => setHideProductWithoutStock(!hideProductWithoutStock)}
+          >
+            {hideProductWithoutStock ? "Mostrar todo" : "Solo con existencias"}
+          </Button>
+        </Container>
+      </FlexContainer>
       <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
 
-      {products.docs?.length === 0 ? (
+      {productFiltered?.length === 0 ? (
         <>no hay productos</>
       ) : (
-        products.docs?.map((el, i) => (
+        productFiltered?.map((el, i) => (
           <Product
             key={i}
             product={el}

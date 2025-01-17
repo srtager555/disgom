@@ -42,6 +42,7 @@ export type newCredits = {
 
 export type creditToUpdate = {
   amount: number;
+  newAmount: number;
   ref: DocumentReference<clientCredit>;
 };
 
@@ -302,7 +303,11 @@ function ClientCredit({ client, setAllDiffs }: awdfawf) {
     setAllDiffs((props) => {
       return {
         ...props,
-        [client.id]: { amount: creditData.amount - value, ref: client.ref },
+        [client.id]: {
+          newAmount: value,
+          amount: creditData.amount - value,
+          ref: client.ref,
+        },
       };
     });
   };

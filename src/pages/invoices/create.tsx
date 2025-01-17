@@ -108,6 +108,7 @@ const Page: NextPageWithLayout = () => {
             paid: isCredit,
             paid_at: isCredit ? Timestamp.fromDate(new Date()) : null,
           },
+      newCredits: null,
     };
 
     const invoiceRef = await createInvoice(invoiceData);

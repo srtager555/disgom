@@ -106,7 +106,7 @@ export default function Page() {
       const q = query(coll, orderBy("created_at", "desc"), limit(1));
       const credits = await getDocs(q);
       const last_credit = credits.docs[0].data();
-      return await createCredit(el.ref, el.amount, last_credit.amount);
+      return await createCredit(el.ref, el.newAmount, last_credit.amount);
     });
 
     await closeInvoice(invoiceDoc.ref, {

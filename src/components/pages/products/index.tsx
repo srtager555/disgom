@@ -1,9 +1,11 @@
+import { Select } from "@/components/Inputs/select";
 import { ProductContext } from "@/components/layouts/Products.layout";
 import { useGetProducts } from "@/hooks/products/getProducts";
 import { globalCSSVars } from "@/styles/colors";
-import { Container } from "@/styles/index.styles";
+import { Container, FlexContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
+import { numberParser } from "@/tools/numberPaser";
 import { productDoc } from "@/tools/products/create";
 import { Tag, TagsDoc, TagSimple } from "@/tools/products/tags";
 import {
@@ -18,7 +20,7 @@ import styled, { css } from "styled-components";
 
 const ProductsContainer = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   grid-auto-rows: auto;
   gap: 10px;
 `;
@@ -51,7 +53,8 @@ const Product = styled.button<{ $removeBottomPadding: boolean }>`
 
 export function Products() {
   const { setSelectedProduct } = useContext(ProductContext);
-  const products = useGetProducts();
+  const [tagSelected, setTagSelected] = useState("");
+  const products = useGetProducts(tagSelected);
   const [tags, setTags] = useState<Tag>();
 
   function handlerOnClik(
@@ -79,12 +82,31 @@ export function Products() {
   }, []);
 
   return (
-    <>
-      <h2>Productos</h2>
+    <Container styles={{ marginBottom: "100px" }}>
+      <FlexContainer>
+        <h2 style={{ marginRight: "10px" }}>Productos</h2>
+        {tags && (
+          <Select
+            onChange={(e) => {
+              setTagSelected(e.target.value);
+            }}
+            options={[
+              { name: "Sin filtro", value: "", selected: true },
+              ...Object.values(tags).map((el) => ({
+                name: el.name,
+                value: el.name,
+              })),
+            ]}
+          />
+        )}
+      </FlexContainer>
       <ProductsContainer>
         {products.docs?.map((_, i) => {
           const data = _.data();
           const bottomPadding = data.tags.filter((el) => tags && tags[el]);
+          const stock = data.stock.reduce((before, now) => {
+            return before + now.amount;
+          }, 0);
 
           return (
             <Container key={i}>
@@ -92,9 +114,9 @@ export function Products() {
                 onClick={() => handlerOnClik(_)}
                 $removeBottomPadding={bottomPadding.length > 0}
               >
-                <h3>
-                  {data.name} - {data.units}
-                </h3>
+                <h4 style={{ marginBottom: "10px" }}>
+                  {data.name} - {numberParser(stock)} {data.units}
+                </h4>
                 <Container>
                   {tags &&
                     data.tags.map((el, i) => {
@@ -113,6 +135,6 @@ export function Products() {
           );
         })}
       </ProductsContainer>
-    </>
+    </Container>
   );
 }

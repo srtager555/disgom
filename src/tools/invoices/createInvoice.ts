@@ -20,6 +20,7 @@ import { client } from "../sellers/createClient";
 import { outputType } from "../products/addOutputs";
 import { bill } from "@/components/pages/invoice/Product/closing/Bills";
 import { inventory } from "../sellers/invetory/create";
+import { credit } from "../sellers/credits/create";
 
 export type invoiceType = {
   created_at: Timestamp;
@@ -50,6 +51,7 @@ export type invoiceType = {
     paid: boolean;
     paid_at: Timestamp | null;
   } | null;
+  newCredits: Array<DocumentReference<credit>> | null;
 };
 
 export async function createInvoice(data: Omit<invoiceType, "created_at">) {

@@ -1,6 +1,7 @@
 import { bill } from "@/components/pages/invoice/Product/closing/Bills";
 import { DocumentReference, updateDoc } from "firebase/firestore";
 import { invoiceType } from "./createInvoice";
+import { credit } from "../sellers/credits/create";
 
 export type closeInvoiceProps = {
   total_sold: number;
@@ -12,6 +13,7 @@ export type closeInvoiceProps = {
     deposit: number;
     cash: number;
   };
+  newCredits: Array<DocumentReference<credit>>;
 };
 
 export async function closeInvoice(

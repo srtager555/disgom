@@ -26,6 +26,8 @@ import { inventoryProductDoc } from "@/tools/sellers/invetory/addProduct";
 import { purchases_amounts, sales_amounts } from "./preview";
 import { ProductManagerPreview } from "@/components/pages/invoice/Product/closing/closed/manager";
 import { Credit } from "@/components/pages/invoice/Product/closing/closed/Credit";
+import { Bills } from "@/components/pages/invoice/Product/closing/closed/Bills";
+import { Close } from "@/components/pages/invoice/Product/closing/closed/Close";
 
 export default function Page() {
   const { id } = useQueryParams();
@@ -229,6 +231,17 @@ export default function Page() {
           invoiceData={data}
         />
       </Container>
+
+      <Bills bills={data.bills} />
+
+      {data.money && (
+        <Close
+          totals={productsTotals}
+          credits={totalCredits}
+          bills={data.bills || []}
+          money={data.money}
+        />
+      )}
     </Container>
   );
 }

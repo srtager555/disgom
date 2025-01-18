@@ -38,22 +38,22 @@ const SeeMoreButton = styled.button`
   }
 `;
 
-const CloseButton = styled.button`
-  border: none;
-  background-color: ${globalCSSVars["--selected"]};
-  color: #fff;
-  font-size: 1.1rem;
-  padding: 10px;
-  cursor: pointer;
+// const CloseButton = styled.button`
+//   border: none;
+//   background-color: ${globalCSSVars["--selected"]};
+//   color: #fff;
+//   font-size: 1.1rem;
+//   padding: 10px;
+//   cursor: pointer;
 
-  &:hover {
-    transform: scale(1.1);
-  }
+//   &:hover {
+//     transform: scale(1.1);
+//   }
 
-  &:active {
-    transform: scale(0.9);
-  }
-`;
+//   &:active {
+//     transform: scale(0.9);
+//   }
+// `;
 
 type props = {
   hasInventory?: boolean;
@@ -103,7 +103,7 @@ export function SellerListPrinter({ hasInventory = false }: props) {
                   </SeeMoreButton>
                 ) : (
                   <>
-                    {!hasInventory && <CloseButton>Hacer Cierre</CloseButton>}
+                    {/* {hasInventory && <CloseButton>Hacer Cierre</CloseButton>} */}
                     <SeeMoreButton onClick={() => goToSellerData(el.id)}>
                       Ver más
                     </SeeMoreButton>

@@ -14,9 +14,9 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 
-export const InvoiceContainer = styled.div`
+export const InvoiceContainer = styled.div<{ small?: boolean }>`
   display: grid;
-  grid-template-columns: repeat(3, 350px);
+  grid-template-columns: repeat(${(props) => (props.small ? "1" : "3")}, 350px);
   grid-auto-rows: 50px;
   gap: 10px;
 `;
@@ -46,7 +46,7 @@ type props = {
   inSeller?: boolean;
 };
 
-export function InvoicePreview({ doc }: props) {
+export function InvoicePreview({ doc, inSeller }: props) {
   const [seller, setSeller] = useState<DocumentSnapshot<SellersDoc>>();
   const [client, setClient] = useState<DocumentSnapshot<client>>();
   const data = useMemo(() => doc.data(), [doc]);
@@ -83,6 +83,8 @@ export function InvoicePreview({ doc }: props) {
           </small>
           <p>{client.data()?.name}</p>
         </Container>
+      ) : inSeller ? (
+        <p>{data.created_at.toDate().toLocaleDateString()}</p>
       ) : (
         <p>{sellerData?.name}</p>
       )}

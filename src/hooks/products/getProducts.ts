@@ -18,7 +18,10 @@ export function useGetProducts(tag: string = "") {
   const [snap, setSnap] = useState<QuerySnapshot<productDoc>>();
   const [docs, setDocs] =
     useState<QueryDocumentSnapshot<productDoc, DocumentData>[]>();
+  const [docsDisabled, setDocsDisabled] =
+    useState<QueryDocumentSnapshot<productDoc, DocumentData>[]>();
 
+  // effect to the normal products
   useEffect(() => {
     const db = Firestore();
     const coll = collection(
@@ -53,5 +56,39 @@ export function useGetProducts(tag: string = "") {
     };
   }, [tag]);
 
-  return { snap, docs };
+  // effect to the disabled products
+  useEffect(() => {
+    const db = Firestore();
+    const coll = collection(
+      db,
+      ProductsCollection.root
+    ) as CollectionReference<productDoc>;
+    let q;
+
+    if (tag != "")
+      q = query(
+        coll,
+        where("exclude", "!=", true),
+        where("disabled", "==", true),
+        where("tags", "array-contains", tag),
+        orderBy("name")
+      );
+    else
+      q = query(
+        coll,
+        where("exclude", "!=", true),
+        where("disabled", "==", true),
+        orderBy("name")
+      );
+
+    const unsubcribe = onSnapshot(q, (snap) => {
+      setDocsDisabled(snap.docs);
+    });
+
+    return function () {
+      unsubcribe();
+    };
+  }, [tag]);
+
+  return { snap, docs, docsDisabled };
 }

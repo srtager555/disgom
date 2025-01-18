@@ -52,7 +52,7 @@ const Product = styled.button<{ $removeBottomPadding: boolean }>`
 `;
 
 export function Products() {
-  const { setSelectedProduct, selectedProduct } = useContext(ProductContext);
+  const { setSelectedProduct } = useContext(ProductContext);
   const [tagSelected, setTagSelected] = useState("");
   const products = useGetProducts(tagSelected);
   const [tags, setTags] = useState<Tag>();

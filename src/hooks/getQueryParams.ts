@@ -4,13 +4,19 @@ function useQueryParams() {
   const [queryParams, setQueryParams] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const result: Record<string, string> = {};
-    params.forEach((value, key) => {
-      result[key] = value;
-    });
-    setQueryParams(result);
-  }, []);
+    if (global?.window && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      const result: Record<string, string> = {};
+
+      params.forEach((value, key) => {
+        result[key] = value;
+      });
+
+      setQueryParams(result);
+    }
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [global?.window, global?.window?.location.search]);
 
   return queryParams;
 }

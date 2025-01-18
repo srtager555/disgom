@@ -5,17 +5,17 @@ import { SellerListPrinter } from "@/components/sellers/sellerListPrinter";
 export function SellersList() {
   const params = useQueryParams();
 
-  if (Object.keys(params).length > 0) return <></>;
+  if (params.id) return <></>;
 
   return (
     <Container styles={{ marginTop: "50px" }}>
       <h2>Lista de Vendedores</h2>
       <Container>
-        <SellerListPrinter hasInventory />
+        <SellerListPrinter />
         <Container styles={{ marginBottom: "15px" }}>
           <hr />
         </Container>
-        <SellerListPrinter />
+        <SellerListPrinter hasInventory />
       </Container>
     </Container>
   );

@@ -13,6 +13,7 @@ export type productDoc = {
   tags: string[];
   stock: stockType[] | [];
   step: string;
+  disabled: boolean;
 };
 
 /**

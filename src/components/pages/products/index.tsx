@@ -52,7 +52,7 @@ const Product = styled.button<{ $removeBottomPadding: boolean }>`
 `;
 
 export function Products() {
-  const { setSelectedProduct } = useContext(ProductContext);
+  const { setSelectedProduct, selectedProduct } = useContext(ProductContext);
   const [tagSelected, setTagSelected] = useState("");
   const products = useGetProducts(tagSelected);
   const [tags, setTags] = useState<Tag>();
@@ -61,6 +61,11 @@ export function Products() {
     product: QueryDocumentSnapshot<productDoc, DocumentData>
   ) {
     if (setSelectedProduct) setSelectedProduct(product);
+
+    window.scroll({
+      top: 0,
+      behavior: "smooth",
+    });
   }
 
   useEffect(() => {
@@ -105,6 +110,42 @@ export function Products() {
           const data = _.data();
           const bottomPadding = data.tags.filter((el) => tags && tags[el]);
           const stock = data.stock.reduce((before, now) => {
+            return before + now.amount;
+          }, 0);
+
+          return (
+            <Container key={i}>
+              <Product
+                onClick={() => handlerOnClik(_)}
+                $removeBottomPadding={bottomPadding.length > 0}
+              >
+                <h4 style={{ marginBottom: "10px" }}>
+                  {data.name} - {numberParser(stock)} {data.units}
+                </h4>
+                <Container>
+                  {tags &&
+                    data.tags.map((el, i) => {
+                      const data = tags[el];
+
+                      if (data)
+                        return (
+                          <TagSimple $bg={data.color} key={i}>
+                            {data.name}
+                          </TagSimple>
+                        );
+                    })}
+                </Container>
+              </Product>
+            </Container>
+          );
+        })}
+      </ProductsContainer>
+      <h3>Productos desabilitados</h3>
+      <ProductsContainer>
+        {products.docsDisabled?.map((_, i) => {
+          const data = _.data();
+          const bottomPadding = data.tags.filter((el) => tags && tags[el]);
+          const stock = (data.stock || []).reduce((before, now) => {
             return before + now.amount;
           }, 0);
 

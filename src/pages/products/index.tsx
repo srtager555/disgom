@@ -12,7 +12,7 @@ import { addEntry } from "@/tools/products/addEntry";
 import { stockType } from "@/tools/products/addToStock";
 import { EditEntry } from "@/tools/products/editEntry";
 import { removeEntry } from "@/tools/products/removeEntry";
-import { getDoc } from "firebase/firestore";
+import { getDoc, updateDoc } from "firebase/firestore";
 import {
   ChangeEvent,
   FormEvent,
@@ -109,7 +109,7 @@ const StockButton = styled(Button)<{ $selected: boolean }>`
 
 const FormContainer = styled.div`
   display: grid;
-  grid-column: 1 / 5;
+  grid-column: 1 / 6;
   grid-row: 8 / 14;
 `;
 
@@ -169,6 +169,15 @@ const Page: NextPageWithLayout = () => {
 
     formRef.current?.reset();
   };
+
+  async function disableProductManager(e: unknown) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    e.preventDefault();
+
+    if (!product.snap?.ref || !product.data) return;
+    await updateDoc(product.snap.ref, { disabled: !product.data.disabled });
+  }
 
   // functions to remove a stock
   function handlerRemoveStock() {
@@ -380,13 +389,19 @@ const Page: NextPageWithLayout = () => {
                   </InputNumber>
                 </Container>
               </FlexContainer>
-              <Container
-                styles={{ display: "inline-block", marginRight: "10px" }}
+              <FlexContainer
+                styles={{
+                  display: "inline-flex",
+                  justifyContent: "space-between",
+                }}
               >
                 <Button>
                   {entryToEdit ? "Editar entrada" : "Agregar entrada"}
                 </Button>
-              </Container>
+                <Button onClick={disableProductManager}>
+                  {!product.data?.disabled ? "Deshabilitar" : "habilitar"}
+                </Button>
+              </FlexContainer>
               {entryToEdit && (
                 <Button
                   $warn

@@ -15,7 +15,8 @@ import { clientCredit, credit } from "./create";
 
 export async function getCredits(
   route: number,
-  seller_ref: DocumentReference<SellersDoc>
+  seller_ref: DocumentReference<SellersDoc>,
+  all: boolean = false
 ) {
   const creditColl = collection(
     seller_ref,
@@ -23,7 +24,7 @@ export async function getCredits(
   ) as CollectionReference<clientCredit>;
 
   const q = query(creditColl, where("route", "==", route));
-  const clients = await getDocs(q);
+  const clients = await getDocs(all ? creditColl : q);
 
   return clients;
 }

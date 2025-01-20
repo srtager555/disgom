@@ -12,6 +12,7 @@ import {
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { useRouter } from "next/router";
+import styled from "styled-components";
 
 export const ProductContext = createContext<{
   selectedProduct: QueryDocumentSnapshot<productDoc> | undefined;
@@ -22,6 +23,18 @@ export const ProductContext = createContext<{
   selectedProduct: undefined,
   setSelectedProduct: undefined,
 });
+
+const MainContainer = styled(Container)`
+  display: inline-block;
+  border: 2px solid ${globalCSSVars["--foreground"]};
+  border-radius: 20px;
+  padding: 10px;
+  width: 100%;
+
+  @media print {
+    display: none;
+  }
+`;
 
 export function ProductsLayout({ children }: { children: children }) {
   const router = useRouter();
@@ -35,6 +48,10 @@ export function ProductsLayout({ children }: { children: children }) {
     {
       href: "/create",
       text: "Añadir o editar producto",
+    },
+    {
+      href: "/list",
+      text: "Lista de productos",
     },
   ];
 
@@ -50,15 +67,7 @@ export function ProductsLayout({ children }: { children: children }) {
       }}
     >
       <Container styles={{ marginBottom: "25px" }}>
-        <Container
-          styles={{
-            display: "inline-block",
-            border: "2px solid " + globalCSSVars["--foreground"],
-            borderRadius: "20px",
-            padding: "10px",
-            width: "100%",
-          }}
-        >
+        <MainContainer>
           <Container styles={{ marginBottom: "30px" }}>
             {url.map((el, i) => (
               <AnchorNavigators key={i} href={"/products" + el.href}>
@@ -67,7 +76,7 @@ export function ProductsLayout({ children }: { children: children }) {
             ))}
           </Container>
           {children}
-        </Container>
+        </MainContainer>
       </Container>
       <Products />
     </ProductContext.Provider>

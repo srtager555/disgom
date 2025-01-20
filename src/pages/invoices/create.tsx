@@ -212,7 +212,7 @@ const Page: NextPageWithLayout = () => {
                             marginLeft: "10px",
                           }}
                         >
-                          ¿Esta factura será cancelada ahorá?
+                          ¿Esta factura será cancelada ahora?
                         </span>
                       </label>
                     )}

@@ -7,7 +7,6 @@ import {
   SetStateAction,
   useContext,
   useEffect,
-  useMemo,
   useState,
 } from "react";
 import { InvoiceContext } from "@/pages/invoices/create";
@@ -137,18 +136,6 @@ export function ProductList({ setProductsResults }: props) {
   const [tags, setTags] = useState<Tag>();
   const { selectedSeller } = useContext(InvoiceContext);
   const [hideProductWithoutStock, setHideProductWithoutStock] = useState(false);
-  const productFiltered = useMemo(() => {
-    return products.docs?.filter((el) => {
-      const data = el.data();
-      const stock = data.stock.reduce((before, now) => before + now.amount, 0);
-
-      if (hideProductWithoutStock) {
-        return stock > 0;
-      } else {
-        return stock >= 0;
-      }
-    });
-  }, [hideProductWithoutStock, products.docs]);
 
   useEffect(() => {
     const db = Firestore();

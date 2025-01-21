@@ -53,7 +53,8 @@ const Page: NextPageWithLayout = () => {
     const q = query(
       coll,
       where("created_at", ">=", timeInTimestamp),
-      where("created_at", "<", timeInTimestampNextDay)
+      where("created_at", "<", timeInTimestampNextDay),
+      where("disabled", "==", false)
     );
     const unsubcribe = onSnapshot(q, (snap) => {
       const invoices = snap.docs;

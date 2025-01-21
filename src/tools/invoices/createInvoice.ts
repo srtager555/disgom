@@ -52,6 +52,7 @@ export type invoiceType = {
     paid_at: Timestamp | null;
   } | null;
   newCredits: Array<DocumentReference<credit>> | null;
+  disabled: boolean;
 };
 
 export async function createInvoice(data: Omit<invoiceType, "created_at">) {

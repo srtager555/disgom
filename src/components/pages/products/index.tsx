@@ -144,7 +144,11 @@ export function Products() {
     <Container styles={{ marginBottom: "100px" }}>
       <RemoveOnPrint>
         <FlexContainer>
-          <h2 style={{ marginRight: "10px" }}>Productos</h2>
+          <h2 style={{ marginRight: "10px" }}>
+            {products.snap && products.snap?.size > 0
+              ? "Productos"
+              : "No hay productos"}
+          </h2>
           {tags && (
             <Select
               onChange={(e) => {
@@ -160,6 +164,92 @@ export function Products() {
             />
           )}
         </FlexContainer>
+        <ProductsContainer>
+          {products.docs?.map((_, i) => {
+            const data = _.data();
+            const bottomPadding = data.tags.filter((el) => tags && tags[el]);
+            const stock = data.stock.reduce((before, now) => {
+              return before + now.amount;
+            }, 0);
+
+            return (
+              <Product
+                key={i}
+                onClick={() => handlerOnClik(_)}
+                $removeBottomPadding={bottomPadding.length > 0}
+              >
+                <ProductTitle>
+                  <span>{data.name}</span>{" "}
+                  <span
+                    style={{
+                      textAlign: "end",
+                      whiteSpace: "nowrap",
+                      display: "inline-block",
+                    }}
+                  >
+                    {numberParser(stock)} {data.units}
+                  </span>
+                </ProductTitle>
+                <RemoveOnPrint>
+                  {tags &&
+                    data.tags.map((el, i) => {
+                      const data = tags[el];
+
+                      if (data)
+                        return (
+                          <TagSimple $bg={data.color} key={i}>
+                            {data.name}
+                          </TagSimple>
+                        );
+                    })}
+                </RemoveOnPrint>
+              </Product>
+            );
+          })}
+        </ProductsContainer>
+        {products.docsDisabled && products.docsDisabled?.length > 0 && (
+          <>
+            <h3>Productos desabilitados</h3>
+            <ProductsContainer>
+              {" "}
+              {products.docsDisabled.map((_, i) => {
+                const data = _.data();
+                const bottomPadding = data.tags.filter(
+                  (el) => tags && tags[el]
+                );
+                const stock = (data.stock || []).reduce((before, now) => {
+                  return before + now.amount;
+                }, 0);
+
+                return (
+                  <Container key={i}>
+                    <Product
+                      onClick={() => handlerOnClik(_)}
+                      $removeBottomPadding={bottomPadding.length > 0}
+                    >
+                      <h4 style={{ marginBottom: "10px" }}>
+                        {data.name} - {numberParser(stock)} {data.units}
+                      </h4>
+                      <Container>
+                        {tags &&
+                          data.tags.map((el, i) => {
+                            const data = tags[el];
+
+                            if (data)
+                              return (
+                                <TagSimple $bg={data.color} key={i}>
+                                  {data.name}
+                                </TagSimple>
+                              );
+                          })}
+                      </Container>
+                    </Product>
+                  </Container>
+                );
+              })}
+            </ProductsContainer>
+          </>
+        )}
       </RemoveOnPrint>
       <ShowOnPrint>
         <h2 style={{ textAlign: "center" }}>Inventario de productos</h2>
@@ -208,89 +298,6 @@ export function Products() {
           })}
         </ProductsContainer>
       </ShowOnPrint>
-      <RemoveOnPrint>
-        <ProductsContainer>
-          {products.docs?.map((_, i) => {
-            const data = _.data();
-            const bottomPadding = data.tags.filter((el) => tags && tags[el]);
-            const stock = data.stock.reduce((before, now) => {
-              return before + now.amount;
-            }, 0);
-
-            return (
-              <Product
-                key={i}
-                onClick={() => handlerOnClik(_)}
-                $removeBottomPadding={bottomPadding.length > 0}
-              >
-                <ProductTitle>
-                  <span>{data.name}</span>{" "}
-                  <span
-                    style={{
-                      textAlign: "end",
-                      whiteSpace: "nowrap",
-                      display: "inline-block",
-                    }}
-                  >
-                    {numberParser(stock)} {data.units}
-                  </span>
-                </ProductTitle>
-                <RemoveOnPrint>
-                  {tags &&
-                    data.tags.map((el, i) => {
-                      const data = tags[el];
-
-                      if (data)
-                        return (
-                          <TagSimple $bg={data.color} key={i}>
-                            {data.name}
-                          </TagSimple>
-                        );
-                    })}
-                </RemoveOnPrint>
-              </Product>
-            );
-          })}
-        </ProductsContainer>
-      </RemoveOnPrint>
-      <RemoveOnPrint>
-        <h3>Productos desabilitados</h3>
-        <ProductsContainer>
-          {products.docsDisabled?.map((_, i) => {
-            const data = _.data();
-            const bottomPadding = data.tags.filter((el) => tags && tags[el]);
-            const stock = (data.stock || []).reduce((before, now) => {
-              return before + now.amount;
-            }, 0);
-
-            return (
-              <Container key={i}>
-                <Product
-                  onClick={() => handlerOnClik(_)}
-                  $removeBottomPadding={bottomPadding.length > 0}
-                >
-                  <h4 style={{ marginBottom: "10px" }}>
-                    {data.name} - {numberParser(stock)} {data.units}
-                  </h4>
-                  <Container>
-                    {tags &&
-                      data.tags.map((el, i) => {
-                        const data = tags[el];
-
-                        if (data)
-                          return (
-                            <TagSimple $bg={data.color} key={i}>
-                              {data.name}
-                            </TagSimple>
-                          );
-                      })}
-                  </Container>
-                </Product>
-              </Container>
-            );
-          })}
-        </ProductsContainer>
-      </RemoveOnPrint>
     </Container>
   );
 }

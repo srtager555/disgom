@@ -1,3 +1,4 @@
+import SalesComparisonChart from "@/components/chart";
 import { SellersLayout } from "@/components/layouts/sellers/Sellers.layout";
 import { SellersList } from "@/components/layouts/sellers/SellersList.layout";
 import {
@@ -112,7 +113,7 @@ const Page: NextPageWithLayout = () => {
 
   return (
     <Container>
-      <Container
+      {/* <Container
         styles={{
           width: "900px",
           height: "250px",
@@ -120,7 +121,8 @@ const Page: NextPageWithLayout = () => {
           borderRadius: "20px",
           marginBottom: "20px",
         }}
-      ></Container>
+      ></Container> */}
+      <SalesComparisonChart />
       <FlexContainer styles={{ justifyContent: "space-between" }}>
         <Container styles={{ marginRight: "20px" }}>
           <h2>Facturas</h2>

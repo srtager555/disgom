@@ -1,3 +1,4 @@
+import SalesComparisonChart from "@/components/chart";
 import { InputNumber } from "@/components/Inputs/number";
 import {
   ProductContext,
@@ -60,11 +61,11 @@ const ChartContainer = styled.div`
   grid-row: 1 / 8;
 `;
 
-const Chart = styled.div`
-  flex: 1;
-  background-color: #ccc;
-  border-radius: 20px;
-`;
+// const Chart = styled.div`
+//   flex: 1;
+//   background-color: #ccc;
+//   border-radius: 20px;
+// `;
 
 const StockContainer = styled.div`
   grid-column: 6 / 9;
@@ -283,7 +284,7 @@ const Page: NextPageWithLayout = () => {
         <MainContainer>
           <ChartContainer>
             <h3>Ventas semanales</h3>
-            <Chart />
+            <SalesComparisonChart />
           </ChartContainer>
           <StockContainer>
             <h3>Existencias</h3>

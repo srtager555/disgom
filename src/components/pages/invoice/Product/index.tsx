@@ -171,9 +171,15 @@ interface props {
   product: QueryDocumentSnapshot<productDoc>;
   hasInventory: boolean | undefined;
   setProductsResults: Dispatch<SetStateAction<Record<string, productResult>>>;
+  hideWithoutStock: boolean;
 }
 
-export function Product({ product, hasInventory, setProductsResults }: props) {
+export function Product({
+  product,
+  hasInventory,
+  hideWithoutStock,
+  setProductsResults,
+}: props) {
   const data = useMemo(() => product.data(), [product]);
   const stocks = useMemo(() => {
     if (data.stock.length === 0) return undefined;
@@ -220,6 +226,10 @@ export function Product({ product, hasInventory, setProductsResults }: props) {
     Record<number, priceRequestDescription>
   >({});
   const [editAmount, setEditAmount] = useState(true);
+  const hideProduct = useMemo(
+    () => (hideWithoutStock ? stockAmount === 0 : false),
+    [hideWithoutStock, stockAmount]
+  );
 
   const amountListener = useCallback(
     function (n: number) {
@@ -412,7 +422,11 @@ export function Product({ product, hasInventory, setProductsResults }: props) {
   ]);
 
   return (
-    <ProductContainer $hasInventory={hasInventory} $withoutStock={stockAmount}>
+    <ProductContainer
+      $hide={hideProduct}
+      $hasInventory={hasInventory}
+      $withoutStock={stockAmount}
+    >
       <Column gridColumn="1 / 4">
         <ProductName
           title={`Hay ${stockAmount} existencias${

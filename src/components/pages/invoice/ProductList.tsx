@@ -44,17 +44,17 @@ export const ProductContainer = styled.div<{
   $children?: boolean;
   $closing?: boolean;
   $warn?: boolean;
+  $hide?: boolean;
 }>`
-  ${(props) =>
-    props.$header &&
-    css`
-      position: sticky;
-      top: 0;
-      z-index: 999;
-      /* box-shadow: 0 5px 15px #0003; */
-    `}
-  display: grid;
+  display: ${(props) => (props.$fold ? "none" : "grid")};
   grid-column: 1 / -1;
+  gap: 10px;
+  overflow: hidden;
+  transition: 200ms ease all;
+  height: ${(props) =>
+    !props.$hide ? (props.$fold ? "35px" : "auto") : "0px"};
+  padding: ${(props) => (!props.$hide ? (props.$header ? "10px" : "5px") : 0)} 0;
+  visibility: ${(props) => (props.$hide ? "hidden" : "visible")};
   grid-template-columns: repeat(
     ${(props) => {
       if (props.$closing) return "17, 75px";
@@ -66,6 +66,41 @@ export const ProductContainer = styled.div<{
     }}
   );
 
+  &:nth-child(even) {
+    ${(props) => {
+      if (props.$children) {
+        return css`
+          background-color: transparent;
+        `;
+      }
+
+      return css`
+        background-color: ${globalCSSVars["--background-highlight"]};
+      `;
+    }}
+  }
+
+  @media print {
+    grid-template-columns: repeat(20, 1fr);
+  }
+
+  ${(props) =>
+    props.$header &&
+    css`
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      /* box-shadow: 0 5px 15px #0003; */
+    `}
+
+  /* ${(props) =>
+    props.$hide &&
+    css`
+      /* display: none; */
+      opacity: 0;
+      height: 0px;
+    `} */
+
   ${(props) =>
     props.$warn &&
     css`
@@ -74,33 +109,15 @@ export const ProductContainer = styled.div<{
       text-decoration: underline;
     `}
 
-  @media print {
-    grid-template-columns: repeat(20, 1fr);
-  }
-
   ${(props) =>
     !props.$children
       ? css`
-          padding: ${props.$header ? "10px" : "5px"} 0;
           padding-left: 10px;
           background-color: ${globalCSSVars["--background"]};
         `
       : css`
-          background-color: inherit;
+          background-color: transparent;
         `}
-  gap: 10px;
-  overflow: hidden;
-  ${(props) => {
-    if (typeof props.$fold === "boolean") {
-      return css`
-        display: ${props.$fold ? "none" : "grid"};
-      `;
-    }
-  }};
-
-  &:nth-child(even) {
-    background-color: ${globalCSSVars["--background-highlight"]};
-  }
 
   ${(props) =>
     !props.$withoutStock &&
@@ -181,15 +198,16 @@ export function ProductList({ setProductsResults }: props) {
       </FlexContainer>
       <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
 
-      {productFiltered?.length === 0 ? (
+      {products.docs?.length === 0 ? (
         <>no hay productos</>
       ) : (
-        productFiltered?.map((el, i) => (
+        products.docs?.map((el, i) => (
           <Product
             key={i}
             product={el}
             setProductsResults={setProductsResults}
             hasInventory={selectedSeller?.data().hasInventory}
+            hideWithoutStock={hideProductWithoutStock}
           />
         ))
       )}

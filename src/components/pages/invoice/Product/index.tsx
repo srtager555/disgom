@@ -426,6 +426,7 @@ export function Product({
       $hide={hideProduct}
       $hasInventory={hasInventory}
       $withoutStock={stockAmount}
+      $after={`${stockAmount} / ${data.stock.length}`}
     >
       <Column gridColumn="1 / 4">
         <ProductName

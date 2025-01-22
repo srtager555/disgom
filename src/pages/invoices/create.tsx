@@ -6,15 +6,25 @@ import {
 } from "@/components/pages/invoice/ProductList";
 import { Result } from "@/components/pages/invoice/Result";
 import { SelectClient } from "@/components/pages/invoice/SelectClient";
+import useQueryParams from "@/hooks/getQueryParams";
 import { useGetSellers } from "@/hooks/sellers/getSellers";
 import { NextPageWithLayout } from "@/pages/_app";
 import { Button } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
+import { Firestore } from "@/tools/firestore";
+import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { createInvoice, invoiceType } from "@/tools/invoices/createInvoice";
 import { addOutputs } from "@/tools/products/addOutputs";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client } from "@/tools/sellers/createClient";
-import { QueryDocumentSnapshot, Timestamp } from "firebase/firestore";
+import {
+  doc,
+  DocumentReference,
+  DocumentSnapshot,
+  getDoc,
+  QueryDocumentSnapshot,
+  Timestamp,
+} from "firebase/firestore";
 import { useRouter } from "next/router";
 import {
   ChangeEvent,
@@ -56,7 +66,15 @@ const Page: NextPageWithLayout = () => {
     null
   );
   const [isCredit, setIsCredit] = useState(false);
+  const [invoiceToEdit, setInvoiceToEdit] = useState<
+    DocumentSnapshot<invoiceType> | undefined
+  >();
+  const invoiceToEditData = useMemo(
+    () => invoiceToEdit?.data(),
+    [invoiceToEdit]
+  );
   const router = useRouter();
+  const { id } = useQueryParams();
 
   function selectSeller(e: ChangeEvent<HTMLSelectElement>) {
     setSelectedSeller(e.target.value);
@@ -131,6 +149,33 @@ const Page: NextPageWithLayout = () => {
     setSellerDoc(sellerDoc);
   }, [selectedSeller, sellersDocs]);
 
+  // ------ effects to manage the edit mode -------
+
+  // effect to update the selectSeller
+  useEffect(() => {
+    if (!invoiceToEditData) return;
+
+    setSelectedSeller(invoiceToEditData.seller_ref.id);
+  }, [invoiceToEditData]);
+
+  // effect to get the invoice to edit
+  useEffect(() => {
+    async function getInvoiceToEdit() {
+      if (!id) return;
+
+      const db = Firestore();
+      const docRef = doc(
+        db,
+        InvoiceCollection.root,
+        id
+      ) as DocumentReference<invoiceType>;
+      const invoiceData = await getDoc(docRef);
+
+      setInvoiceToEdit(invoiceData);
+    }
+    getInvoiceToEdit();
+  }, [id]);
+
   return (
     <InvoiceContext.Provider value={{ selectedSeller: sellerDoc }}>
       <Container>
@@ -139,6 +184,7 @@ const Page: NextPageWithLayout = () => {
           <Select
             marginBottom="0px"
             onChange={selectSeller}
+            disabled={id ? true : false}
             options={
               !sellers
                 ? [{ name: "Cargando...", value: "none" }]
@@ -149,6 +195,7 @@ const Page: NextPageWithLayout = () => {
                       return {
                         name: data.name,
                         value: el.id,
+                        selected: invoiceToEditData?.seller_ref.id === el.id,
                       };
                     }),
                   ]
@@ -159,6 +206,7 @@ const Page: NextPageWithLayout = () => {
           sellerDoc={sellerDoc}
           sellerData={sellerData}
           setClient={setClient}
+          invoiceDataToEdit={invoiceToEditData}
         />
         {!selectedSeller ? (
           <h3 style={{ marginTop: "10px" }}>

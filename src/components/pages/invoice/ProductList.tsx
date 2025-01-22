@@ -17,6 +17,7 @@ import { Tag, TagsDoc } from "@/tools/products/tags";
 import { doc, DocumentReference, onSnapshot } from "firebase/firestore";
 import { Firestore } from "@/tools/firestore";
 import { Button } from "@/styles/Form.styles";
+import { invoiceType } from "@/tools/invoices/createInvoice";
 
 export type priceVariation = {
   total: number;
@@ -44,26 +45,25 @@ export const ProductContainer = styled.div<{
   $closing?: boolean;
   $warn?: boolean;
   $hide?: boolean;
+  $after?: string;
 }>`
+  position: relative;
   display: ${(props) => (props.$fold ? "none" : "grid")};
   grid-column: 1 / -1;
   gap: 10px;
-  overflow: hidden;
   transition: 200ms ease all;
   height: ${(props) =>
     !props.$hide ? (props.$fold ? "35px" : "auto") : "0px"};
   padding: ${(props) => (!props.$hide ? (props.$header ? "10px" : "5px") : 0)} 0;
   visibility: ${(props) => (props.$hide ? "hidden" : "visible")};
-  grid-template-columns: repeat(
-    ${(props) => {
-      if (props.$closing) return "17, 75px";
-      if (props.$hasInventory) {
-        return "13, 75px";
-      } else {
-        return "10, 75px";
-      }
-    }}
-  );
+  grid-template-columns: ${(props) => {
+    if (props.$closing) return "repeat(17, 75px)";
+    if (props.$hasInventory) {
+      return "repeat(13, 75px)";
+    } else {
+      return "repeat(10, 75px)";
+    }
+  }};
 
   &:nth-child(even) {
     ${(props) => {
@@ -92,13 +92,20 @@ export const ProductContainer = styled.div<{
       /* box-shadow: 0 5px 15px #0003; */
     `}
 
-  /* ${(props) =>
-    props.$hide &&
+  ${(props) =>
+    props.$after &&
     css`
-      /* display: none; */
-      opacity: 0;
-      height: 0px;
-    `} */
+      &::after {
+        content: "${props.$after}";
+        position: absolute;
+        right: calc(100% + 10px);
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 1;
+        text-align: end;
+        white-space: nowrap;
+      }
+    `}
 
   ${(props) =>
     props.$warn &&
@@ -128,6 +135,7 @@ export const ProductContainer = styled.div<{
 
 type props = {
   setProductsResults: Dispatch<SetStateAction<Record<string, productResult>>>;
+  invoiceToEditData: invoiceType | undefined;
 };
 
 export function ProductList({ setProductsResults }: props) {
@@ -183,21 +191,23 @@ export function ProductList({ setProductsResults }: props) {
           </Button>
         </Container>
       </FlexContainer>
-      <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
+      <Container>
+        <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
 
-      {products.docs?.length === 0 ? (
-        <>no hay productos</>
-      ) : (
-        products.docs?.map((el, i) => (
-          <Product
-            key={i}
-            product={el}
-            setProductsResults={setProductsResults}
-            hasInventory={selectedSeller?.data().hasInventory}
-            hideWithoutStock={hideProductWithoutStock}
-          />
-        ))
-      )}
+        {products.docs?.length === 0 ? (
+          <>no hay productos</>
+        ) : (
+          products.docs?.map((el, i) => (
+            <Product
+              key={i}
+              product={el}
+              setProductsResults={setProductsResults}
+              hasInventory={selectedSeller?.data().hasInventory}
+              hideWithoutStock={hideProductWithoutStock}
+            />
+          ))
+        )}
+      </Container>
     </Container>
   );
 }

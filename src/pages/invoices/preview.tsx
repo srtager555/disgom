@@ -200,13 +200,23 @@ export default function Page() {
             <h2>Factura de {owners.client?.data()?.name}</h2>
           </Container>
 
-          <Button
-            onClick={() => {
-              window.print();
-            }}
-          >
-            Imprimir
-          </Button>
+          <Container>
+            <Button
+              style={{ marginRight: "10px" }}
+              onClick={() => {
+                router.push("/invoices/create?id=" + id);
+              }}
+            >
+              Editar
+            </Button>
+            <Button
+              onClick={() => {
+                window.print();
+              }}
+            >
+              Imprimir
+            </Button>
+          </Container>
         </FlexContainer>
         <p>
           Esta factura se hizo el{" "}

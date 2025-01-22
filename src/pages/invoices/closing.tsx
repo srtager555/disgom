@@ -83,6 +83,10 @@ export default function Page() {
   const [route, setRoute] = useState<number>();
   const router = useRouter();
 
+  function EditLoad() {
+    router.push("/invoices/create?id=" + id);
+  }
+
   async function closeThisInvoice() {
     if (
       !invoiceDoc ||
@@ -307,6 +311,9 @@ export default function Page() {
         <p>Cierre del {data.created_at.toDate().toLocaleDateString()}</p>
       </Container>
 
+      <Container styles={{ marginBottom: "10px" }}>
+        <Button onClick={EditLoad}>Editar carga</Button>
+      </Container>
       <ProductManager
         rawProducts={sortedRawProducts}
         setInventories={setNewInventoriesToCreate}

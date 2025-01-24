@@ -44,6 +44,7 @@ export function ProductClosing({
 }: props) {
   const [product, setProduct] = useState<DocumentSnapshot<productDoc>>();
   const productData = useMemo(() => product?.data(), [product]);
+  const lastStock = useMemo(() => productData?.stock[0], [productData]);
   const [fold, setFold] = useState(false);
   const [amoutnSold, setAmoutnSold] = useState(0);
 
@@ -60,27 +61,33 @@ export function ProductClosing({
   }, [data]);
 
   const normalSalePrices = useMemo(() => {
+    if (data.sales_amounts.length === 0 && lastStock)
+      return numberParser(lastStock.sale_price);
+
     const prices = data.sales_amounts.map((el) => el.normal_price);
     const diff = prices.filter((el) => el != prices[0]);
 
     return diff.length > 0 ? "~" : prices[0] ? numberParser(prices[0]) : "~";
-  }, [data]);
+  }, [data.sales_amounts, lastStock]);
   const sellerSalePrices = useMemo(() => {
+    if (data.sales_amounts.length === 0 && lastStock)
+      return numberParser(lastStock.seller_profit);
+
     const prices = data.sales_amounts.map((el) => el.seller_price);
     const diff = prices.filter((el) => el != prices[0]);
 
     return diff.length > 0 ? "~" : prices[0] ? numberParser(prices[0]) : "~";
-  }, [data]);
+  }, [data.sales_amounts, lastStock]);
 
   const inventoryAmount = useMemo(() => {
     return data.inventory.reduce(
       (before, now) => {
-        const normal_price = data.sales_amounts.sort(
-          (a, b) => b.normal_price - a.normal_price
-        )[0];
-        const seller_price = data.sales_amounts.sort(
-          (a, b) => b.seller_price - a.seller_price
-        )[0];
+        const normal_price =
+          data.sales_amounts.sort((a, b) => b.normal_price - a.normal_price)[0]
+            ?.normal_price || lastStock?.sale_price;
+        const seller_price =
+          data.sales_amounts.sort((a, b) => b.seller_price - a.seller_price)[0]
+            ?.seller_price || lastStock?.seller_profit;
 
         if (!normal_price || !seller_price)
           return {
@@ -101,13 +108,13 @@ export function ProductClosing({
                 : now.amount - before.reducedAmountSold),
           total_sales:
             before.total_sales +
-            normal_price.normal_price *
+            normal_price *
               (before.reducedAmountSold > now.amount
                 ? 0
                 : now.amount - before.reducedAmountSold),
           total_seller_sales:
             before.total_seller_sales +
-            seller_price.seller_price *
+            seller_price *
               (before.reducedAmountSold > now.amount
                 ? 0
                 : now.amount - before.reducedAmountSold),
@@ -125,7 +132,13 @@ export function ProductClosing({
         total_seller_sales: 0,
       }
     );
-  }, [amoutnSold, data.inventory, data.sales_amounts]);
+  }, [
+    amoutnSold,
+    data.inventory,
+    data.sales_amounts,
+    lastStock?.sale_price,
+    lastStock?.seller_profit,
+  ]);
 
   const load = useMemo(() => {
     const list = [...data.purchases_amounts, ...data.inventory];
@@ -212,12 +225,16 @@ export function ProductClosing({
                 : before.reducedAmountSold - now.amount,
           };
         } else {
-          const normal_price = data.sales_amounts.sort(
-            (a, b) => b.normal_price - a.normal_price
-          )[0];
-          const seller_price = data.sales_amounts.sort(
-            (a, b) => b.seller_price - a.seller_price
-          )[0];
+          const normal_price =
+            data.sales_amounts.sort(
+              (a, b) => b.normal_price - a.normal_price
+            )[0]?.normal_price || lastStock?.sale_price;
+          const seller_price =
+            data.sales_amounts.sort(
+              (a, b) => b.seller_price - a.seller_price
+            )[0]?.seller_price || lastStock?.seller_profit;
+
+          console.log(normal_price);
 
           if (!normal_price || !seller_price)
             return {
@@ -228,13 +245,13 @@ export function ProductClosing({
             ...before,
             total_inve_sales:
               before.total_inve_sales +
-              normal_price.normal_price *
+              normal_price *
                 (before.reducedAmountSold > now.amount
                   ? 0
                   : now.amount - before.reducedAmountSold),
             total_inve_seller_sales:
               before.total_inve_seller_sales +
-              seller_price.seller_price *
+              seller_price *
                 (before.reducedAmountSold > now.amount
                   ? 0
                   : now.amount - before.reducedAmountSold),
@@ -253,7 +270,13 @@ export function ProductClosing({
         reducedAmountSold: amoutnSold,
       }
     );
-  }, [amoutnSold, data.inventory, data.sales_amounts]);
+  }, [
+    amoutnSold,
+    data.inventory,
+    data.sales_amounts,
+    lastStock?.sale_price,
+    lastStock?.seller_profit,
+  ]);
 
   const amountListener = useCallback(
     function (n: number) {
@@ -487,18 +510,18 @@ export function ProductClosing({
         {data.inventory.map((el, i) => {
           const normal_price = data.sales_amounts.sort(
             (a, b) => b.normal_price - a.normal_price
-          );
+          )[0];
 
           const seller_price = data.sales_amounts.sort(
             (a, b) => b.seller_price - a.seller_price
           )[0];
 
-          if (!normal_price || !seller_price) return <></>;
+          if (!lastStock) return <></>;
 
           return (
             <InvPrice
-              normal={normal_price[0].normal_price}
-              seller={seller_price.seller_price}
+              normal={normal_price?.normal_price || lastStock.sale_price}
+              seller={seller_price?.seller_price || lastStock.seller_profit}
               key={i}
               data={el}
             />

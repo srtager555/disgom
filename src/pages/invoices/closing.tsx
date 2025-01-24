@@ -230,11 +230,14 @@ export default function Page() {
         const last_amounts = entries.find((el) => el[0] === product_id);
 
         const purchases_amounts = last_amounts
-          ? [last_amounts[1].purchases_amounts, purchase_amount]
+          ? [...last_amounts[1].purchases_amounts, purchase_amount]
           : [purchase_amount];
+
         const sales_amounts = last_amounts
-          ? [last_amounts[1].sales_amounts, sale_amount]
+          ? [...last_amounts[1].sales_amounts, sale_amount]
           : [sale_amount];
+
+        const inventory = last_amounts ? [...last_amounts[1].inventory] : [];
 
         return {
           ...props,
@@ -242,7 +245,7 @@ export default function Page() {
             name,
             purchases_amounts,
             sales_amounts,
-            inventory: [],
+            inventory,
           },
         };
       });
@@ -253,35 +256,42 @@ export default function Page() {
     };
   }, [data?.products_outputs, inventoriesProducts]);
 
-  // effect to merge the intory with the outputs
+  // effect to merge the inventory with the outputs
   useEffect(() => {
-    const rawProductsLength = Object.keys(rawProducts).length === 0;
     const inventoriesProductsLength = inventoriesProducts?.length === 0;
-    if (inventoriesProductsLength || rawProductsLength) return;
 
-    inventoriesProducts?.forEach((el) => {
+    if (!inventoriesProducts || inventoriesProductsLength) return;
+
+    inventoriesProducts.forEach(async (el) => {
       const data = el.data();
-      const product_id = data.product_ref.id;
+      const productSnap = await getDoc(data.product_ref);
+      const productData = productSnap.data() as productDoc;
+      const product_id = productSnap.id;
 
       setRawProducts((props) => {
         const entries: [string, rawProductWithInventory][] | [] =
           Object.entries(props);
 
         const last_amounts = entries.find((el) => el[0] === product_id);
+
+        const last_data = last_amounts ? last_amounts[1] : {};
         const inventory = last_amounts
-          ? [last_amounts[1].inventory, data]
+          ? [...last_amounts[1].inventory, data]
           : [data];
 
         return {
           ...props,
           [product_id]: {
-            ...last_amounts,
+            ...last_data,
+            name: productData.name,
+            sales_amounts: [],
+            purchases_amounts: [],
             inventory,
           },
         };
       });
     });
-  }, [inventoriesProducts, rawProducts]);
+  }, [inventoriesProducts]);
 
   // effecto to sort rawProduct
   useEffect(() => {

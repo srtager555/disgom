@@ -63,7 +63,7 @@ export default function Page() {
   const [invoiceDoc, setInvoiceDoc] = useState<DocumentSnapshot<invoiceType>>();
   const [seller, setSeller] = useState<DocumentSnapshot<SellersDoc>>();
   const [rawProducts, setRawProducts] = useState<
-    Record<string, rawProductWithInventory>
+    Record<string, rawProductWithInventory> | object
   >({});
   const [sortedRawProducts, setSortedRawProducts] = useState<
     Record<string, rawProductWithInventory>
@@ -196,81 +196,53 @@ export default function Page() {
   useEffect(() => {
     if (!data?.products_outputs) return;
 
-    let allProducts: (
-      | QueryDocumentSnapshot<inventoryProductDoc>
-      | DocumentReference<outputType>
-    )[] = [...data.products_outputs];
-
-    if (inventoriesProducts) {
-      allProducts = [...data.products_outputs, ...inventoriesProducts];
-    }
+    const allProducts: DocumentReference<outputType>[] = [
+      ...data.products_outputs,
+    ];
 
     allProducts.forEach(async (element) => {
-      let product_id = "";
-      let inventory: Array<inventoryProductDoc> = [];
-      let purchase_amount: Array<purchases_amounts> = [];
-      let sale_amount: Array<sales_amounts> = [];
-      let name = "";
+      const output = await getDoc(element);
+      const data = output.data();
+      const product = await getDoc(
+        element.parent.parent as DocumentReference<productDoc>
+      );
+      const name = product.data()?.name || "";
+      if (!data) return;
 
-      if ("ref" in element) {
-        const data = element.data();
-        if (!data) return;
-
-        const product = await getDoc(data.product_ref);
-        name = product.data()?.name || "";
-        product_id = data.product_ref.id;
-
-        inventory = [data];
-      } else {
-        const output = await getDoc(element);
-        const data = output.data();
-        const product = await getDoc(
-          element.parent.parent as DocumentReference<productDoc>
-        );
-        name = product.data()?.name || "";
-        if (!data) return;
-
-        product_id = data.entry_ref.path.split("/")[1];
-
-        purchase_amount = [
-          {
-            amount: data.amount,
-            price: data.cost_price,
-            total: data.purchase_cost,
-          },
-        ];
-        sale_amount = [
-          {
-            amount: data.amount,
-            normal_price: data.sale_prices.normal,
-            normal_total: data.sales_values.normal,
-            seller_price: data.sale_prices.seller,
-            seller_total: data.sales_values.seller,
-          },
-        ];
-      }
+      const product_id = data.entry_ref.path.split("/")[1];
+      const purchase_amount: purchases_amounts = {
+        amount: data.amount,
+        price: data.cost_price,
+        total: data.purchase_cost,
+      };
+      const sale_amount: sales_amounts = {
+        amount: data.amount,
+        normal_price: data.sale_prices.normal,
+        normal_total: data.sales_values.normal,
+        seller_price: data.sale_prices.seller,
+        seller_total: data.sales_values.seller,
+      };
 
       setRawProducts((props) => {
+        const entries: [string, rawProductWithInventory][] | [] =
+          Object.entries(props);
+
+        const last_amounts = entries.find((el) => el[0] === product_id);
+
+        const purchases_amounts = last_amounts
+          ? [last_amounts[1].purchases_amounts, purchase_amount]
+          : [purchase_amount];
+        const sales_amounts = last_amounts
+          ? [last_amounts[1].sales_amounts, sale_amount]
+          : [sale_amount];
+
         return {
           ...props,
           [product_id]: {
             name,
-            purchases_amounts:
-              purchase_amount.length > 0
-                ? [
-                    ...(props[product_id]?.purchases_amounts || []),
-                    ...purchase_amount,
-                  ]
-                : props[product_id]?.purchases_amounts || [],
-            sales_amounts:
-              sale_amount.length > 0
-                ? [...(props[product_id]?.sales_amounts || []), ...sale_amount]
-                : props[product_id]?.sales_amounts || [],
-
-            inventory:
-              inventory.length > 0
-                ? [...(props[product_id]?.inventory || []), ...inventory]
-                : props[product_id]?.inventory || [],
+            purchases_amounts,
+            sales_amounts,
+            inventory: [],
           },
         };
       });
@@ -280,6 +252,36 @@ export default function Page() {
       setRawProducts({});
     };
   }, [data?.products_outputs, inventoriesProducts]);
+
+  // effect to merge the intory with the outputs
+  useEffect(() => {
+    const rawProductsLength = Object.keys(rawProducts).length === 0;
+    const inventoriesProductsLength = inventoriesProducts?.length === 0;
+    if (inventoriesProductsLength || rawProductsLength) return;
+
+    inventoriesProducts?.forEach((el) => {
+      const data = el.data();
+      const product_id = data.product_ref.id;
+
+      setRawProducts((props) => {
+        const entries: [string, rawProductWithInventory][] | [] =
+          Object.entries(props);
+
+        const last_amounts = entries.find((el) => el[0] === product_id);
+        const inventory = last_amounts
+          ? [last_amounts[1].inventory, data]
+          : [data];
+
+        return {
+          ...props,
+          [product_id]: {
+            ...last_amounts,
+            inventory,
+          },
+        };
+      });
+    });
+  }, [inventoriesProducts, rawProducts]);
 
   // effecto to sort rawProduct
   useEffect(() => {

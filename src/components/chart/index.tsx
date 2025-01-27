@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
@@ -8,6 +10,7 @@ import {
   Legend,
   CategoryScale,
   LinearScale,
+  // @ts-ignore
 } from "chart.js";
 
 ChartJS.register(
@@ -131,7 +134,8 @@ const SalesComparisonChart = () => {
       },
       tooltip: {
         callbacks: {
-          label: (context: any) => {
+          //@ts-ignore
+          label: (context) => {
             return `Fecha: ${context.raw.x}, Ventas: ${context.raw.y}`;
           },
         },
@@ -155,6 +159,7 @@ const SalesComparisonChart = () => {
   };
 
   return chartData ? (
+    //@ts-ignore
     <Line data={chartData} options={options} />
   ) : (
     <p>Cargando datos...</p>

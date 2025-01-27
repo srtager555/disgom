@@ -1,5 +1,4 @@
 import { Container } from "@/styles/index.styles";
-import { Line } from "react-chartjs-2";
 import type { NextPageWithLayout } from "../_app";
 import SalesComparisonChart from "@/components/chart";
 

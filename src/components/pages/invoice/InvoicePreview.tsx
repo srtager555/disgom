@@ -84,7 +84,7 @@ export function InvoicePreview({ doc, inSeller }: props) {
           <p>{client.data()?.name}</p>
         </Container>
       ) : inSeller ? (
-        <p>{data.created_at.toDate().toLocaleDateString()}</p>
+        <p>{data.created_at?.toDate().toLocaleDateString()}</p>
       ) : (
         <p>{sellerData?.name}</p>
       )}

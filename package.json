@@ -8,12 +8,15 @@
     "start": "next start",
     "lint": "next lint",
     "emulators:kill": "lsof -ti tcp:4500 | xargs kill -15 && lsof -ti tcp:4400 | xargs kill -15 && lsof -ti tcp:9099 | xargs kill -15 && lsof -ti tcp:5001 | xargs kill -15 && lsof -ti tcp:8080 | xargs kill -15 && lsof -ti tcp:9000 | xargs kill -15 && lsof -ti tcp:5000 | xargs kill -15 && lsof -ti tcp:9199 | xargs kill -15",
-    "emulators:start": "export GOOGLE_APPLICATION_CREDENTIALS=/Users/srtager555/dev/disgom/disgom-app-firebase-adminsdk-zafzh-0e36ae3976.json && export FIRESTORE_EMULATOR_HOST='127.0.0.1:5000' && export FIREBASE_AUTH_EMULATOR_HOST='127.0.0.1:9099'  && firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data"
+    "emulators:start": "export GOOGLE_APPLICATION_CREDENTIALS=/Users/srtager555/dev/disgom/disgom-app-firebase-adminsdk-zafzh-0e36ae3976.json && export FIRESTORE_EMULATOR_HOST='127.0.0.1:5000' && export FIREBASE_AUTH_EMULATOR_HOST='127.0.0.1:9099'  && firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data",
+    "emulators:buld": "export GOOGLE_APPLICATION_CREDENTIALS=/Users/srtager555/dev/disgom/disgom-app-firebase-adminsdk-zafzh-0e36ae3976.json && export FIRESTORE_EMULATOR_HOST='127.0.0.1:5000' && export FIREBASE_AUTH_EMULATOR_HOST='127.0.0.1:9099'  && firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data next start"
   },
   "dependencies": {
+    "chart.js": "^4.4.7",
     "firebase": "^11.1.0",
     "firebase-admin": "^13.0.2",
     "next": "15.1.2",
+    "next-pwa": "^5.6.0",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^19.0.0",
@@ -21,6 +24,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/next-pwa": "^5.6.9",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

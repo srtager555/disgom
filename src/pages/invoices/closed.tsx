@@ -222,7 +222,6 @@ export default function Page() {
 
   // effecto to sort rawProduct
   useEffect(() => {
-    console.log(rawProducts);
     const sorted = Object.fromEntries(
       Object.entries(rawProducts).sort((a, b) => {
         const aData = a[1];

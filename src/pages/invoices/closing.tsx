@@ -254,7 +254,10 @@ export default function Page() {
     return () => {
       setRawProducts({});
     };
-  }, [data?.products_outputs, inventoriesProducts]);
+  }, [
+    data?.products_outputs,
+    // inventoriesProducts
+  ]);
 
   // effect to merge the inventory with the outputs
   useEffect(() => {

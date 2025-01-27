@@ -315,12 +315,12 @@ export default function Page() {
       <Head>
         <title>
           {sellerData.name} cierre{" "}
-          {data.created_at.toDate().toLocaleDateString()}
+          {data.created_at?.toDate().toLocaleDateString()}
         </title>
       </Head>
       <Container styles={{ marginBottom: "20px" }}>
         <h1>Cierre de {sellerData.name}</h1>
-        <p>Cierre del {data.created_at.toDate().toLocaleDateString()}</p>
+        <p>Cierre del {data.created_at?.toDate().toLocaleDateString()}</p>
       </Container>
 
       <Container styles={{ marginBottom: "10px" }}>

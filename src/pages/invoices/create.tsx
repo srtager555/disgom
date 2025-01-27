@@ -14,6 +14,7 @@ import { Container, FlexContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { createInvoice, invoiceType } from "@/tools/invoices/createInvoice";
+import { disableInvoice } from "@/tools/invoices/disableInvoice";
 import { addOutputs } from "@/tools/products/addOutputs";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client } from "@/tools/sellers/createClient";
@@ -99,12 +100,14 @@ const Page: NextPageWithLayout = () => {
       }
     );
 
-    const invoiceData: Omit<invoiceType, "created_at"> = {
+    const invoiceData: invoiceType = {
+      created_at:
+        invoiceToEditData?.created_at || Timestamp.fromDate(new Date()),
       seller_ref: sellerDoc?.ref,
       client_ref: client?.ref || null,
       inventory_ref: null,
       products_outputs: [],
-      last_inventory_ref: null,
+      last_inventory_ref: invoiceToEditData?.last_inventory_ref || null,
       total_cost: {
         normal: totals.total_cost,
         withInventory: totals.total_cost,
@@ -117,19 +120,20 @@ const Page: NextPageWithLayout = () => {
         normal: totals.total_profit,
         withInventory: totals.total_profit,
       },
-      route: null,
-      bills: null,
-      money: null,
+      route: invoiceToEditData?.route || null,
+      bills: invoiceToEditData?.bills || null,
+      money: invoiceToEditData?.money || null,
       credit: sellerDoc.data().hasInventory
         ? null
         : {
             paid: isCredit,
             paid_at: isCredit ? Timestamp.fromDate(new Date()) : null,
           },
-      newCredits: null,
+      newCredits: invoiceToEditData?.newCredits || null,
       disabled: false,
     };
 
+    if (invoiceToEdit) await disableInvoice(invoiceToEdit);
     const invoiceRef = await createInvoice(invoiceData);
 
     // add the outputs to the invoice
@@ -214,7 +218,10 @@ const Page: NextPageWithLayout = () => {
           </h3>
         ) : (
           <>
-            <ProductList setProductsResults={setProductsResults} />
+            <ProductList
+              invoiceToEditData={invoiceToEditData}
+              setProductsResults={setProductsResults}
+            />
 
             <Result
               hasInventory={sellerData?.hasInventory}
@@ -294,7 +301,7 @@ const Page: NextPageWithLayout = () => {
                     : false
                 }
               >
-                Crear factura
+                {invoiceToEdit ? "Editar factura" : "Crear Factura"}
               </Button>
             </Container>
           </>

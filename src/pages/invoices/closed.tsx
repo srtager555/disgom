@@ -123,81 +123,56 @@ export default function Page() {
   useEffect(() => {
     if (!data?.products_outputs) return;
 
-    let allProducts: (
-      | QueryDocumentSnapshot<inventoryProductDoc>
-      | DocumentReference<outputType>
-    )[] = [...data.products_outputs];
-
-    if (inventoriesProducts) {
-      allProducts = [...data.products_outputs, ...inventoriesProducts];
-    }
+    const allProducts: DocumentReference<outputType>[] = [
+      ...data.products_outputs,
+    ];
 
     allProducts.forEach(async (element) => {
-      let product_id = "";
-      let inventory: Array<inventoryProductDoc> = [];
-      let purchase_amount: Array<purchases_amounts> = [];
-      let sale_amount: Array<sales_amounts> = [];
-      let name = "";
+      const output = await getDoc(element);
+      const data = output.data();
+      const product = await getDoc(
+        element.parent.parent as DocumentReference<productDoc>
+      );
+      const name = product.data()?.name || "";
+      if (!data) return;
 
-      if ("ref" in element) {
-        const data = element.data();
-        if (!data) return;
-
-        const product = await getDoc(data.product_ref);
-        name = product.data()?.name || "";
-
-        product_id = data.product_ref.id;
-        inventory = [data];
-      } else {
-        const output = await getDoc(element);
-        const data = output.data();
-        const product = await getDoc(
-          element.parent.parent as DocumentReference<productDoc>
-        );
-        name = product.data()?.name || "";
-        if (!data) return;
-
-        product_id = data.entry_ref.path.split("/")[1];
-
-        purchase_amount = [
-          {
-            amount: data.amount,
-            price: data.cost_price,
-            total: data.purchase_cost,
-          },
-        ];
-        sale_amount = [
-          {
-            amount: data.amount,
-            normal_price: data.sale_prices.normal,
-            normal_total: data.sales_values.normal,
-            seller_price: data.sale_prices.seller,
-            seller_total: data.sales_values.seller,
-          },
-        ];
-      }
+      const product_id = data.entry_ref.path.split("/")[1];
+      const purchase_amount: purchases_amounts = {
+        amount: data.amount,
+        price: data.cost_price,
+        total: data.purchase_cost,
+      };
+      const sale_amount: sales_amounts = {
+        amount: data.amount,
+        normal_price: data.sale_prices.normal,
+        normal_total: data.sales_values.normal,
+        seller_price: data.sale_prices.seller,
+        seller_total: data.sales_values.seller,
+      };
 
       setRawProducts((props) => {
+        const entries: [string, rawProductWithInventory][] | [] =
+          Object.entries(props);
+
+        const last_amounts = entries.find((el) => el[0] === product_id);
+
+        const purchases_amounts = last_amounts
+          ? [...last_amounts[1].purchases_amounts, purchase_amount]
+          : [purchase_amount];
+
+        const sales_amounts = last_amounts
+          ? [...last_amounts[1].sales_amounts, sale_amount]
+          : [sale_amount];
+
+        const inventory = last_amounts ? [...last_amounts[1].inventory] : [];
+
         return {
           ...props,
           [product_id]: {
             name,
-            purchases_amounts:
-              purchase_amount.length > 0
-                ? [
-                    ...(props[product_id]?.purchases_amounts || []),
-                    ...purchase_amount,
-                  ]
-                : props[product_id]?.purchases_amounts || [],
-            sales_amounts:
-              sale_amount.length > 0
-                ? [...(props[product_id]?.sales_amounts || []), ...sale_amount]
-                : props[product_id]?.sales_amounts || [],
-
-            inventory:
-              inventory.length > 0
-                ? [...(props[product_id]?.inventory || []), ...inventory]
-                : props[product_id]?.inventory || [],
+            purchases_amounts,
+            sales_amounts,
+            inventory,
           },
         };
       });
@@ -206,10 +181,48 @@ export default function Page() {
     return () => {
       setRawProducts({});
     };
-  }, [data?.products_outputs, inventoriesProducts]);
+  }, [data?.products_outputs]);
+
+  // effect to merge the inventory with the outputs
+  useEffect(() => {
+    const inventoriesProductsLength = inventoriesProducts?.length === 0;
+
+    if (!inventoriesProducts || inventoriesProductsLength) return;
+
+    inventoriesProducts.forEach(async (el) => {
+      const data = el.data();
+      const productSnap = await getDoc(data.product_ref);
+      const productData = productSnap.data() as productDoc;
+      const product_id = productSnap.id;
+
+      setRawProducts((props) => {
+        const entries: [string, rawProductWithInventory][] | [] =
+          Object.entries(props);
+
+        const last_amounts = entries.find((el) => el[0] === product_id);
+
+        const last_data = last_amounts ? last_amounts[1] : {};
+        const inventory = last_amounts
+          ? [...last_amounts[1].inventory, data]
+          : [data];
+
+        return {
+          ...props,
+          [product_id]: {
+            ...last_data,
+            name: productData.name,
+            sales_amounts: [],
+            purchases_amounts: [],
+            inventory,
+          },
+        };
+      });
+    });
+  }, [inventoriesProducts]);
 
   // effecto to sort rawProduct
   useEffect(() => {
+    console.log(rawProducts);
     const sorted = Object.fromEntries(
       Object.entries(rawProducts).sort((a, b) => {
         const aData = a[1];
@@ -237,12 +250,12 @@ export default function Page() {
       <Head>
         <title>
           {sellerData.name} cierre{" "}
-          {data.created_at.toDate().toLocaleDateString()}
+          {data.created_at?.toDate().toLocaleDateString()}
         </title>
       </Head>
       <Container styles={{ marginBottom: "20px" }}>
         <h1>Cierre de {sellerData.name} - Vista previa</h1>
-        <p>Cierre del {data.created_at.toDate().toLocaleDateString()}</p>
+        <p>Cierre del {data.created_at?.toDate().toLocaleDateString()}</p>
       </Container>
 
       <ProductManagerPreview

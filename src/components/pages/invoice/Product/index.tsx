@@ -2,7 +2,7 @@ import { Icon } from "@/components/Icons";
 import { globalCSSVars } from "@/styles/colors";
 import { Container } from "@/styles/index.styles";
 import { productDoc } from "@/tools/products/create";
-import { QueryDocumentSnapshot } from "firebase/firestore";
+import { DocumentSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
 import {
   ChangeEvent,
   Dispatch,
@@ -18,6 +18,8 @@ import { Cost } from "./Cost";
 import { Button } from "@/styles/Form.styles";
 import { Price } from "./Price";
 import { numberParser } from "@/tools/numberPaser";
+import { outputType } from "@/tools/products/addOutputs";
+import { stockType } from "@/tools/products/addToStock";
 
 export type OutputsRequest = {
   stockPosition: number;
@@ -32,6 +34,8 @@ export type OutputCostDescription = {
 
 export type priceRequest = {
   amount: number;
+  normal_price?: number;
+  seller_price?: number;
 };
 
 export type priceRequestDescription = {
@@ -172,6 +176,7 @@ interface props {
   hasInventory: boolean | undefined;
   setProductsResults: Dispatch<SetStateAction<Record<string, productResult>>>;
   hideWithoutStock: boolean;
+  previusOutputsToEdit: DocumentSnapshot<outputType>[];
 }
 
 export function Product({
@@ -179,17 +184,36 @@ export function Product({
   hasInventory,
   hideWithoutStock,
   setProductsResults,
+  previusOutputsToEdit,
 }: props) {
   const data = useMemo(() => product.data(), [product]);
   const stocks = useMemo(() => {
     if (data.stock.length === 0) return undefined;
-    return data.stock.sort(
+
+    const sortedStock = data.stock.sort(
       (a, b) => a.created_at.seconds - b.created_at.seconds
     );
-  }, [data.stock]);
+
+    const previusStock: stockType[] = previusOutputsToEdit.map((el) => {
+      const data = el.data();
+      return {
+        amount: data?.amount,
+        purchase_price: data?.cost_price,
+        sale_price: data?.sale_prices.normal,
+        seller_profit: data?.sale_prices.seller,
+        created_at: data?.created_at,
+        entry_ref: data?.entry_ref,
+      } as stockType;
+    });
+
+    return [...previusStock, ...sortedStock];
+  }, [data.stock, previusOutputsToEdit]);
   const currentStock = stocks ? stocks[0] : undefined;
+  const lastStock = stocks ? stocks[stocks.length - 1] : undefined;
   const stockAmount = useMemo(() => {
-    const amounts = data.stock.map((_) => _.amount);
+    if (!stocks) return 0;
+
+    const amounts = stocks.map((_) => _.amount);
     let sum = 0;
 
     for (let index = 0; index < amounts.length; index++) {
@@ -198,34 +222,52 @@ export function Product({
     }
 
     return sum;
-  }, [data.stock]);
+  }, [stocks]);
   const [fold, setFold] = useState(false);
   const [amount, setAmount] = useState(0);
+
+  // states to manage the prices
+  const [salePrice, setSalePrice] = useState(lastStock?.sale_price || 0);
+  const [sellerPrice, setSellerPrice] = useState(lastStock?.seller_profit || 0);
   const [diffPurchasePrices, setDiffPurchasePrices] = useState(false);
-  const [purchaseValue, setPurchaseValue] = useState(0);
-  const [salePrice, setSalePrice] = useState(currentStock?.sale_price || 0);
+  const [diffSellerPrices, setDiffSellerPrices] = useState(false);
   const [diffSalePrices, setDiffSalePrices] = useState(false);
+
+  // states to manage the totals of the operations
+  const [purchaseValue, setPurchaseValue] = useState(0);
   const [saleValue, setSaleValue] = useState(0);
   const [profitValue, setProfitValue] = useState(0);
-  const [diffSellerPrices, setDiffSellerPrices] = useState(false);
-  const [sellerPrice, setSellerPrice] = useState(
-    currentStock?.seller_profit || 0
-  );
   const [sellerValue, setSellerValue] = useState(0);
   const [sellerProfit, setSellerProfit] = useState(0);
-
-  const [costRequestsData, setCostRequestData] = useState<OutputsRequest[]>([]);
 
   const [costValues, setCostValues] = useState<
     Record<number, OutputCostDescription>
   >({});
+
+  // states to request informaction about the prices
+  const [costRequestsData, setCostRequestData] = useState<OutputsRequest[]>([]);
   const [requestPricesValues, setRequestPricesValues] = useState<
     Array<priceRequest>
   >([{ amount }]);
   const [priceRequestDescription, setPriceRequestDescription] = useState<
     Record<number, priceRequestDescription>
   >({});
-  const [editAmount, setEditAmount] = useState(true);
+
+  // statet to manage the edit mode
+  const [editAmount, setEditAmount] = useState(false);
+  const [editNormalPrice, setEditNormalPrice] = useState(false);
+  const [editSellerPrice, setEditSellerPrice] = useState(false);
+
+  const priceRequestCurrentAmount = useMemo(() => {
+    const request = Object.values(priceRequestDescription);
+
+    const amount = request.reduce((before, now) => {
+      return before + now.amount;
+    }, 0);
+
+    return amount;
+  }, [priceRequestDescription]);
+
   const hideProduct = useMemo(
     () => (hideWithoutStock ? stockAmount === 0 : false),
     [hideWithoutStock, stockAmount]
@@ -262,6 +304,7 @@ export function Product({
     [stocks]
   );
 
+  // callback to check if there is more than one cost on the product
   const checkCost = useCallback(
     function (field: keyof OutputCostDescription) {
       const values = Object.values(costValues);
@@ -272,6 +315,7 @@ export function Product({
     [costValues]
   );
 
+  // instead of checking the cost, this callback checks the product prices
   const checkPrice = useCallback(
     function (field: keyof priceRequestDescription) {
       const values = Object.values(priceRequestDescription);
@@ -284,10 +328,12 @@ export function Product({
     [priceRequestDescription]
   );
 
+  // This function add a new price variation in the product
   function addNewPriceRequest() {
     setRequestPricesValues((props) => [...props, { amount: 0 }]);
   }
 
+  // this function is to update a state
   function changeStateValue(
     e: ChangeEvent<HTMLInputElement>,
     setState: Dispatch<SetStateAction<number>>
@@ -296,10 +342,12 @@ export function Product({
     setState(value);
   }
 
+  // this function is to switch the fold
   function folding() {
     setFold(!fold);
   }
 
+  // This function is to get the total of a specific field of the Cost
   const getCostValues = useCallback(
     function (num: keyof OutputCostDescription) {
       const values = Object.values(costValues);
@@ -311,6 +359,7 @@ export function Product({
     [costValues]
   );
 
+  // this function do the same process but with the Sales
   const getSaleValues = useCallback(
     function (num: keyof priceRequestDescription) {
       const values = Object.values(priceRequestDescription);
@@ -322,14 +371,12 @@ export function Product({
     [priceRequestDescription]
   );
 
+  // effect to manage the price requests
   useEffect(() => {
-    if (requestPricesValues.length > 1) {
-      setEditAmount(false);
-    } else {
-      if (amount === requestPricesValues[0].amount) return;
-      setRequestPricesValues([{ amount: amount }]);
-      setEditAmount(true);
-    }
+    if (requestPricesValues.length > 1) return;
+
+    if (amount === requestPricesValues[0].amount) return;
+    setRequestPricesValues([{ amount: amount }]);
   }, [amount, requestPricesValues]);
 
   // effect to manage the values
@@ -370,7 +417,7 @@ export function Product({
   // effect to update the product result
   useEffect(() => {
     // delete the result if the amount is 0
-    if (amount === 0) {
+    if (amount === 0 && editAmount) {
       setProductsResults((props) => {
         const arr = { ...props };
         delete arr[product.id];
@@ -410,6 +457,7 @@ export function Product({
       };
     });
   }, [
+    editAmount,
     amount,
     priceRequestDescription,
     product.id,
@@ -421,99 +469,152 @@ export function Product({
     setProductsResults,
   ]);
 
+  // ======== effects to manage the edit mode ======== //
+
+  // this effect is to add the respective price request with
+  //  the previus outputs to edit
+  useEffect(() => {
+    if (previusOutputsToEdit.length <= 1 || requestPricesValues.length > 1)
+      return;
+
+    const newDefaultRequestPriceValues = previusOutputsToEdit.map((el) => {
+      const data = el.data() as outputType;
+
+      return {
+        amount: data?.amount,
+        normal_price: data.sale_prices.normal,
+        seller_price: data.sale_prices.seller,
+      } as priceRequest;
+    });
+
+    if (newDefaultRequestPriceValues.length > 0)
+      setRequestPricesValues(newDefaultRequestPriceValues);
+  }, [previusOutputsToEdit, requestPricesValues.length]);
+
+  // effect to set the preview amount hen the edit
+  // mode is on
+  useEffect(() => {
+    if (previusOutputsToEdit.length != 1 || editAmount) return;
+
+    const amount = previusOutputsToEdit[0].data()?.amount as number;
+
+    setAmount(amount);
+  }, [previusOutputsToEdit, editAmount]);
+
   return (
     <ProductContainer
       $hide={hideProduct}
       $hasInventory={hasInventory}
       $withoutStock={stockAmount}
       $after={`${stockAmount} / ${data.stock.length}`}
+      $warn={amount > stockAmount || priceRequestCurrentAmount > stockAmount}
     >
-      <Column gridColumn="1 / 4">
-        <ProductName
-          title={`Hay ${stockAmount} existencias${
-            data.stock.length > 1
-              ? ` divididas en ${data.stock.length} entradas`
-              : ""
-          }`}
-        >
-          {data.name}
-        </ProductName>
-      </Column>
-      <Column gridColumn="4 / 5">
-        {Object.values(priceRequestDescription).length > 1 ? (
-          getSaleValues("amount")
-        ) : (
-          <Input
-            onClick={() => setEditAmount(true)}
-            onChange={(e) => {
-              changeStateValue(e, setAmount);
-              amountListener(Number(e.target.value));
-            }}
-            type="number"
-            value={!editAmount ? getCostValues("amount") : undefined}
-            max={stockAmount}
-            min={0}
-            step={data.step}
-          />
+      <>
+        <Column gridColumn="1 / 4">
+          <ProductName
+            title={`Hay ${stockAmount} existencias${
+              data.stock.length > 1
+                ? ` divididas en ${data.stock.length} entradas`
+                : ""
+            }`}
+          >
+            {data.name}
+          </ProductName>
+        </Column>
+        <Column gridColumn="4 / 5">
+          {Object.values(priceRequestDescription).length > 1 ? (
+            getSaleValues("amount")
+          ) : (
+            <Input
+              onChange={(e) => {
+                changeStateValue(e, setAmount);
+                amountListener(Number(e.target.value));
+              }}
+              onClick={() => setEditAmount(true)}
+              onSelect={() => setEditAmount(true)}
+              value={!editAmount ? requestPricesValues[0].amount : undefined}
+              type="number"
+              max={stockAmount}
+              min={0}
+              step={data.step}
+            />
+          )}
+        </Column>
+        <Column gridColumn="5 / 6">
+          {diffPurchasePrices ? "~" : currentStock?.purchase_price || "~"}
+        </Column>
+        <Column gridColumn="6 / 7" title={numberParser(purchaseValue)}>
+          {numberParser(purchaseValue)}
+        </Column>
+        <Column gridColumn="7 / 8">
+          {diffSalePrices ? (
+            "~"
+          ) : currentStock?.sale_price ? (
+            <Input
+              onChange={(e) => changeStateValue(e, setSalePrice)}
+              type="number"
+              min={currentStock.purchase_price}
+              step={0.01}
+              onClick={() => setEditNormalPrice(true)}
+              onSelect={() => setEditNormalPrice(true)}
+              value={
+                !editNormalPrice
+                  ? requestPricesValues[0].normal_price ||
+                    salePrice ||
+                    currentStock.sale_price
+                  : undefined
+              }
+            />
+          ) : (
+            "~"
+          )}
+        </Column>
+        <Column gridColumn="8 / 9" title={numberParser(saleValue)}>
+          {numberParser(saleValue)}
+        </Column>
+        <Column gridColumn="9 / 10" title={numberParser(profitValue)}>
+          {numberParser(profitValue)}
+        </Column>
+
+        {hasInventory && (
+          <>
+            <Column gridColumn="10 / 11">
+              {diffSellerPrices ? (
+                "~"
+              ) : currentStock?.seller_profit ? (
+                <Input
+                  onChange={(e) => changeStateValue(e, setSellerPrice)}
+                  type="number"
+                  min={salePrice}
+                  step={0.01}
+                  onClick={() => setEditSellerPrice(true)}
+                  onSelect={() => setEditSellerPrice(true)}
+                  value={
+                    !editSellerPrice
+                      ? requestPricesValues[0].seller_price ||
+                        sellerPrice ||
+                        currentStock.seller_profit
+                      : undefined
+                  }
+                />
+              ) : (
+                "~"
+              )}
+            </Column>
+            <Column gridColumn="11 / 12" title={numberParser(sellerValue)}>
+              {numberParser(sellerValue)}
+            </Column>
+            <Column gridColumn="12 / 13" title={numberParser(sellerProfit)}>
+              {numberParser(sellerProfit)}
+            </Column>
+          </>
         )}
-      </Column>
-      <Column gridColumn="5 / 6">
-        {diffPurchasePrices ? "~" : currentStock?.purchase_price || "~"}
-      </Column>
-      <Column gridColumn="6 / 7" title={numberParser(purchaseValue)}>
-        {numberParser(purchaseValue)}
-      </Column>
-      <Column gridColumn="7 / 8">
-        {diffSalePrices ? (
-          "~"
-        ) : currentStock?.sale_price ? (
-          <Input
-            onChange={(e) => changeStateValue(e, setSalePrice)}
-            type="number"
-            min={currentStock.purchase_price}
-            step={0.01}
-            defaultValue={salePrice || currentStock.sale_price}
-          />
-        ) : (
-          "~"
-        )}
-      </Column>
-      <Column gridColumn="8 / 9" title={numberParser(saleValue)}>
-        {numberParser(saleValue)}
-      </Column>
-      <Column gridColumn="9 / 10" title={numberParser(profitValue)}>
-        {numberParser(profitValue)}
-      </Column>
-      {hasInventory && (
-        <>
-          <Column gridColumn="10 / 11">
-            {diffSellerPrices ? (
-              "~"
-            ) : currentStock?.seller_profit ? (
-              <Input
-                onChange={(e) => changeStateValue(e, setSellerPrice)}
-                type="number"
-                min={salePrice}
-                step={0.01}
-                defaultValue={sellerPrice || currentStock.seller_profit}
-              />
-            ) : (
-              "~"
-            )}
-          </Column>
-          <Column gridColumn="11 / 12" title={numberParser(sellerValue)}>
-            {numberParser(sellerValue)}
-          </Column>
-          <Column gridColumn="12 / 13" title={numberParser(sellerProfit)}>
-            {numberParser(sellerProfit)}
-          </Column>
-        </>
-      )}
-      <Column gridColumn="-1 / -2">
-        <ExtraButton onClick={folding}>
-          <Icon iconType={fold ? "fold" : "unfold"} />
-        </ExtraButton>
-      </Column>
+        <Column gridColumn="-1 / -2">
+          <ExtraButton onClick={folding}>
+            <Icon iconType={fold ? "fold" : "unfold"} />
+          </ExtraButton>
+        </Column>
+      </>
       <ProductContainer
         $children
         $hasInventory={hasInventory}
@@ -523,22 +624,19 @@ export function Product({
         <Column gridColumn="1 / -1" $removeBorder>
           <b>Precios de la salida detallados</b>
         </Column>
-        {currentStock &&
-          requestPricesValues.map((el, i) => (
-            <Price
-              key={i}
-              hasInventory={hasInventory}
-              stockInfo={currentStock}
-              priceRequestLength={requestPricesValues.length}
-              thePrice={salePrice}
-              theSellerPrice={sellerPrice}
-              priceRequest={el}
-              setSaleData={setPriceRequestDescription}
-              saleData={priceRequestDescription}
-              setRequestData={setRequestPricesValues}
-              index={i}
-            />
-          ))}
+        {requestPricesValues.map((el, i) => (
+          <Price
+            key={i}
+            hasInventory={hasInventory}
+            priceRequestLength={requestPricesValues.length}
+            thePrice={salePrice}
+            theSellerPrice={sellerPrice}
+            priceRequest={el}
+            setSaleData={setPriceRequestDescription}
+            setRequestData={setRequestPricesValues}
+            index={i}
+          />
+        ))}
         <ProductContainer
           $children
           $hasInventory={hasInventory}

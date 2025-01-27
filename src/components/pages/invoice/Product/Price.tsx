@@ -1,26 +1,24 @@
 import { Column, Input, priceRequest, priceRequestDescription } from ".";
 import { stockType } from "@/tools/products/addToStock";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { numberParser } from "@/tools/numberPaser";
 import { Button } from "@/styles/Form.styles";
+import { before } from "node:test";
 
 interface PriceProsp {
   hasInventory: boolean | undefined;
-  stockInfo: stockType;
   thePrice: number;
   theSellerPrice: number;
   priceRequestLength: number;
-  priceRequest: { amount: number };
+  priceRequest: priceRequest;
   setSaleData: Dispatch<
     SetStateAction<Record<number, priceRequestDescription>>
   >;
-  saleData: Record<number, priceRequestDescription>;
   setRequestData: Dispatch<SetStateAction<Array<priceRequest>>>;
   index: number;
 }
 
 export function Price({
-  stockInfo,
   priceRequestLength,
   priceRequest,
   thePrice,
@@ -35,6 +33,9 @@ export function Price({
   const [totalSold, setTotalSold] = useState(0);
   const [sellerPrice, setSellerPrice] = useState(theSellerPrice);
   const [totalSellerSold, setTotalSellerSold] = useState(0);
+  const [editAmount, setEditAmount] = useState(false);
+  const [editNormalPrice, setEditNormalPrice] = useState(false);
+  const [editSellerPrice, setEditSellerPrice] = useState(false);
 
   function deleteo_o() {
     setSaleData((props) => {
@@ -53,9 +54,14 @@ export function Price({
   }
 
   useEffect(() => {
-    setSoldPrice(thePrice);
-    setSellerPrice(theSellerPrice);
-  }, [thePrice, theSellerPrice]);
+    setSoldPrice(priceRequest.normal_price || thePrice);
+    setSellerPrice(priceRequest.seller_price || theSellerPrice);
+  }, [
+    priceRequest.normal_price,
+    priceRequest.seller_price,
+    thePrice,
+    theSellerPrice,
+  ]);
 
   useEffect(() => {
     setAmount(priceRequest.amount);
@@ -98,8 +104,9 @@ export function Price({
         {priceRequestLength > 1 ? (
           <Input
             type="number"
+            onClick={() => setEditAmount(true)}
             onChange={(e) => setAmount(Number(e.target.value))}
-            defaultValue={amount}
+            value={!editAmount ? amount : undefined}
           />
         ) : (
           numberParser(amount)
@@ -109,11 +116,17 @@ export function Price({
         {priceRequestLength > 1 ? (
           <Input
             type="number"
-            defaultValue={thePrice}
             onChange={(e) => setSoldPrice(Number(e.target.value))}
+            onClick={() => setEditNormalPrice(true)}
+            onSelect={() => setEditNormalPrice(true)}
+            value={
+              !editNormalPrice
+                ? priceRequest.normal_price || thePrice
+                : undefined
+            }
           />
         ) : (
-          numberParser(thePrice)
+          numberParser(priceRequest.normal_price || thePrice)
         )}
       </Column>
       <Column gridColumn="8 / 9" title={numberParser(totalSold)}>
@@ -126,11 +139,17 @@ export function Price({
             {priceRequestLength > 1 ? (
               <Input
                 type="number"
-                defaultValue={stockInfo.seller_profit}
                 onChange={(e) => setSellerPrice(Number(e.target.value))}
+                onClick={() => setEditSellerPrice(true)}
+                onSelect={() => setEditSellerPrice(true)}
+                value={
+                  !editSellerPrice
+                    ? priceRequest.seller_price || theSellerPrice
+                    : undefined
+                }
               />
             ) : (
-              numberParser(stockInfo.seller_profit)
+              numberParser(theSellerPrice)
             )}
           </Column>
           <Column gridColumn="11 / 12" title={numberParser(totalSellerSold)}>

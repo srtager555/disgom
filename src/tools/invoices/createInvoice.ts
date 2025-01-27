@@ -23,7 +23,7 @@ import { inventory } from "../sellers/invetory/create";
 import { credit } from "../sellers/credits/create";
 
 export type invoiceType = {
-  created_at: Timestamp;
+  created_at?: Timestamp;
   seller_ref: DocumentReference<SellersDoc>;
   client_ref: DocumentReference<client> | null;
   products_outputs: Array<DocumentReference<outputType>> | null;
@@ -55,7 +55,7 @@ export type invoiceType = {
   disabled: boolean;
 };
 
-export async function createInvoice(data: Omit<invoiceType, "created_at">) {
+export async function createInvoice(data: invoiceType) {
   const db = Firestore();
   const coll = collection(
     db,

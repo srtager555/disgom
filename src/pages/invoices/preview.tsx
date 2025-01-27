@@ -38,8 +38,8 @@ export type sales_amounts = {
 
 export type rawProduct = {
   name: string;
-  purchases_amounts: Array<purchases_amounts>;
-  sales_amounts: Array<sales_amounts>;
+  purchases_amounts: Array<purchases_amounts> | [];
+  sales_amounts: Array<sales_amounts> | [];
 };
 
 export type invoiceOwners = {
@@ -220,7 +220,7 @@ export default function Page() {
         </FlexContainer>
         <p>
           Esta factura se hizo el{" "}
-          {data.created_at.toDate().toLocaleDateString()}
+          {data.created_at?.toDate().toLocaleDateString()}
         </p>
         {data.credit?.paid ? (
           <p>

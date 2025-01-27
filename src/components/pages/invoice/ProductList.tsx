@@ -14,10 +14,17 @@ import { globalCSSVars } from "@/styles/colors";
 import { Select } from "@/components/Inputs/select";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
 import { Tag, TagsDoc } from "@/tools/products/tags";
-import { doc, DocumentReference, onSnapshot } from "firebase/firestore";
+import {
+  doc,
+  DocumentReference,
+  DocumentSnapshot,
+  getDoc,
+  onSnapshot,
+} from "firebase/firestore";
 import { Firestore } from "@/tools/firestore";
 import { Button } from "@/styles/Form.styles";
 import { invoiceType } from "@/tools/invoices/createInvoice";
+import { outputType } from "@/tools/products/addOutputs";
 
 export type priceVariation = {
   total: number;
@@ -138,12 +145,15 @@ type props = {
   invoiceToEditData: invoiceType | undefined;
 };
 
-export function ProductList({ setProductsResults }: props) {
+export function ProductList({ setProductsResults, invoiceToEditData }: props) {
   const [tagSelected, setTagSelected] = useState("");
   const products = useGetProducts(tagSelected);
   const [tags, setTags] = useState<Tag>();
   const { selectedSeller } = useContext(InvoiceContext);
   const [hideProductWithoutStock, setHideProductWithoutStock] = useState(false);
+  const [allPreviusOutputsToEdit, setAllPreviusOutputsToEdit] = useState<
+    DocumentSnapshot<outputType>[]
+  >([]);
 
   useEffect(() => {
     const db = Firestore();
@@ -162,6 +172,27 @@ export function ProductList({ setProductsResults }: props) {
       unsubcribe();
     };
   }, []);
+
+  // effect to get each output to send to the respective product
+  // when the edit mode is on
+  useEffect(() => {
+    async function getOuputs() {
+      const outputs = invoiceToEditData?.products_outputs;
+
+      if (!outputs) return;
+
+      const apo = outputs.map(async (el) => {
+        const output = await getDoc(el);
+
+        return output;
+      });
+
+      const apoResolved = await Promise.all(apo);
+      setAllPreviusOutputsToEdit(apoResolved);
+    }
+
+    getOuputs();
+  }, [invoiceToEditData?.products_outputs]);
 
   return (
     <Container styles={{ margin: "50px 0" }}>
@@ -195,17 +226,24 @@ export function ProductList({ setProductsResults }: props) {
         <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
 
         {products.docs?.length === 0 ? (
-          <>no hay productos</>
+          <>No hay productos</>
         ) : (
-          products.docs?.map((el, i) => (
-            <Product
-              key={i}
-              product={el}
-              setProductsResults={setProductsResults}
-              hasInventory={selectedSeller?.data().hasInventory}
-              hideWithoutStock={hideProductWithoutStock}
-            />
-          ))
+          products.docs?.map((el, i) => {
+            const previusOutputsToEdit = allPreviusOutputsToEdit.filter(
+              (_) => _.ref.parent.parent?.id === el.id
+            );
+
+            return (
+              <Product
+                key={i}
+                product={el}
+                setProductsResults={setProductsResults}
+                hasInventory={selectedSeller?.data().hasInventory}
+                hideWithoutStock={hideProductWithoutStock}
+                previusOutputsToEdit={previusOutputsToEdit}
+              />
+            );
+          })
         )}
       </Container>
     </Container>

@@ -29,6 +29,8 @@ import { Credit } from "@/components/pages/invoice/Product/closing/closed/Credit
 import { Bills } from "@/components/pages/invoice/Product/closing/closed/Bills";
 import { Close } from "@/components/pages/invoice/Product/closing/closed/Close";
 import { productDoc } from "@/tools/products/create";
+import { Button } from "@/styles/Form.styles";
+import { useRouter } from "next/router";
 
 export default function Page() {
   const { id } = useQueryParams();
@@ -48,6 +50,7 @@ export default function Page() {
   const [productsTotals, setProductsTotals] = useState<totals_sold>();
   const sellerData = useMemo(() => seller?.data(), [seller]);
   const data = useMemo(() => invoiceDoc?.data(), [invoiceDoc]);
+  const router = useRouter();
 
   // effect to get The invoice
   useEffect(() => {
@@ -209,10 +212,10 @@ export default function Page() {
         return {
           ...props,
           [product_id]: {
-            ...last_data,
-            name: productData.name,
             sales_amounts: [],
             purchases_amounts: [],
+            ...last_data,
+            name: productData.name,
             inventory,
           },
         };
@@ -255,6 +258,16 @@ export default function Page() {
       <Container styles={{ marginBottom: "20px" }}>
         <h1>Cierre de {sellerData.name} - Vista previa</h1>
         <p>Cierre del {data.created_at?.toDate().toLocaleDateString()}</p>
+      </Container>
+
+      <Container styles={{ marginBottom: "10px" }}>
+        <Button
+          onClick={() => {
+            router.push("/invoices/closing?id=" + invoiceDoc.id);
+          }}
+        >
+          Editar cierre
+        </Button>
       </Container>
 
       <ProductManagerPreview

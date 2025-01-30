@@ -45,7 +45,7 @@ export function Close({ totals, credits, bills, money }: props) {
         <Column gridColumn="">Vendedor</Column>
         <Column gridColumn="">{numberParser(totals.total_seller_proft)}</Column>
         <Column gridColumn="">Gastos</Column>
-        <Column gridColumn="">{numberParser(billsTotal)}</Column>
+        <Column gridColumn="">-{numberParser(billsTotal)}</Column>
         <Column gridColumn="">Empresa</Column>
         <Column gridColumn="">{numberParser(totals.total_profit)}</Column>
         <Column gridColumn="">Liquidación</Column>

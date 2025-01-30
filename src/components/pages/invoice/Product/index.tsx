@@ -506,7 +506,7 @@ export function Product({
       $hide={hideProduct}
       $hasInventory={hasInventory}
       $withoutStock={stockAmount}
-      $after={`${stockAmount} / ${data.stock.length}`}
+      $after={`${stockAmount - amount} / ${data.stock.length}`}
       $warn={amount > stockAmount || priceRequestCurrentAmount > stockAmount}
     >
       <>

@@ -28,6 +28,7 @@ import { inventory_product_data } from "@/tools/sellers/invetory/addProduct";
 import { totals_sold } from "./manager";
 
 type props = {
+  amountNotSold: number | undefined;
   data: rawProductWithInventory;
   product_id: string;
   setNewInventoryToCreate: Dispatch<
@@ -37,6 +38,7 @@ type props = {
 };
 
 export function ProductClosing({
+  amountNotSold,
   product_id,
   data,
   setNewInventoryToCreate,
@@ -47,6 +49,7 @@ export function ProductClosing({
   const lastStock = useMemo(() => productData?.stock[0], [productData]);
   const [fold, setFold] = useState(false);
   const [amoutnSold, setAmoutnSold] = useState(0);
+  const [editDevo, setEditDevo] = useState(false);
 
   const costPrices = useMemo(() => {
     const ioqnfjwn = [...data.purchases_amounts, ...data.inventory];
@@ -142,6 +145,8 @@ export function ProductClosing({
 
   const load = useMemo(() => {
     const list = [...data.purchases_amounts, ...data.inventory];
+    console.log("data", data.purchases_amounts);
+    console.log("data inventory", data.inventory);
 
     return list.reduce(
       (before, now) => {
@@ -409,6 +414,14 @@ export function ProductClosing({
     totalSales.total_inve_seller_sales,
   ]);
 
+  console.log(load);
+
+  // ---------- effects to manage the edit mode
+  // effect to set the amount not sold
+  useEffect(() => {
+    if (amountNotSold) setAmoutnSold(amountNotSold);
+  }, [amountNotSold]);
+
   return (
     <ProductContainer
       $withoutStock={1}
@@ -426,6 +439,9 @@ export function ProductClosing({
         <Input
           type="number"
           onChange={onChangeAmountSold}
+          onClick={() => setEditDevo(true)}
+          onSelect={() => setEditDevo(true)}
+          value={!editDevo ? amountNotSold : undefined}
           step={productData?.step}
           min={0}
         />

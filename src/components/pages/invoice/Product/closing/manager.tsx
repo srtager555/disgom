@@ -5,10 +5,14 @@ import {
   rawProductWithInventory,
 } from "@/pages/invoices/closing";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { inventory_product_data } from "@/tools/sellers/invetory/addProduct";
+import {
+  inventory_product_data,
+  inventoryProductDoc,
+} from "@/tools/sellers/invetory/addProduct";
 import { ProductContainer } from "../../ProductList";
 import { Column } from "..";
 import { numberParser } from "@/tools/numberPaser";
+import { QueryDocumentSnapshot } from "firebase/firestore";
 
 export type totals_sold = {
   total_purchase: number;
@@ -24,12 +28,14 @@ type props = {
     SetStateAction<Record<string, inventory_product_data[]> | undefined>
   >;
   setProductTotals: Dispatch<SetStateAction<totals_sold | undefined>>;
+  inventory: QueryDocumentSnapshot<inventoryProductDoc>[] | undefined;
 };
 
 export function ProductManager({
   rawProducts,
   setInventories,
   setProductTotals,
+  inventory,
 }: props) {
   const [newInventoryToCreate, setNewInventoryToCreate] = useState<
     Record<string, inventory_product_data[]>
@@ -68,14 +74,28 @@ export function ProductManager({
   return (
     <Container styles={{ marginBottom: "30px" }}>
       <Descriptions />
-      {Object.entries(rawProducts).map((el, i) => {
-        const data = el[1];
+      {Object.entries(rawProducts).map((_, i) => {
+        const data = _[1];
+        const amounts = (inventory || [])
+          .filter((el) => {
+            const data = el.data();
+
+            return data.product_ref.id === _[0];
+          })
+          .map((el) => el.data());
+
+        const amountNotSold = amounts.reduce((before, now) => {
+          return before + now.amount;
+        }, 0);
+
+        console.log("info product", data);
 
         return (
           <ProductClosing
+            amountNotSold={amountNotSold}
             key={i}
             data={data}
-            product_id={el[0]}
+            product_id={_[0]}
             setNewInventoryToCreate={setNewInventoryToCreate}
             setTotals={setTotals}
           />

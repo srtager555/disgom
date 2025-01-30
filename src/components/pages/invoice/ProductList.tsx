@@ -61,7 +61,8 @@ export const ProductContainer = styled.div<{
   transition: 200ms ease all;
   height: ${(props) =>
     !props.$hide ? (props.$fold ? "35px" : "auto") : "0px"};
-  padding: ${(props) => (!props.$hide ? (props.$header ? "10px" : "5px") : 0)} 0;
+  /* padding: ${(props) =>
+    !props.$hide ? (props.$header ? "10px" : "5px") : 0} 0; */
   visibility: ${(props) => (props.$hide ? "hidden" : "visible")};
   grid-template-columns: ${(props) => {
     if (props.$closing) return "repeat(17, 75px)";
@@ -260,7 +261,7 @@ export const Descriptions = ({
       Nombre del producto
     </Column>
     <Column gridColumn="4 / 5" printGridColumn="8 / 10">
-      Cant
+      Consig.
     </Column>
     <Column gridColumn="5 / 6">P Costo</Column>
     <Column gridColumn="6 / 7">T Costo</Column>

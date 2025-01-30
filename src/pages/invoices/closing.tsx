@@ -77,6 +77,8 @@ export default function Page() {
   const [creditsToUpdate, setCreditsToUpdate] = useState<creditToUpdate[]>();
   const [newInventoriesToCreate, setNewInventoriesToCreate] =
     useState<Record<string, inventory_product_data[]>>();
+  const [invoiceInventory, setInvoiceInventory] =
+    useState<QueryDocumentSnapshot<inventoryProductDoc>[]>();
   const [productsTotals, setProductsTotals] = useState<totals_sold>();
   const [bills, setBills] = useState<Record<string, bill>>({});
   const [money, setMoney] = useState({ cash: 0, deposit: 0 });
@@ -110,11 +112,22 @@ export default function Page() {
     });
 
     const creditsUpdated = Object.values(creditsToUpdate).map(async (el) => {
-      const coll = collection(el.ref, "credits") as CollectionReference<credit>;
-      const q = query(coll, orderBy("created_at", "desc"), limit(1));
-      const credits = await getDocs(q);
-      const last_credit = credits.docs[0].data();
-      return await createCredit(el.ref, el.newAmount, last_credit.amount);
+      if (!el.previuss) {
+        const coll = collection(
+          el.ref,
+          "credits"
+        ) as CollectionReference<credit>;
+        const q = query(coll, orderBy("created_at", "desc"), limit(1));
+        const credits = await getDocs(q);
+        const last_credit = credits.docs[0].data();
+        return await createCredit(el.ref, el.newAmount, last_credit.amount);
+      } else {
+        await updateDoc(el.previuss, {
+          amount: el.newAmount,
+        });
+
+        return el.previuss;
+      }
     });
 
     await closeInvoice(invoiceDoc.ref, {
@@ -285,10 +298,10 @@ export default function Page() {
         return {
           ...props,
           [product_id]: {
-            ...last_data,
-            name: productData.name,
             sales_amounts: [],
             purchases_amounts: [],
+            ...last_data,
+            name: productData.name,
             inventory,
           },
         };
@@ -309,6 +322,40 @@ export default function Page() {
 
     setSortedRawProducts(sorted);
   }, [rawProducts]);
+
+  // effects to edit the edit the closed invoice
+  // effecto to get the inventory to se as not sold amount
+  useEffect(() => {
+    async function getInventory() {
+      if (!data || !seller) return;
+
+      if (!data.inventory_ref) return;
+
+      const coll = collection(
+        data.inventory_ref,
+        SellersCollection.inventories.products
+      ) as CollectionReference<inventoryProductDoc>;
+      const invent_products = await getDocs(coll);
+
+      setInvoiceInventory(invent_products.docs);
+    }
+
+    getInventory();
+  }, [data, seller]);
+
+  // effect to add the bills to edit
+  useEffect(() => {
+    const bills = invoiceDoc?.data()?.bills;
+    if (!bills) return;
+
+    const parsed = Object.fromEntries(
+      bills.map((el) => {
+        return [el.reason.replaceAll(" ", "_"), el];
+      })
+    );
+
+    setBills(parsed);
+  }, [invoiceDoc]);
 
   if (!invoiceDoc || !data || !sellerData || !rawProducts || !seller)
     return "Cargando...";
@@ -333,6 +380,7 @@ export default function Page() {
         rawProducts={sortedRawProducts}
         setInventories={setNewInventoriesToCreate}
         setProductTotals={setProductsTotals}
+        inventory={invoiceInventory}
       />
 
       <Container styles={{ marginBottom: "30px" }}>
@@ -342,6 +390,7 @@ export default function Page() {
           setNewCreditsToCreate={setNewCreditsToCreate}
           setCreditsToUpdate={setCreditsToUpdate}
           setRoute={setRoute}
+          invoice={invoiceDoc}
         />
       </Container>
 
@@ -352,6 +401,7 @@ export default function Page() {
         credits={totalCredits}
         bills={bills}
         setMoney={setMoney}
+        invoice={invoiceDoc}
       />
 
       <FlexContainer styles={{ justifyContent: "center" }}>

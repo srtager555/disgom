@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 import { Select } from "@/components/Inputs/select";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { numberParser } from "@/tools/numberPaser";
@@ -6,6 +7,8 @@ import { clientCredit, credit } from "@/tools/sellers/credits/create";
 import { getClientCredits, getCredits } from "@/tools/sellers/credits/get";
 import {
   DocumentReference,
+  DocumentSnapshot,
+  getDoc,
   QueryDocumentSnapshot,
   QuerySnapshot,
 } from "firebase/firestore";
@@ -14,6 +17,7 @@ import {
   Dispatch,
   FormEvent,
   SetStateAction,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -24,6 +28,7 @@ import { Button, Form } from "@/styles/Form.styles";
 import { InputText } from "@/components/Inputs/text";
 import { InputNumber } from "@/components/Inputs/number";
 import { globalCSSVars } from "@/styles/colors";
+import { invoiceType } from "@/tools/invoices/createInvoice";
 
 type props = {
   seller_ref: DocumentReference<SellersDoc>;
@@ -31,6 +36,7 @@ type props = {
   setNewCreditsToCreate: Dispatch<SetStateAction<newCredits[] | undefined>>;
   setCreditsToUpdate: Dispatch<SetStateAction<creditToUpdate[] | undefined>>;
   setRoute: Dispatch<SetStateAction<number | undefined>>;
+  invoice: DocumentSnapshot<invoiceType> | undefined;
 };
 
 export type newCredits = {
@@ -43,6 +49,7 @@ export type newCredits = {
 export type creditToUpdate = {
   amount: number;
   newAmount: number;
+  previuss: DocumentReference<credit> | undefined;
   ref: DocumentReference<clientCredit>;
 };
 
@@ -54,6 +61,7 @@ export function Credit({
   setNewCreditsToCreate,
   setCreditsToUpdate,
   setRoute: setR,
+  invoice,
 }: props) {
   const routes = [
     {
@@ -182,11 +190,26 @@ export function Credit({
     setCreditsToUpdate(correct);
   }, [allDiffs, setCreditsToUpdate]);
 
+  // ----------------- effects to manage the edit mode
+  // effect to set the route
+  useEffect(() => {
+    const route = invoice?.data()?.route;
+    if (route) {
+      setRoute(route);
+      setR(route);
+    }
+  }, [invoice, setR]);
+
   return (
     <Container>
       <h2>Creditos</h2>
       <Select
-        options={routes}
+        options={routes.map((el) => {
+          return {
+            ...el,
+            selected: Number(el.value) === invoice?.data()?.route,
+          };
+        })}
         onChange={(e) => {
           setRoute(Number(e.target.value));
           setR(Number(e.target.value));
@@ -255,9 +278,22 @@ export function Credit({
             ) : (
               <Container styles={{ marginBottom: "10px" }}>
                 <h4>Creditos anteriores</h4>
-                {credits?.docs.map((el, i) => (
-                  <ClientCredit client={el} setAllDiffs={setAllDiffs} key={i} />
-                ))}
+                {credits?.docs.map((_, i) => {
+                  const creditToEdit = invoice
+                    ?.data()
+                    ?.newCredits?.find((el) => {
+                      return el.parent.parent?.id === _.id;
+                    });
+
+                  return (
+                    <ClientCredit
+                      creditToEditRef={creditToEdit}
+                      client={_}
+                      setAllDiffs={setAllDiffs}
+                      key={i}
+                    />
+                  );
+                })}
               </Container>
             )}
             <FlexContainer styles={{ justifyContent: "flex-end" }}>
@@ -286,31 +322,43 @@ export function Credit({
 type awdfawf = {
   client: QueryDocumentSnapshot<clientCredit>;
   setAllDiffs: Dispatch<SetStateAction<allDiffs>>;
+  creditToEditRef: DocumentReference<credit> | undefined;
 };
 
-function ClientCredit({ client, setAllDiffs }: awdfawf) {
+function ClientCredit({ client, setAllDiffs, creditToEditRef }: awdfawf) {
   const data = useMemo(() => client.data(), [client]);
   const [credit, setCredit] = useState<QueryDocumentSnapshot<credit>>();
   const creditData = useMemo(() => credit?.data(), [credit]);
   const [diff, setDiff] = useState<number | string>("...");
+  const [editAmount, setEditAmount] = useState(false);
+  const [creditToEdit, setCreditToEdit] = useState<DocumentSnapshot<credit>>();
 
-  const manageDiff = (e: ChangeEvent<HTMLInputElement>) => {
-    if (!creditData) return;
+  const manageDiff = useCallback(
+    (e: ChangeEvent<HTMLInputElement> | number) => {
+      if (!creditData) return;
 
-    const value = Number(e.target.value);
-    setDiff(creditData.amount - value);
+      const value = typeof e === "number" ? e : Number(e.target.value);
+      const previusAmount = creditData.last_amount;
+      const currentAmount = creditData.amount;
+      const wowowow = creditToEdit ? previusAmount : currentAmount;
+      const different = wowowow - value;
 
-    setAllDiffs((props) => {
-      return {
-        ...props,
-        [client.id]: {
-          newAmount: value,
-          amount: creditData.amount - value,
-          ref: client.ref,
-        },
-      };
-    });
-  };
+      setDiff(different);
+
+      setAllDiffs((props) => {
+        return {
+          ...props,
+          [client.id]: {
+            newAmount: value,
+            amount: different,
+            ref: client.ref,
+            previuss: creditToEdit?.ref,
+          },
+        };
+      });
+    },
+    [client.id, client.ref, creditData, creditToEdit, setAllDiffs]
+  );
 
   // effecto get the credit
   useEffect(() => {
@@ -322,6 +370,27 @@ function ClientCredit({ client, setAllDiffs }: awdfawf) {
 
     getCredit();
   }, [client]);
+
+  // effect to get the credits to edit
+  useEffect(() => {
+    async function getCreditToEdit() {
+      if (!creditToEditRef) return;
+      const credit = await getDoc(creditToEditRef);
+
+      setCreditToEdit(credit);
+    }
+
+    getCreditToEdit();
+  }, [creditToEditRef]);
+
+  // effecto to update the diff
+  useEffect(() => {
+    if (!creditToEdit || typeof diff === "number") return;
+
+    const previusAmount = creditToEdit.data()?.amount as number;
+
+    manageDiff(previusAmount);
+  }, [creditToEdit, manageDiff, diff]);
 
   if (!creditData) return <>Cargando...</>;
 
@@ -340,14 +409,23 @@ function ClientCredit({ client, setAllDiffs }: awdfawf) {
         <Container
           styles={{ width: "75px", marginRight: "10px", textAlign: "center" }}
         >
-          {numberParser(creditData.amount)}
+          {!creditToEdit
+            ? numberParser(creditData.amount)
+            : creditToEdit.data()?.last_amount
+            ? //@ts-ignore
+              numberParser(creditToEdit.data()?.last_amount)
+            : "Nuevo"}
         </Container>
         <Container
           styles={{ width: "75px", marginRight: "10px", height: "100%" }}
         >
           <Input
             onChange={manageDiff}
+            onClick={() => setEditAmount(true)}
+            onSelect={() => setEditAmount(true)}
+            value={!editAmount ? creditToEdit?.data()?.amount : undefined}
             height="100%"
+            type="number"
             style={{ textAlign: "center" }}
           />
         </Container>

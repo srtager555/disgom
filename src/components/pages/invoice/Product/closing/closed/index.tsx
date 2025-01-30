@@ -222,7 +222,6 @@ export function ProductClosing({
             data.sales_amounts.sort(
               (a, b) => b.seller_price - a.seller_price
             )[0]?.seller_price || lastStock?.seller_profit;
-
           console.log(normal_price);
 
           if (!normal_price || !seller_price)
@@ -323,7 +322,7 @@ export function ProductClosing({
       $closing
       $warn={inventoryAmount.amount + load.amount - amoutnSold < 0}
     >
-      <Column gridColumn="1 / 4">{productData?.name} a</Column>
+      <Column gridColumn="1 / 4">{productData?.name}</Column>
       <Column gridColumn="">{numberParser(inventoryAmount.amount)}</Column>
       <Column gridColumn="">
         {numberParser(load.amount - inventoryAmount.amount)}
@@ -338,7 +337,7 @@ export function ProductClosing({
       >
         {numberParser(load.total + load.total_inventory)}
       </Column>
-      <Column gridColumn="">{normalSalePrices}a</Column>
+      <Column gridColumn="">{normalSalePrices}</Column>
       <Column
         gridColumn=""
         title={numberParser(totalSales.sale + totalSales.total_inve_sales)}

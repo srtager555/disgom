@@ -47,6 +47,15 @@ export function Bills({ bills, setBills }: props) {
     formRef.current?.reset();
   }
 
+  function removeBill(id: string) {
+    setBills((props) => {
+      const all = { ...props };
+      delete all[id];
+
+      return all;
+    });
+  }
+
   // effecto to reduce the bills
   useEffect(() => {
     const total = Object.values(bills).reduce((before, now) => {
@@ -89,13 +98,23 @@ export function Bills({ bills, setBills }: props) {
               width: "400px",
               borderBottom: "1px solid " + globalCSSVars["--detail"],
               marginBottom: "20px",
+              alignItems: "center",
             }}
           >
-            <Container styles={{ width: "300px", marginRight: "10px" }}>
+            <Container styles={{ width: "255px", marginRight: "10px" }}>
               {el.reason}
             </Container>
-            <Container styles={{ width: "90px" }}>
+            <Container
+              styles={{ width: "80px", marginRight: "10px", textAlign: "end" }}
+            >
               {numberParser(el.amount)}
+            </Container>
+            <Container styles={{ width: "45px" }}>
+              <Button
+                onClick={() => removeBill(el.reason.replaceAll(" ", "_"))}
+              >
+                X
+              </Button>
             </Container>
           </FlexContainer>
         );
@@ -108,7 +127,7 @@ export function Bills({ bills, setBills }: props) {
         }}
       >
         <h3>Total</h3>
-        <p style={{ width: "90px", marginLeft: "10px" }}>
+        <p style={{ width: "90px", marginRight: "55px", textAlign: "end" }}>
           {numberParser(total)}
         </p>
       </FlexContainer>

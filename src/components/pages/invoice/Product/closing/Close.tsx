@@ -3,8 +3,10 @@ import styled from "styled-components";
 import { Column, Input } from "..";
 import { totals_sold } from "./manager";
 import { bill } from "./Bills";
-import { Dispatch, SetStateAction, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { numberParser } from "@/tools/numberPaser";
+import { invoiceType } from "@/tools/invoices/createInvoice";
+import { DocumentSnapshot } from "firebase/firestore";
 
 const GridCon = styled(Container)`
   display: grid;
@@ -19,15 +21,35 @@ type props = {
   credits: number;
   bills: Record<string, bill>;
   setMoney: Dispatch<SetStateAction<{ cash: number; deposit: number }>>;
+  invoice: DocumentSnapshot<invoiceType>;
 };
 
-export function Close({ totals, credits, bills, setMoney }: props) {
+export function Close({ totals, credits, bills, setMoney, invoice }: props) {
   const [cash, setCash] = useState(0);
   const [deposit, setDeposit] = useState(0);
   const billsTotal = useMemo(
     () => Object.values(bills).reduce((before, now) => before + now.amount, 0),
     [bills]
   );
+  const [editCash, setEditCash] = useState(false);
+  const [editDeposit, setEditDeposit] = useState(false);
+
+  const money = useMemo(() => {
+    const data = invoice.data();
+    return data?.money;
+  }, [invoice]);
+
+  useEffect(() => {
+    if (!money) return;
+
+    setCash(money.cash);
+    setDeposit(money.deposit);
+
+    setMoney({
+      deposit: money.deposit,
+      cash: money.cash,
+    });
+  }, [money, setMoney]);
 
   if (!totals) return <>Cargando...</>;
 
@@ -46,7 +68,7 @@ export function Close({ totals, credits, bills, setMoney }: props) {
         <Column gridColumn="">Vendedor</Column>
         <Column gridColumn="">{numberParser(totals.total_seller_proft)}</Column>
         <Column gridColumn="">Gastos</Column>
-        <Column gridColumn="">{numberParser(billsTotal)}</Column>
+        <Column gridColumn="">-{numberParser(billsTotal)}</Column>
         <Column gridColumn="">Empresa</Column>
         <Column gridColumn="">{numberParser(totals.total_profit)}</Column>
         <Column gridColumn="">Liquidación</Column>
@@ -57,26 +79,30 @@ export function Close({ totals, credits, bills, setMoney }: props) {
         <Column gridColumn="">
           <Input
             type="number"
-            step="0.01"
             onChange={(e) => {
               setDeposit(Number(e.target.value));
               setMoney((props) => {
                 return { ...props, deposit: Number(e.target.value) };
               });
             }}
+            onClick={() => setEditDeposit(true)}
+            onSelect={() => setEditDeposit(true)}
+            value={!editDeposit ? money?.deposit : undefined}
           />
         </Column>
         <Column gridColumn="1 / 2">Efectivo</Column>
         <Column gridColumn="">
           <Input
             type="number"
-            step="0.01"
             onChange={(e) => {
               setCash(Number(e.target.value));
               setMoney((props) => {
                 return { ...props, cash: Number(e.target.value) };
               });
             }}
+            onClick={() => setEditCash(true)}
+            onSelect={() => setEditCash(true)}
+            value={!editCash ? money?.cash : undefined}
           />
         </Column>
         <Column gridColumn="1 / 2">

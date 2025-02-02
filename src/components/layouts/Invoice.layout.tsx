@@ -6,7 +6,7 @@ export function InvoiceLayout({ children }: { children: children }) {
     <Container>
       <Container styles={{ marginBottom: "30px" }}>
         <AnchorNavigators href="/invoices">Lista de facturas</AnchorNavigators>
-        <AnchorNavigators href="/invoices/create">
+        <AnchorNavigators href="/invoices/manage">
           Crear factura
         </AnchorNavigators>
       </Container>

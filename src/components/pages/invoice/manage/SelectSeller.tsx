@@ -65,7 +65,9 @@ export function SelectSeller({
         <h1 style={{ margin: "0", textAlign: "center" }}>Factura de</h1>
       ) : (
         <>
-          <h1>¡Es hora de crear una factura!</h1>
+          <h1 style={{ textAlign: "center" }}>
+            ¡Es hora de crear una factura!
+          </h1>
           <p>Selecciona un vendedor para crear una factura</p>
         </>
       )}

@@ -3,8 +3,9 @@
 import pwa from "next-pwa";
 
 const withPWA = pwa({
-  dest: "public", // Carpeta donde se generará el Service Worker
-  disable: process.env.NODE_ENV === "development", // Desactiva PWA en modo desarrollo
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  disableDevLogs: process.env.NODE_ENV === "development",
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/.*\/_next\/static\//,

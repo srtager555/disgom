@@ -2,7 +2,7 @@ import { Select } from "@/components/Inputs/select";
 import { useGetSellers } from "@/hooks/sellers/getSellers";
 import { FlexContainer } from "@/styles/index.styles";
 import { SellersDoc } from "@/tools/sellers/create";
-import { DocumentSnapshot } from "firebase/firestore";
+import { DocumentSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
 import {
   ChangeEvent,
   Dispatch,
@@ -15,7 +15,7 @@ import styled from "styled-components";
 
 type SelectSellerProps = {
   setSelectedSeller: Dispatch<
-    SetStateAction<DocumentSnapshot<SellersDoc> | undefined>
+    SetStateAction<QueryDocumentSnapshot<SellersDoc> | undefined>
   >;
   currentSeller: DocumentSnapshot<SellersDoc> | undefined;
 };

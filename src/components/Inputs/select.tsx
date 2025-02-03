@@ -38,7 +38,7 @@ export function Select({
         marginRight: inline ? "10px" : "0px",
       }}
     >
-      <p>{children}</p>
+      {children && <p>{children}</p>}
       <SelectStyles {...props}>
         {options.map((el, i) => {
           return (

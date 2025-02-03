@@ -5,7 +5,6 @@ import { Button, Form } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
-import { invoiceType } from "@/tools/invoices/createInvoice";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client, createClient } from "@/tools/sellers/createClient";
 import { updateClient } from "@/tools/sellers/udpateClient";
@@ -13,6 +12,7 @@ import {
   collection,
   CollectionReference,
   doc,
+  DocumentSnapshot,
   onSnapshot,
   QueryDocumentSnapshot,
 } from "firebase/firestore";
@@ -47,14 +47,14 @@ interface props {
   sellerData: SellersDoc | undefined;
   sellerDoc: QueryDocumentSnapshot<SellersDoc> | undefined;
   setClient: Dispatch<SetStateAction<QueryDocumentSnapshot<client> | null>>;
-  invoiceDataToEdit: invoiceType | undefined;
+  client: DocumentSnapshot<client> | null;
 }
 
 export function SelectClient({
   sellerData,
   sellerDoc,
   setClient,
-  invoiceDataToEdit,
+  client,
 }: props) {
   const [clients, setClients] = useState<QueryDocumentSnapshot<client>[]>();
   const [selectedClient, setSelectedClient] = useState<
@@ -151,14 +151,12 @@ export function SelectClient({
 
   // effecto to set the seller data
   useEffect(() => {
-    if (!clients || !invoiceDataToEdit) return;
+    if (!clients || !client) return;
 
-    const theClient = clients.find(
-      (el) => el.id === invoiceDataToEdit.client_ref?.id
-    );
+    const theClient = clients.find((el) => el.id === client.id);
     setSelectedClient(theClient);
     setClient(theClient || null);
-  }, [clients, invoiceDataToEdit, setClient]);
+  }, [clients, client, setClient]);
 
   return (
     <>
@@ -176,7 +174,7 @@ export function SelectClient({
                       name: data.name,
                       value: el.id,
                       selected:
-                        invoiceDataToEdit?.client_ref?.id === el.id ||
+                        client?.id === el.id ||
                         createdClientAsDefault === el.id,
                     };
                   }),

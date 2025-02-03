@@ -1,7 +1,10 @@
+import { Products } from "@/components/pages/invoice/manage/products";
 import { SelectSeller } from "@/components/pages/invoice/manage/SelectSeller";
+import { SelectClient } from "@/components/pages/invoice/SelectClient";
 import { FlexContainer } from "@/styles/index.styles";
 import { SellersDoc } from "@/tools/sellers/create";
-import { DocumentSnapshot } from "firebase/firestore";
+import { client } from "@/tools/sellers/createClient";
+import { QueryDocumentSnapshot } from "firebase/firestore";
 import { useState } from "react";
 import styled from "styled-components";
 
@@ -16,8 +19,11 @@ const MainContainer = styled(FlexContainer)`
 
 export default function Page() {
   const [selectedSeller, setSelectedSeller] = useState<
-    DocumentSnapshot<SellersDoc> | undefined
+    QueryDocumentSnapshot<SellersDoc> | undefined
   >(undefined);
+  const [client, setClient] = useState<QueryDocumentSnapshot<client> | null>(
+    null
+  );
 
   return (
     <MainContainer>
@@ -25,6 +31,16 @@ export default function Page() {
         currentSeller={selectedSeller}
         setSelectedSeller={setSelectedSeller}
       />
+      {selectedSeller && (
+        <SelectClient
+          sellerData={selectedSeller?.data()}
+          sellerDoc={selectedSeller}
+          setClient={setClient}
+          client={client}
+        />
+      )}
+
+      <Products />
     </MainContainer>
   );
 }

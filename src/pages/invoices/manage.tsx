@@ -1,7 +1,7 @@
 import { Products } from "@/components/pages/invoice/manage/products";
 import { SelectSeller } from "@/components/pages/invoice/manage/SelectSeller";
 import { SelectClient } from "@/components/pages/invoice/SelectClient";
-import { FlexContainer } from "@/styles/index.styles";
+import { Container, FlexContainer } from "@/styles/index.styles";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client } from "@/tools/sellers/createClient";
 import { QueryDocumentSnapshot } from "firebase/firestore";
@@ -27,20 +27,22 @@ export default function Page() {
 
   return (
     <MainContainer>
-      <SelectSeller
-        currentSeller={selectedSeller}
-        setSelectedSeller={setSelectedSeller}
-      />
-      {selectedSeller && (
-        <SelectClient
-          sellerData={selectedSeller?.data()}
-          sellerDoc={selectedSeller}
-          setClient={setClient}
-          client={client}
+      <Container styles={{ marginBottom: "20px" }}>
+        <SelectSeller
+          currentSeller={selectedSeller}
+          setSelectedSeller={setSelectedSeller}
         />
-      )}
+        {selectedSeller && (
+          <SelectClient
+            sellerData={selectedSeller?.data()}
+            sellerDoc={selectedSeller}
+            setClient={setClient}
+            client={client}
+          />
+        )}
+      </Container>
 
-      <Products />
+      <Products selectedSeller={selectedSeller} />
     </MainContainer>
   );
 }

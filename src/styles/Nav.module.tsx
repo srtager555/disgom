@@ -63,6 +63,9 @@ export const Nav = styled.nav`
   background: ${globalCSSVars["--background"]};
   border: 2px ${globalCSSVars["--foreground"]} solid;
   border-radius: 15px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
 
   @media print {
     display: none;

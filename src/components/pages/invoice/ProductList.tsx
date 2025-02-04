@@ -25,6 +25,7 @@ import { Firestore } from "@/tools/firestore";
 import { Button } from "@/styles/Form.styles";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { outputType } from "@/tools/products/addOutputs";
+import { Icon } from "@/components/Icons";
 
 export type priceVariation = {
   total: number;
@@ -126,7 +127,7 @@ export const ProductContainer = styled.div<{
   ${(props) =>
     !props.$children
       ? css`
-          padding-left: 10px;
+          /* padding-left: 10px; */
           background-color: ${globalCSSVars["--background"]};
         `
       : css`
@@ -258,27 +259,25 @@ export const Descriptions = ({
 }) => (
   <ProductContainer $header $withoutStock={1} $hasInventory={hasInventory}>
     <Column gridColumn="1 / 4" printGridColumn="1 / 8">
-      Nombre del producto
+      Producto
     </Column>
     <Column gridColumn="4 / 5" printGridColumn="8 / 10">
-      Consig.
+      Guardo
     </Column>
-    <Column gridColumn="5 / 6">P Costo</Column>
-    <Column gridColumn="6 / 7">T Costo</Column>
+    <Column gridColumn="5 / 6">Consig.</Column>
+    <Column gridColumn="6 / 7">Devol</Column>
     <Column gridColumn="7 / 8" printGridColumn="-4 / -6">
-      Precio
+      Venta
     </Column>
     <Column gridColumn="8 / 9" printGridColumn="-1 / -4">
-      Total
+      Precio
     </Column>
-    <Column gridColumn="9 / 10">Ganan</Column>
-    {hasInventory && (
-      <>
-        <Column gridColumn="10 / 11">P Vend</Column>
-        <Column gridColumn="11 / 12">V Vend</Column>
-        <Column gridColumn="12 / 13">G Vend</Column>
-      </>
-    )}
-    <Column gridColumn="-1 / -2">Extra</Column>
+    <Column gridColumn="9 / 10">Total</Column>
+    <Column gridColumn="10 / 11">Com.</Column>
+    <Column gridColumn="11 / 12">
+      <Container styles={{ marginRight: "10px" }}>
+        <Icon iconType="fold" />
+      </Container>
+    </Column>
   </ProductContainer>
 );

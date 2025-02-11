@@ -9,6 +9,7 @@ import { entryData, entryDoc } from "./addEntry";
 
 export interface stockProps extends entryData {
   entry_ref: DocumentReference<entryDoc>;
+  product_ref: DocumentReference<productDoc>;
 }
 
 export interface stockType extends stockProps {

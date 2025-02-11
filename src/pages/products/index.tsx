@@ -1,28 +1,16 @@
 import SalesComparisonChart from "@/components/chart";
-import { InputNumber } from "@/components/Inputs/number";
 import {
   ProductContext,
   ProductsLayout,
 } from "@/components/layouts/Products.layout";
+import { FormToAddStock } from "@/components/pages/invoice/Products/FormToAddStock";
 import { useGetProduct } from "@/hooks/products/getProduct";
 import { NextPageWithLayout } from "@/pages/_app";
 import { globalCSSVars } from "@/styles/colors";
-import { Button, Form } from "@/styles/Form.styles";
+import { Button } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
-import { addEntry } from "@/tools/products/addEntry";
 import { stockType } from "@/tools/products/addToStock";
-import { EditEntry } from "@/tools/products/editEntry";
-import { removeEntry } from "@/tools/products/removeEntry";
-import { getDoc, updateDoc } from "firebase/firestore";
-import {
-  ChangeEvent,
-  FormEvent,
-  ReactElement,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { ReactElement, useContext, useEffect, useState } from "react";
 import styled, { css } from "styled-components";
 
 const FadeContainer = styled(Container)<{ $fade: boolean }>`
@@ -111,99 +99,15 @@ const StockButton = styled(Button)<{ $selected: boolean }>`
 const FormContainer = styled.div`
   display: grid;
   grid-column: 1 / 6;
-  grid-row: 8 / 14;
+  grid-row: 9 / 15;
 `;
 
 const Page: NextPageWithLayout = () => {
   const { selectedProduct } = useContext(ProductContext);
   const product = useGetProduct();
-  const [timeoutSaved, setTimeoutSaved] = useState<NodeJS.Timeout>();
+
   const [entryToEdit, setEntryToEdit] = useState<stockType | undefined>();
-  const [originalAmount, setOriginalAmount] = useState(0);
   const [stock, setStock] = useState<stockType[]>([]);
-  const [defaultCost, setDefaultCost] = useState(0);
-  const [dynamicMinCost, setDynamicMinCost] = useState<number | undefined>(
-    undefined
-  );
-  const [defaultProfitOwner, setDefaultProfitOwner] = useState(0);
-  const [defaultProfitSeller, setDefaultProfitSeller] = useState(0);
-  const [dynamicMinSeller, setDynamicMinSeller] = useState<number | undefined>(
-    undefined
-  );
-  const formRef = useRef<HTMLFormElement>(null);
-  const costRef = useRef<HTMLInputElement>(null);
-  const ownerRef = useRef<HTMLInputElement>(null);
-
-  const handlerOnSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!selectedProduct) return;
-
-    const { productCostPrice, productSalePrice, sellerProfit, amount } =
-      e.target as EventTarget & {
-        sellerProfit: HTMLInputElement;
-        productCostPrice: HTMLInputElement;
-        productSalePrice: HTMLInputElement;
-        amount: HTMLInputElement;
-      };
-
-    const purchase_price = Number(productCostPrice.value);
-    const sale_price = Number(productSalePrice.value);
-    const seller_profit = Number(sellerProfit.value);
-
-    if (entryToEdit) {
-      await EditEntry(selectedProduct.ref, entryToEdit, {
-        amount: Number(amount.value),
-        purchase_price,
-        sale_price,
-        seller_profit,
-      });
-
-      setEntryToEdit(undefined);
-    } else {
-      await addEntry(selectedProduct?.ref, {
-        amount: Number(amount.value),
-        purchase_price,
-        sale_price,
-        seller_profit,
-      });
-    }
-
-    formRef.current?.reset();
-  };
-
-  async function disableProductManager(e: unknown) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    e.preventDefault();
-
-    if (!product.snap?.ref || !product.data) return;
-    await updateDoc(product.snap.ref, { disabled: !product.data.disabled });
-  }
-
-  // functions to remove a stock
-  function handlerRemoveStock() {
-    setTimeoutSaved(
-      setTimeout(async () => {
-        if (!entryToEdit || !selectedProduct?.ref) return;
-        await removeEntry(entryToEdit, selectedProduct?.ref, false);
-
-        setEntryToEdit(undefined);
-      }, 5000)
-    );
-  }
-  function handlerCancelRemoveStock() {
-    clearTimeout(timeoutSaved);
-  }
-
-  // functions to manage the min input value
-  function handlerOnChangeOwnerMin(e: ChangeEvent<HTMLInputElement>) {
-    const newMin = e.target.value;
-    setDynamicMinCost(Number(newMin));
-  }
-  function handlerOnChangeSellerMin(e: ChangeEvent<HTMLInputElement>) {
-    const newMin = e.target.value;
-    setDynamicMinSeller(Number(newMin));
-  }
 
   // function to select and unselect a entry
   function handlerSelectEntry(stock: stockType) {
@@ -225,47 +129,6 @@ const Page: NextPageWithLayout = () => {
 
     setStock(stock);
   }, [product.data?.stock]);
-
-  // effect to set the default values in the inputs
-  // if there is a entry selected the code will put their values
-  // in the default input values
-  useEffect(() => {
-    if (!stock || stock?.length === 0) {
-      setDefaultCost(0);
-      setDefaultProfitOwner(0);
-      setDefaultProfitSeller(0);
-
-      return;
-    }
-
-    const currentPriceData = stock[0];
-
-    setDefaultCost(
-      entryToEdit?.purchase_price ?? currentPriceData.purchase_price
-    );
-    setDefaultProfitOwner(
-      entryToEdit?.sale_price ?? currentPriceData.sale_price
-    );
-    setDefaultProfitSeller(
-      entryToEdit?.seller_profit ?? currentPriceData.seller_profit
-    );
-  }, [stock, entryToEdit]);
-
-  // effect to get the original entry amount
-  useEffect(() => {
-    async function getEntry() {
-      if (!entryToEdit) {
-        setOriginalAmount(0);
-        return;
-      }
-
-      const query = await getDoc(entryToEdit.entry_ref);
-      const originalAmount = query.data()?.amount;
-
-      if (originalAmount) setOriginalAmount(originalAmount);
-    }
-    getEntry();
-  }, [entryToEdit]);
 
   useEffect(() => {
     setEntryToEdit(undefined);
@@ -310,7 +173,9 @@ const Page: NextPageWithLayout = () => {
                             <Container styles={{ marginRight: "10px" }}>
                               Precio {_.sale_price} -
                             </Container>
-                            <Container>Vendedor {_.seller_profit}</Container>
+                            <Container>
+                              Vendedor {_.seller_commission}
+                            </Container>
                           </FlexContainer>
                         </StockButton>
                       </Container>
@@ -321,102 +186,11 @@ const Page: NextPageWithLayout = () => {
             </StockMapContainer>
           </StockContainer>
           <FormContainer>
-            <Form ref={formRef} onSubmit={handlerOnSubmit}>
-              <h3>Crear una nueva entrada</h3>
-              <p>
-                {entryToEdit
-                  ? "Edita la entrada seleccionada"
-                  : "Ingresa nuevo producto al stock."}
-              </p>
-              <FlexContainer>
-                <Container styles={{ width: "80px" }}>
-                  <InputNumber
-                    ref={costRef}
-                    defaultValue={defaultCost}
-                    min={0}
-                    step={0.01}
-                    onChange={handlerOnChangeOwnerMin}
-                    name="productCostPrice"
-                    inline
-                    required
-                  >
-                    Costó
-                  </InputNumber>
-                </Container>
-                <Container styles={{ width: "80px" }}>
-                  <InputNumber
-                    ref={ownerRef}
-                    onChange={handlerOnChangeSellerMin}
-                    min={dynamicMinCost ?? defaultCost}
-                    defaultValue={defaultProfitOwner}
-                    name="productSalePrice"
-                    step="0.01"
-                    inline
-                    required
-                  >
-                    P. Venta
-                  </InputNumber>
-                </Container>
-                <Container styles={{ width: "110px" }}>
-                  <InputNumber
-                    min={dynamicMinSeller ?? defaultProfitOwner}
-                    defaultValue={defaultProfitSeller}
-                    name="sellerProfit"
-                    step="0.01"
-                    inline
-                    required
-                  >
-                    P. Vendedor
-                  </InputNumber>
-                </Container>
-                <Container styles={{ width: "110px" }}>
-                  <InputNumber
-                    defaultValue={entryToEdit?.amount}
-                    inline
-                    name="amount"
-                    required
-                    step="0.01"
-                  >
-                    {entryToEdit ? (
-                      <>Stock ({originalAmount})</>
-                    ) : (
-                      <>
-                        Ingresó{" "}
-                        {selectedProduct?.data()
-                          ? `${selectedProduct.data().units}`
-                          : ""}
-                      </>
-                    )}
-                  </InputNumber>
-                </Container>
-              </FlexContainer>
-              <FlexContainer
-                styles={{
-                  display: "inline-flex",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Button>
-                  {entryToEdit ? "Editar entrada" : "Agregar entrada"}
-                </Button>
-                <Button onClick={disableProductManager}>
-                  {!product.data?.disabled ? "Deshabilitar" : "habilitar"}
-                </Button>
-              </FlexContainer>
-              {entryToEdit && (
-                <Button
-                  $warn
-                  $hold
-                  onPointerDown={handlerRemoveStock}
-                  onPointerUp={handlerCancelRemoveStock}
-                  onPointerLeave={handlerCancelRemoveStock}
-                >
-                  {entryToEdit.amount === originalAmount
-                    ? "Eliminar entrada"
-                    : "Eliminar existencias"}
-                </Button>
-              )}
-            </Form>
+            <FormToAddStock
+              stock={stock}
+              entryToEdit={entryToEdit}
+              setEntryToEdit={setEntryToEdit}
+            />
           </FormContainer>
         </MainContainer>
       </FadeContainer>

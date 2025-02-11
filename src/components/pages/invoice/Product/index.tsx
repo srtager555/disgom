@@ -53,7 +53,7 @@ const ColumnGrid = styled(Container)<{
 }>`
   grid-column: ${(props) => props.$gridColumn};
   width: 100%;
-  height: 25px;
+  height: calc(25px + 10px);
 
   @media print {
     display: ${(props) => (props.$printGridColumn ? "block" : "none")};
@@ -131,6 +131,7 @@ export const Column = styled(ColumnBase)<{
   overflow: hidden;
   text-overflow: ellipsis;
   background-color: inherit;
+  padding: 5px 0;
 
   & > button {
     padding: 0px;
@@ -158,8 +159,8 @@ export const Input = styled.input`
   width: 100%;
   height: 100%;
   border: none;
-  border-bottom: 1px solid ${globalCSSVars["--detail"]};
-  padding: 0;
+  /* border-bottom: 1px solid ${globalCSSVars["--detail"]}; */
+  padding: 2px 5px;
   font-size: 1rem;
 `;
 
@@ -504,7 +505,7 @@ export function Product({
   return (
     <ProductContainer
       $hide={hideProduct}
-      $hasInventory={hasInventory}
+      $hasInventory={false}
       $withoutStock={stockAmount}
       $after={`${stockAmount - amount} / ${data.stock.length}`}
       $warn={amount > stockAmount || priceRequestCurrentAmount > stockAmount}
@@ -521,7 +522,10 @@ export function Product({
             {data.name}
           </ProductName>
         </Column>
-        <Column gridColumn="4 / 5">
+        <Column gridColumn="">
+          {diffPurchasePrices ? "~" : currentStock?.purchase_price || "~"}
+        </Column>
+        <Column gridColumn="">
           {Object.values(priceRequestDescription).length > 1 ? (
             getSaleValues("amount")
           ) : (
@@ -540,13 +544,13 @@ export function Product({
             />
           )}
         </Column>
-        <Column gridColumn="5 / 6">
-          {diffPurchasePrices ? "~" : currentStock?.purchase_price || "~"}
+        <Column gridColumn="">
+          <Input type="number" defaultValue={"0"} />
         </Column>
-        <Column gridColumn="6 / 7" title={numberParser(purchaseValue)}>
-          {numberParser(purchaseValue)}
+        <Column gridColumn="" title={numberParser(saleValue)}>
+          {numberParser(saleValue)}
         </Column>
-        <Column gridColumn="7 / 8">
+        <Column gridColumn="">
           {diffSalePrices ? (
             "~"
           ) : currentStock?.sale_price ? (
@@ -569,50 +573,18 @@ export function Product({
             "~"
           )}
         </Column>
-        <Column gridColumn="8 / 9" title={numberParser(saleValue)}>
-          {numberParser(saleValue)}
-        </Column>
-        <Column gridColumn="9 / 10" title={numberParser(profitValue)}>
+        <Column gridColumn="" title={numberParser(profitValue)}>
           {numberParser(profitValue)}
         </Column>
-
-        {hasInventory && (
-          <>
-            <Column gridColumn="10 / 11">
-              {diffSellerPrices ? (
-                "~"
-              ) : currentStock?.seller_profit ? (
-                <Input
-                  onChange={(e) => changeStateValue(e, setSellerPrice)}
-                  type="number"
-                  min={salePrice}
-                  step={0.01}
-                  onClick={() => setEditSellerPrice(true)}
-                  onSelect={() => setEditSellerPrice(true)}
-                  value={
-                    !editSellerPrice
-                      ? requestPricesValues[0].seller_price ||
-                        sellerPrice ||
-                        currentStock.seller_profit
-                      : undefined
-                  }
-                />
-              ) : (
-                "~"
-              )}
-            </Column>
-            <Column gridColumn="11 / 12" title={numberParser(sellerValue)}>
-              {numberParser(sellerValue)}
-            </Column>
-            <Column gridColumn="12 / 13" title={numberParser(sellerProfit)}>
-              {numberParser(sellerProfit)}
-            </Column>
-          </>
-        )}
-        <Column gridColumn="-1 / -2">
-          <ExtraButton onClick={folding}>
-            <Icon iconType={fold ? "fold" : "unfold"} />
-          </ExtraButton>
+        <Column gridColumn="" title={numberParser(profitValue)}>
+          {numberParser(profitValue)}
+        </Column>
+        <Column gridColumn="11 / 12">
+          <Container styles={{ marginRight: "10px" }}>
+            <ExtraButton onClick={folding}>
+              <Icon iconType={fold ? "fold" : "unfold"} />
+            </ExtraButton>
+          </Container>
         </Column>
       </>
       <ProductContainer

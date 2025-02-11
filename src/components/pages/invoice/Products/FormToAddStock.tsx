@@ -1,0 +1,258 @@
+import { InputNumber } from "@/components/Inputs/number";
+import { ProductContext } from "@/components/layouts/Products.layout";
+import { useGetProduct } from "@/hooks/products/getProduct";
+import { Form, Button } from "@/styles/Form.styles";
+import { Container, FlexContainer } from "@/styles/index.styles";
+import { addEntry } from "@/tools/products/addEntry";
+import { stockType } from "@/tools/products/addToStock";
+import { EditEntry } from "@/tools/products/editEntry";
+import { removeEntry } from "@/tools/products/removeEntry";
+import { getDoc, updateDoc } from "firebase/firestore";
+import {
+  FormEvent,
+  ChangeEvent,
+  useRef,
+  useState,
+  useContext,
+  useEffect,
+  Dispatch,
+  SetStateAction,
+} from "react";
+
+type props = {
+  stock: stockType[];
+  entryToEdit: stockType | undefined;
+  setEntryToEdit: Dispatch<SetStateAction<stockType | undefined>>;
+};
+
+export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
+  const product = useGetProduct();
+  const { selectedProduct } = useContext(ProductContext);
+  const [timeoutSaved, setTimeoutSaved] = useState<NodeJS.Timeout>();
+  const [defaultCost, setDefaultCost] = useState(0);
+  const [dynamicMinCost, setDynamicMinCost] = useState<number | undefined>(
+    undefined
+  );
+  const [defaultProfitOwner, setDefaultProfitOwner] = useState(0);
+  const [defaultProfitSeller, setDefaultProfitSeller] = useState(0);
+  const [originalAmount, setOriginalAmount] = useState(0);
+  const formRef = useRef<HTMLFormElement>(null);
+  const costRef = useRef<HTMLInputElement>(null);
+  const ownerRef = useRef<HTMLInputElement>(null);
+
+  const handlerOnSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct) return;
+
+    const { productCostPrice, productSalePrice, sellerProfit, amount } =
+      e.target as EventTarget & {
+        sellerProfit: HTMLInputElement;
+        productCostPrice: HTMLInputElement;
+        productSalePrice: HTMLInputElement;
+        amount: HTMLInputElement;
+      };
+
+    const purchase_price = Number(productCostPrice.value);
+    const sale_price = Number(productSalePrice.value);
+    const seller_commission = Number(sellerProfit.value);
+
+    if (entryToEdit) {
+      console.log("?????");
+      await EditEntry(selectedProduct.ref, entryToEdit, {
+        amount: Number(amount.value),
+        purchase_price,
+        sale_price,
+        seller_commission,
+        product_ref: selectedProduct.ref,
+      });
+
+      setEntryToEdit(undefined);
+    } else {
+      await addEntry(selectedProduct?.ref, {
+        amount: Number(amount.value),
+        purchase_price,
+        sale_price,
+        seller_commission,
+      });
+    }
+
+    formRef.current?.reset();
+  };
+
+  async function disableProductManager(e: unknown) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-expect-error
+    e.preventDefault();
+
+    if (!product.snap?.ref || !product.data) return;
+    await updateDoc(product.snap.ref, { disabled: !product.data.disabled });
+  }
+
+  // functions to remove a stock
+  function handlerRemoveStock() {
+    setTimeoutSaved(
+      setTimeout(async () => {
+        if (!entryToEdit || !selectedProduct?.ref) return;
+        await removeEntry(entryToEdit, selectedProduct?.ref, false);
+
+        setEntryToEdit(undefined);
+      }, 5000)
+    );
+  }
+  function handlerCancelRemoveStock() {
+    clearTimeout(timeoutSaved);
+  }
+
+  // functions to manage the min input value
+  function handlerOnChangeOwnerMin(e: ChangeEvent<HTMLInputElement>) {
+    const newMin = e.target.value;
+    setDynamicMinCost(Number(newMin));
+  }
+
+  // effect to set the default values in the inputs
+  // if there is a entry selected the code will put their values
+  // in the default input values
+  useEffect(() => {
+    if (!stock || stock?.length === 0) {
+      setDefaultCost(0);
+      setDefaultProfitOwner(0);
+      setDefaultProfitSeller(0);
+
+      return;
+    }
+
+    const currentPriceData = stock[0];
+
+    setDefaultCost(
+      entryToEdit?.purchase_price ?? currentPriceData.purchase_price
+    );
+    setDefaultProfitOwner(
+      entryToEdit?.sale_price ?? currentPriceData.sale_price
+    );
+    setDefaultProfitSeller(
+      entryToEdit?.seller_commission ?? currentPriceData.seller_commission
+    );
+  }, [stock, entryToEdit]);
+
+  // effect to get the original entry amount
+  useEffect(() => {
+    async function getEntry() {
+      if (!entryToEdit) {
+        setOriginalAmount(0);
+        return;
+      }
+
+      const query = await getDoc(entryToEdit.entry_ref);
+      const originalAmount = query.data()?.amount;
+
+      if (originalAmount) setOriginalAmount(originalAmount);
+    }
+    getEntry();
+  }, [entryToEdit]);
+
+  // effect to reset the form when the selected product changes
+  useEffect(() => {
+    if (!formRef.current) return;
+
+    formRef.current.reset();
+  }, [selectedProduct]);
+
+  return (
+    <>
+      <Form name="FormEditEntry" ref={formRef} onSubmit={handlerOnSubmit}>
+        <h3>Crear una nueva entrada</h3>
+        <p>
+          {entryToEdit
+            ? "Edita la entrada seleccionada"
+            : "Ingresa nuevo producto al stock."}
+        </p>
+        <FlexContainer>
+          <InputNumber
+            ref={costRef}
+            defaultValue={defaultCost}
+            min={0}
+            step={0.01}
+            onChange={handlerOnChangeOwnerMin}
+            name="productCostPrice"
+            inline
+            required
+            width="90px"
+          >
+            Costó
+          </InputNumber>
+          <InputNumber
+            ref={ownerRef}
+            min={dynamicMinCost ?? defaultCost}
+            defaultValue={defaultProfitOwner}
+            name="productSalePrice"
+            step="0.01"
+            inline
+            required
+            width="90px"
+          >
+            Precio
+          </InputNumber>
+          <InputNumber
+            defaultValue={defaultProfitSeller}
+            name="sellerProfit"
+            step="0.01"
+            inline
+            width={"90px"}
+            required
+          >
+            Com.
+          </InputNumber>
+
+          <InputNumber
+            defaultValue={entryToEdit?.amount}
+            inline
+            name="amount"
+            required
+            step="0.01"
+            width="110px"
+          >
+            {entryToEdit ? (
+              <>Stock ({originalAmount})</>
+            ) : (
+              <>
+                Ingresó{" "}
+                {selectedProduct?.data()
+                  ? `${selectedProduct.data().units}`
+                  : ""}
+              </>
+            )}
+          </InputNumber>
+        </FlexContainer>
+        <FlexContainer
+          styles={{
+            display: "inline-flex",
+            justifyContent: "space-between",
+          }}
+        >
+          <Container>
+            <Button style={{ marginRight: "10px" }}>
+              {entryToEdit ? "Editar entrada" : "Agregar entrada"}
+            </Button>
+            <Button onClick={disableProductManager}>
+              {!product.data?.disabled ? "Deshabilitar" : "habilitar"}
+            </Button>
+          </Container>
+          {entryToEdit && (
+            <Button
+              $warn
+              $hold
+              onClick={(e) => e.preventDefault()}
+              onPointerDown={handlerRemoveStock}
+              onPointerUp={handlerCancelRemoveStock}
+              onPointerLeave={handlerCancelRemoveStock}
+            >
+              {entryToEdit.amount === originalAmount
+                ? "Eliminar entrada"
+                : "Eliminar existencias"}
+            </Button>
+          )}
+        </FlexContainer>
+      </Form>
+    </>
+  );
+}

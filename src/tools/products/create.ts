@@ -21,6 +21,7 @@ export type productDoc = {
   stock: stockType[] | [];
   step: string;
   disabled: boolean;
+  position: number | null;
 };
 
 type props = {
@@ -77,6 +78,7 @@ export async function createProduct({
     disabled: false,
     exclude: false,
     step: parseStep(Number(stepRaw)),
+    position: null,
   });
 }
 

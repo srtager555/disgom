@@ -4,11 +4,10 @@ import {
   ProductsLayout,
 } from "@/components/layouts/Products.layout";
 import { FormToAddStock } from "@/components/pages/invoice/Products/FormToAddStock";
+import { ProductStock } from "@/components/pages/invoice/Products/Stock";
 import { useGetProduct } from "@/hooks/products/getProduct";
 import { NextPageWithLayout } from "@/pages/_app";
-import { globalCSSVars } from "@/styles/colors";
-import { Button } from "@/styles/Form.styles";
-import { Container, FlexContainer } from "@/styles/index.styles";
+import { Container } from "@/styles/index.styles";
 import { stockType } from "@/tools/products/addToStock";
 import { ReactElement, useContext, useEffect, useState } from "react";
 import styled, { css } from "styled-components";
@@ -60,42 +59,6 @@ const StockContainer = styled.div`
   grid-row-start: 1;
 `;
 
-const StockMapContainer = styled(Container)`
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: repeat(3, 1fr);
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  /* padding: 10px;
-  border: solid 2px ${globalCSSVars["--foreground"]}; */
-  border-radius: 20px;
-  margin-bottom: 20px;
-`;
-
-const StockButton = styled(Button)<{ $selected: boolean }>`
-  text-align: start;
-  padding: 5px;
-  width: 100%;
-  background-color: ${(props) =>
-    props.$selected
-      ? globalCSSVars["--selected"]
-      : globalCSSVars["--background"]};
-  ${(props) =>
-    props.$selected &&
-    css`
-      color: #fff;
-      transform: scale(1.04);
-    `}
-
-  &:hover {
-    transform: scale(1.02);
-  }
-  &:active {
-    transform: scale(0.95);
-  }
-`;
-
 const FormContainer = styled.div`
   display: grid;
   grid-column: 1 / 6;
@@ -108,12 +71,6 @@ const Page: NextPageWithLayout = () => {
 
   const [entryToEdit, setEntryToEdit] = useState<stockType | undefined>();
   const [stock, setStock] = useState<stockType[]>([]);
-
-  // function to select and unselect a entry
-  function handlerSelectEntry(stock: stockType) {
-    if (entryToEdit === stock) setEntryToEdit(undefined);
-    else setEntryToEdit(stock);
-  }
 
   // effect to sort the product stock by date
   useEffect(() => {
@@ -136,11 +93,9 @@ const Page: NextPageWithLayout = () => {
 
   return (
     <Container>
-      <p>
-        <i>
-          Para ver información de un producto seleccionelo en la lista de
-          productos
-        </i>
+      <p style={{ fontStyle: "italic" }}>
+        Para ver información de un producto seleccionelo en la lista de
+        productos
       </p>
       <FadeContainer $fade={selectedProduct ? false : true}>
         <h1>{selectedProduct?.data().name}</h1>
@@ -150,40 +105,11 @@ const Page: NextPageWithLayout = () => {
             <SalesComparisonChart />
           </ChartContainer>
           <StockContainer>
-            <h3>Existencias</h3>
-            {stock.length > 0 && <p>Para editar una entrada seleccionela</p>}
-            <StockMapContainer>
-              {stock.length === 0 ? (
-                <p>No hay existencia de este producto</p>
-              ) : (
-                <>
-                  {stock.map((_, i) => {
-                    return (
-                      <Container key={i} styles={{ width: "100%" }}>
-                        <StockButton
-                          $selected={_ === entryToEdit}
-                          onClick={() => handlerSelectEntry(_)}
-                        >
-                          {_.created_at.toDate().toLocaleDateString()} - hay{" "}
-                          {_.amount} {product.data?.units}
-                          <FlexContainer>
-                            <Container styles={{ marginRight: "10px" }}>
-                              Costo {_.purchase_price} -
-                            </Container>
-                            <Container styles={{ marginRight: "10px" }}>
-                              Precio {_.sale_price} -
-                            </Container>
-                            <Container>
-                              Vendedor {_.seller_commission}
-                            </Container>
-                          </FlexContainer>
-                        </StockButton>
-                      </Container>
-                    );
-                  })}
-                </>
-              )}
-            </StockMapContainer>
+            <ProductStock
+              stock={stock}
+              entryToEdit={entryToEdit}
+              setEntryToEdit={setEntryToEdit}
+            />
           </StockContainer>
           <FormContainer>
             <FormToAddStock

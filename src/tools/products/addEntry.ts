@@ -16,7 +16,7 @@ export interface entryDoc extends entryData {
 export type entryData = {
   purchase_price: number;
   sale_price: number;
-  seller_profit: number;
+  seller_commission: number;
   amount: number;
 };
 
@@ -37,6 +37,10 @@ export async function addEntry(
   }).then(async (_) => {
     const entry_ref = doc(coll, _.id) as DocumentReference<entryDoc>;
 
-    await addToStock(productRef, { entry_ref, ...data });
+    await addToStock(productRef, {
+      entry_ref,
+      ...data,
+      product_ref: productRef,
+    });
   });
 }

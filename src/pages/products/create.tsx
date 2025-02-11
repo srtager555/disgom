@@ -6,6 +6,7 @@ import {
   ProductsLayout,
 } from "@/components/layouts/Products.layout";
 import { TagManager } from "@/components/pages/products/TagManager";
+import { useGetProducts } from "@/hooks/products/getProducts";
 import { NextPageWithLayout } from "@/pages/_app";
 import { Button, Form } from "@/styles/Form.styles";
 import { Container } from "@/styles/index.styles";
@@ -34,6 +35,9 @@ const Page: NextPageWithLayout = () => {
   const [timeOut, setTimeOut] = useState<NodeJS.Timeout>();
   const productFormRef = useRef<HTMLFormElement>(null);
   const units = getUnits();
+  const products = useGetProducts();
+  const [productVariant, setProductVariant] = useState(false);
+  const [parentID, setParentID] = useState<string>("");
 
   function handlerDisableProduct(e: FormEvent) {
     e.preventDefault();
@@ -51,40 +55,48 @@ const Page: NextPageWithLayout = () => {
   async function handlerCreateProduct(e: FormEvent) {
     if (!productFormRef) return;
     e.preventDefault();
-    const { productName, units, productStep } = e.target as EventTarget & {
-      productName: HTMLInputElement;
-      units: HTMLInputElement & { value: productUnits };
-      productStep: HTMLInputElement;
-    };
+    const { productName, units, productStep, product_parent } =
+      e.target as EventTarget & {
+        productName: HTMLInputElement;
+        units?: HTMLInputElement & { value: productUnits };
+        productStep?: HTMLInputElement;
+        product_parent: HTMLInputElement;
+      };
 
     const tagsParsed = tagsAdded.map((el) => el.name);
 
-    await createProduct(
-      selectedProduct?.ref,
-      productName.value,
-      units.value,
-      tagsParsed,
-      productStep.value
-    );
+    await createProduct({
+      product_ref: selectedProduct?.ref,
+      name: productName.value,
+      units: units?.value,
+      stepRaw: productStep?.value,
+      tags: tagsParsed,
+      product_parent: !productVariant ? null : product_parent.value,
+    });
 
     productFormRef.current?.reset();
     setTagsAdded([]);
+    setProductVariant(false);
     if (setSelectedProduct) setSelectedProduct(undefined);
   }
 
   useEffect(() => {
+    const formRef = productFormRef.current;
+
     async function getData() {
       // logic to get the data
       if (!selectedProduct) {
         setSelectedProductData(undefined);
         setTagsAdded([]);
         productFormRef.current?.reset();
+        setProductVariant(false);
         return;
       }
 
       const data = selectedProduct.data();
       setSelectedProductData(data);
-
+      setProductVariant(data.product_parent ? true : false);
+      setParentID(data.product_parent?.id || "");
       // logic to get the tags
       const tags = await getTags().then((_) => _.data()?.tags);
       if (!tags) return;
@@ -93,11 +105,16 @@ const Page: NextPageWithLayout = () => {
       setTagsAdded(currentTags);
     }
     getData();
+
+    return () => {
+      setParentID("");
+      formRef?.reset();
+    };
   }, [selectedProduct]);
 
   return (
     <Container styles={{ padding: "0 1%" }}>
-      <h1 style={{ marginBottom: "0px" }}>Añadir o edita un producto</h1>
+      <h1 style={{ marginBottom: "0px" }}>Añade o edita un producto</h1>
       <p style={{ marginBottom: "10px" }}>
         Para editar un producto se tiene que seleccionar en la lista de
         productos
@@ -119,29 +136,72 @@ const Page: NextPageWithLayout = () => {
             >
               Nombre del producto
             </InputText>
+            <Container styles={{ marginBottom: "10px" }}>
+              <label>
+                <input
+                  onChange={function (e) {
+                    const value = e.target.checked;
 
-            <Select
-              name="units"
-              options={units.map((u) => ({ name: "en " + u, value: u }))}
-              defaultValue={selectedProductData?.units}
-            >
-              ¿Cómo se medirá este producto?
-            </Select>
-
-            <InputNumber
-              name="productStep"
-              defaultValue={
-                selectedProductData?.step
-                  ? unparseStep(selectedProductData?.step)
-                  : 0
-              }
-              width="250px"
-              max={5}
-              min={0}
-            >
-              ¿Cuantos decimales manejará el peso?
-            </InputNumber>
-
+                    setProductVariant(value);
+                  }}
+                  type="checkbox"
+                  checked={productVariant}
+                  style={{ marginRight: "10px", display: "inline-block" }}
+                />
+                ¿Este producto es una variación de una existente?
+              </label>
+            </Container>
+            {!productVariant ? (
+              <>
+                <Select
+                  name="units"
+                  options={units.map((u) => ({ name: "en " + u, value: u }))}
+                  defaultValue={selectedProductData?.units}
+                >
+                  ¿Cómo se medirá este producto?
+                </Select>
+                <InputNumber
+                  name="productStep"
+                  defaultValue={
+                    selectedProductData?.step
+                      ? unparseStep(selectedProductData?.step)
+                      : 0
+                  }
+                  width="250px"
+                  max={5}
+                  min={0}
+                >
+                  ¿Cuantos decimales manejará el peso?
+                </InputNumber>
+              </>
+            ) : (
+              <Container styles={{ marginBottom: "20px" }}>
+                {productVariant && typeof parentID !== "undefined" && (
+                  <Container styles={{ marginTop: "10px" }}>
+                    <Select
+                      required
+                      name="product_parent"
+                      options={[
+                        {
+                          name: "Seleccione un producto",
+                          value: "",
+                          disabled: true,
+                          selected: parentID === "",
+                        },
+                        ...(products.docsWithoutParent?.map((el) => {
+                          const data = el.data();
+                          return {
+                            name: data.name,
+                            value: el.ref.id,
+                            selected: parentID === el.ref.id,
+                          };
+                        }) || []),
+                      ]}
+                    />
+                  </Container>
+                )}
+              </Container>
+            )}
             <Button $primary style={{ marginRight: "10px" }}>
               {selectedProduct ? "Actualizar producto" : "Crear producto"}
             </Button>

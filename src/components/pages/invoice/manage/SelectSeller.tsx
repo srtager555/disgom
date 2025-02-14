@@ -1,4 +1,5 @@
 import { Select } from "@/components/Inputs/select";
+import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
 import { useGetSellers } from "@/hooks/sellers/getSellers";
 import { FlexContainer } from "@/styles/index.styles";
 import { SellersDoc } from "@/tools/sellers/create";
@@ -9,6 +10,7 @@ import {
   SetStateAction,
   useCallback,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import styled from "styled-components";
@@ -35,21 +37,29 @@ export function SelectSeller({
   setSelectedSeller,
   currentSeller,
 }: SelectSellerProps) {
+  const invoice = useGetInvoiceByQuery();
+  const seller_id = useMemo(() => invoice?.data().seller_ref.id, [invoice]);
   const sellers = useGetSellers();
   const [lastSellerID, setLastSellerID] = useState<string>();
+
+  const findTheSeller = useCallback(
+    (id: string) => {
+      if (id === "" || !sellers) return;
+      return sellers.docs.find((el) => el.id === id);
+    },
+    [sellers]
+  );
 
   // function to selecte a seller
   const selectSeller = useCallback(
     (e: ChangeEvent<HTMLSelectElement> | string) => {
       const value = typeof e === "string" ? e : e.target.value;
-
-      if (value === "" || !sellers) return;
-      const selectedSeller = sellers.docs.find((el) => el.id === value);
+      const selectedSeller = findTheSeller(value);
 
       setSelectedSeller(selectedSeller);
       setLastSellerID(value);
     },
-    [sellers, setSelectedSeller]
+    [findTheSeller, setSelectedSeller]
   );
 
   // effect to set a seller if there is a current seller
@@ -58,6 +68,11 @@ export function SelectSeller({
       selectSeller(currentSeller.id);
     }
   }, [currentSeller, lastSellerID, selectSeller]);
+
+  // effect to select the seller when the invoice is already created
+  useEffect(() => {
+    if (seller_id) setSelectedSeller(findTheSeller(seller_id));
+  }, [findTheSeller, seller_id, setSelectedSeller]);
 
   return (
     <SelectContainer column={!currentSeller ? true : false}>
@@ -84,7 +99,8 @@ export function SelectSeller({
                   return {
                     name: data.name,
                     value: el.id,
-                    selected: currentSeller?.id === el.id,
+                    selected:
+                      seller_id === el.id || currentSeller?.id === el.id,
                   };
                 }),
               ]

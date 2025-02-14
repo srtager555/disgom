@@ -55,14 +55,15 @@ export type invoiceType = {
   disabled: boolean;
 };
 
-export async function createInvoice(data: invoiceType) {
+export async function createInvoice(data: Pick<invoiceType, "seller_ref">) {
+  const { seller_ref } = data;
   const db = Firestore();
   const coll = collection(
     db,
     InvoiceCollection.root
   ) as CollectionReference<invoiceType>;
 
-  const sellerDoc = await getDoc(data.seller_ref);
+  const sellerDoc = await getDoc(seller_ref);
   let last_inventory = null;
 
   if (sellerDoc.data()?.hasInventory) {
@@ -78,7 +79,28 @@ export async function createInvoice(data: invoiceType) {
 
   return await addDoc(coll, {
     created_at: Timestamp.fromDate(new Date()),
-    ...data,
+    seller_ref,
+    client_ref: null,
+    products_outputs: null,
+    inventory_ref: null,
+    total_sold: {
+      normal: 0,
+      withInventory: 0,
+    },
+    total_cost: {
+      normal: 0,
+      withInventory: 0,
+    },
+    total_proft: {
+      normal: 0,
+      withInventory: 0,
+    },
+    route: null,
+    bills: null,
+    money: null,
+    credit: null,
+    newCredits: null,
+    disabled: false,
     last_inventory_ref: last_inventory?.ref || null,
   });
 }

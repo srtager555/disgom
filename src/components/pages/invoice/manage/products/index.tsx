@@ -2,16 +2,19 @@ import { HideWithoutStock } from "@/components/pages/products/HideWithoutStock";
 import { SelectTag } from "@/components/pages/products/SelectTag";
 import { useGetProducts } from "@/hooks/products/getProducts";
 import { Container, FlexContainer } from "@/styles/index.styles";
-import { useState } from "react";
-import { Descriptions } from "../../ProductList";
+import { Dispatch, SetStateAction, useState } from "react";
+import { Descriptions, productResult } from "../../ProductList";
 import { SellersDoc } from "@/tools/sellers/create";
 import { QueryDocumentSnapshot } from "firebase/firestore";
+import { Product as P } from "../../Product";
+import { Product } from "./Product";
 
 type props = {
   selectedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
+  setProductsResults: Dispatch<SetStateAction<Record<string, productResult>>>;
 };
 
-export function Products({ selectedSeller }: props) {
+export function Products({ selectedSeller, setProductsResults }: props) {
   const [tagSelected, setTagSelected] = useState("");
   const productsList = useGetProducts(tagSelected);
   const [hideProductWithoutStock, setHideProductWithoutStock] = useState(false);
@@ -29,8 +32,20 @@ export function Products({ selectedSeller }: props) {
       </FlexContainer>
       <Container styles={{ marginBottom: "20px" }}>
         <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
-        {productsList?.docs?.map((product) => {
-          return <></>;
+        {productsList?.docs?.map((product, i) => {
+          return (
+            <Product key={i} doc={product} selectedSeller={selectedSeller} />
+          );
+          return (
+            <P
+              key={i}
+              product={product}
+              hasInventory={false}
+              setProductsResults={setProductsResults}
+              hideWithoutStock={hideProductWithoutStock}
+              previusOutputsToEdit={[]}
+            />
+          );
         })}
       </Container>
     </Container>

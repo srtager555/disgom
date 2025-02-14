@@ -69,9 +69,9 @@ export const ProductContainer = styled.div<{
   grid-template-columns: ${(props) => {
     if (props.$closing) return "repeat(17, 75px)";
     if (props.$hasInventory) {
-      return "repeat(13, 75px)";
+      return "15px repeat(12, 75px)";
     } else {
-      return "repeat(10, 75px)";
+      return "15px repeat(12, 75px)";
     }
   }};
 
@@ -259,23 +259,28 @@ export const Descriptions = ({
   hasInventory: boolean | undefined;
 }) => (
   <ProductContainer $header $withoutStock={1} $hasInventory={hasInventory}>
-    <Column gridColumn="1 / 4" printGridColumn="1 / 8">
+    <Column gridColumn="2 / 5" printGridColumn="1 / 8">
       Producto
     </Column>
-    <Column gridColumn="4 / 5" printGridColumn="8 / 10">
+    <Column gridColumn="" printGridColumn="8 / 10" hide={!hasInventory}>
       Guardo
     </Column>
-    <Column gridColumn="5 / 6">Consig.</Column>
-    <Column gridColumn="6 / 7">Devol</Column>
-    <Column gridColumn="7 / 8" printGridColumn="-4 / -6">
+    <Column gridColumn="">{hasInventory ? "Consig." : "Cantidad"}</Column>
+    <Column gridColumn="" hide={!hasInventory}>
+      Devol.
+    </Column>
+    <Column gridColumn="" printGridColumn="-4 / -6" hide={!hasInventory}>
       Venta
     </Column>
-    <Column gridColumn="8 / 9" printGridColumn="-1 / -4">
+    <Column gridColumn="" printGridColumn="-1 / -4">
       Precio
     </Column>
-    <Column gridColumn="9 / 10">Total</Column>
-    <Column gridColumn="10 / 11">Com.</Column>
-    <Column gridColumn="11 / 12">
+    <Column gridColumn={hasInventory ? "" : "-3 / -4"}>Total</Column>
+    <Column gridColumn="" hide={!hasInventory}>
+      Comision
+    </Column>
+    <Column gridColumn="-2 / -3">Utilidad</Column>
+    <Column gridColumn="-1 / -2">
       <Container styles={{ marginRight: "10px" }}>
         <Icon iconType="fold" />
       </Container>

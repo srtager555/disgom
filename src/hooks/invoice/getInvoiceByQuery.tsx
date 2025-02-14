@@ -9,6 +9,7 @@ import {
 import { Firestore } from "@/tools/firestore";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import useQueryParams from "../getQueryParams";
+import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 
 export function useGetInvoiceByQuery() {
   const { id } = useQueryParams();
@@ -21,7 +22,7 @@ export function useGetInvoiceByQuery() {
 
     const ref = doc(
       Firestore(),
-      "invoices",
+      InvoiceCollection.root,
       id
     ) as DocumentReference<invoiceType>;
 

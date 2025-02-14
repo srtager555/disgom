@@ -14,7 +14,7 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 
 const MainContainer = styled(FlexContainer)`
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   flex-direction: column;
   min-height: 100vh;
@@ -23,8 +23,8 @@ const MainContainer = styled(FlexContainer)`
 `;
 
 export default function Page() {
-  const router = useRouter();
   const { id } = useQueryParams();
+  const router = useRouter();
   const [selectedSeller, setSelectedSeller] = useState<
     QueryDocumentSnapshot<SellersDoc> | undefined
   >(undefined);

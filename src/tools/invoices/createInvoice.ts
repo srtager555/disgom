@@ -26,7 +26,7 @@ export type invoiceType = {
   created_at?: Timestamp;
   seller_ref: DocumentReference<SellersDoc>;
   client_ref: DocumentReference<client> | null;
-  products_outputs: Array<DocumentReference<outputType>> | null;
+  products_outputs: Record<string, Array<DocumentReference<outputType>>>;
   inventory_ref: null;
   last_inventory_ref: DocumentReference<inventory> | null;
   total_sold: {
@@ -81,7 +81,7 @@ export async function createInvoice(data: Pick<invoiceType, "seller_ref">) {
     created_at: Timestamp.fromDate(new Date()),
     seller_ref,
     client_ref: null,
-    products_outputs: null,
+    products_outputs: {},
     inventory_ref: null,
     total_sold: {
       normal: 0,

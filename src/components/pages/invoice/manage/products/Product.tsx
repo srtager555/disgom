@@ -1,11 +1,12 @@
 import { productDoc } from "@/tools/products/create";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { ProductContainer } from "../../ProductList";
-import { memo, useMemo } from "react";
+import { memo, useMemo, useState } from "react";
 import { Column, Input } from "../../Product";
 import styled from "styled-components";
 import { SellersDoc } from "@/tools/sellers/create";
 import { AddOutput } from "./AddOutput";
+import { MemoProductSold } from "./ProductSold";
 
 const GrabButton = styled.button`
   display: inline-block;
@@ -43,6 +44,8 @@ export const MemoProduct = memo(Product, (prev, next) => {
 });
 
 export function Product({ doc, selectedSeller }: props) {
+  const [outputsAmount, setOutputsAmount] = useState(0);
+  const [amount, setAmount] = useState(0);
   const data = useMemo(() => doc.data(), [doc]);
   const currentStock = data.stock.reduce((acc, stock) => {
     return acc + stock.amount;
@@ -68,10 +71,17 @@ export function Product({ doc, selectedSeller }: props) {
         productDoc={doc}
         currentStock={currentStock}
         stocks={data.stock}
+        setOutputsAmount={setOutputsAmount}
       />
       <Column>
         <Input type="number" />
       </Column>
+      <MemoProductSold
+        outputsAmount={outputsAmount}
+        inventoryAmount={0}
+        devolutionAmount={0}
+        setAmount={setAmount}
+      />
     </ProductContainer>
   );
 }

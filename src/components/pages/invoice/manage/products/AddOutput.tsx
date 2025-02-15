@@ -1,4 +1,6 @@
 import React, {
+  Dispatch,
+  SetStateAction,
   useCallback,
   useEffect,
   useMemo,
@@ -20,6 +22,7 @@ type props = {
   currentStock: number;
   stocks: stockType[];
   productDoc: QueryDocumentSnapshot<productDoc>;
+  setOutputsAmount: Dispatch<SetStateAction<number>>;
 };
 
 export type variations = Array<{
@@ -72,6 +75,7 @@ export function AddOutputBase({
   productDoc,
   currentStock,
   stocks,
+  setOutputsAmount,
 }: props) {
   const [cookingAmountAdded, setCookingAmountAdded] =
     useState<number>(currentAmount);
@@ -144,11 +148,22 @@ export function AddOutputBase({
     if (currentAmount === cookedAmountAdded) return;
     if (outputsToCreate.length === 0) return;
 
-    console.log(outputsToCreate);
-
     addOutputs(invoice_ref, productDoc.ref, outputsToCreate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoice_ref?.id, outputsToCreate]);
+
+  // useEffect to set the outputs amounts
+  useEffect(() => {
+    if (outputsToCreate.length > 0) {
+      const outputsAmount = outputsToCreate.reduce(
+        (acc, next) => acc + next.amount,
+        0
+      );
+      setOutputsAmount(outputsAmount);
+    } else {
+      setOutputsAmount(currentAmount);
+    }
+  }, [currentAmount, outputsToCreate, setOutputsAmount]);
 
   return (
     <Column>

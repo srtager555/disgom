@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { useState } from "react";
 import {
-  onSnapshot,
   doc,
-  QueryDocumentSnapshot,
   DocumentReference,
+  getDoc,
+  DocumentSnapshot,
 } from "firebase/firestore";
 import { Firestore } from "@/tools/firestore";
 import { invoiceType } from "@/tools/invoices/createInvoice";
@@ -14,27 +14,25 @@ import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 export function useGetInvoiceByQuery() {
   const { id } = useQueryParams();
   const [invoice, setInvoice] = useState<
-    QueryDocumentSnapshot<invoiceType> | undefined
+    DocumentSnapshot<invoiceType> | undefined
   >();
 
   useEffect(() => {
-    if (!id) return;
+    async function getInvoice() {
+      if (!id) return;
 
-    const ref = doc(
-      Firestore(),
-      InvoiceCollection.root,
-      id
-    ) as DocumentReference<invoiceType>;
+      const ref = doc(
+        Firestore(),
+        InvoiceCollection.root,
+        id
+      ) as DocumentReference<invoiceType>;
 
-    const unsubscribe = onSnapshot(ref, (snap) => {
-      if (snap.exists()) {
-        setInvoice(snap);
-      } else {
-        setInvoice(undefined);
-      }
-    });
+      const invoice = await getDoc(ref);
 
-    return () => unsubscribe();
+      setInvoice(invoice);
+    }
+
+    getInvoice();
   }, [id]);
 
   return invoice;

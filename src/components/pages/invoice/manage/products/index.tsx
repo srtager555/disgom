@@ -7,7 +7,7 @@ import { Descriptions, productResult } from "../../ProductList";
 import { SellersDoc } from "@/tools/sellers/create";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { Product as P } from "../../Product";
-import { Product } from "./Product";
+import { MemoProduct } from "./Product";
 
 type props = {
   selectedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
@@ -34,7 +34,11 @@ export function Products({ selectedSeller, setProductsResults }: props) {
         <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
         {productsList?.docs?.map((product, i) => {
           return (
-            <Product key={i} doc={product} selectedSeller={selectedSeller} />
+            <MemoProduct
+              key={i}
+              doc={product}
+              selectedSeller={selectedSeller}
+            />
           );
           return (
             <P

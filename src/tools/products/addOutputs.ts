@@ -16,26 +16,24 @@ import { productDoc } from "./create";
 import { entryDoc } from "./addEntry";
 import { invoiceType } from "../invoices/createInvoice";
 import { updateStock } from "./updateStock";
+import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 
 export type outputType = {
   created_at: Timestamp;
   amount: number;
-  cost_price: number;
-  purchase_cost: number;
-  sale_prices: {
-    normal: number;
-    seller: number;
-  };
-  sales_values: {
-    normal: number;
-    seller: number;
-  };
+  purchase_price: number;
+  purchase_value: number;
+  sale_price: number;
+  sale_value: number;
+  commission: number;
+  commission_value: number;
   entry_ref: DocumentReference<entryDoc>;
-  invoice_ref: DocumentReference<invoiceType> | null;
+  invoice_ref: DocumentReference<invoiceType>;
+  product_ref: DocumentReference<productDoc>;
   disabled: boolean;
 };
 
-export async function addOutputs(
+export async function a(
   invoice_ref: DocumentReference<invoiceType>,
   product_id: string,
   productOutputData: productResult
@@ -134,6 +132,52 @@ export async function addOutputs(
   });
 }
 
+export async function addOutputs(
+  invoice_ref: DocumentReference<invoiceType>,
+  product_ref: DocumentReference<productDoc>,
+  rawOutputs: rawOutput[]
+) {
+  const outputColl = collection(
+    product_ref,
+    ProductsCollection.output
+  ) as CollectionReference<outputType>;
+
+  const outputParser = (rawOutput: rawOutput): outputType => {
+    const purchase_value = rawOutput.amount * rawOutput.purchase_price;
+    const sale_value = rawOutput.amount * rawOutput.sale_price;
+    const commission_value = rawOutput.amount * rawOutput.commission;
+
+    return {
+      created_at: Timestamp.fromDate(new Date()),
+      amount: rawOutput.amount,
+      purchase_price: rawOutput.purchase_price,
+      purchase_value,
+      sale_price: rawOutput.sale_price,
+      sale_value,
+      commission: rawOutput.commission,
+      commission_value,
+      entry_ref: rawOutput.entry_ref,
+      invoice_ref,
+      product_ref,
+      disabled: false,
+    };
+  };
+
+  const outputsReady = rawOutputs.map((el) => {
+    return outputParser(el);
+  });
+
+  const outputsRefsPromise = outputsReady.map(async (el) => {
+    return await addDoc(outputColl, el);
+  });
+
+  const outputsRefs = await Promise.all(outputsRefsPromise);
+  const outputs_id = "products_outputs." + product_ref.id;
+
+  await updateDoc(invoice_ref, {
+    [outputs_id]: outputsRefs,
+  });
+}
 // const amountListener =
 //     function (n: number) {
 //       let remainingAmount = n;

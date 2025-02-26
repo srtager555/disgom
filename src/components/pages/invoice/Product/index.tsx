@@ -94,13 +94,16 @@ function ColumnBase({
   gridColumn: $gridColumn,
   printGridColumn,
   title,
+  hide,
 }: {
   children: children;
   className?: string;
-  gridColumn: string;
+  gridColumn?: string;
   printGridColumn?: string;
   title?: string;
+  hide?: boolean;
 }) {
+  if (hide) return <></>;
   return (
     <ColumnGrid
       $title={title}
@@ -132,6 +135,7 @@ export const Column = styled(ColumnBase)<{
   text-overflow: ellipsis;
   background-color: inherit;
   padding: 5px 0;
+  padding-left: 10px;
 
   & > button {
     padding: 0px;

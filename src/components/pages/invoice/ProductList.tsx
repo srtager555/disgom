@@ -58,7 +58,7 @@ export const ProductContainer = styled.div<{
   position: relative;
   display: ${(props) => (props.$fold ? "none" : "grid")};
   grid-column: 1 / -1;
-  gap: 10px;
+  /* gap: 10px; */
   transition: 200ms ease all;
   height: ${(props) =>
     !props.$hide ? (props.$fold ? "35px" : "auto") : "0px"};

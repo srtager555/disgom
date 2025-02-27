@@ -22,7 +22,9 @@ type props = {
   currentStock: number;
   stocks: stockType[];
   productDoc: QueryDocumentSnapshot<productDoc>;
+  // rtProductData: productDoc;
   setOutputsAmount: Dispatch<SetStateAction<number>>;
+  customPrice: number | undefined;
 };
 
 export type variations = Array<{
@@ -63,6 +65,7 @@ export const AddOutput = (props: Omit<props, "currentAmount">) => {
 
 export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   if (prev.currentAmount != next.currentAmount) return false;
+  if (prev.customPrice != next.customPrice) return false;
 
   const prevProductDocID = prev.productDoc.id;
   const nextProductDocID = next.productDoc.id;
@@ -73,17 +76,21 @@ export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
 export function AddOutputBase({
   currentAmount,
   productDoc,
+  // rtProductData,
   currentStock,
   stocks,
   setOutputsAmount,
+  customPrice,
 }: props) {
   const [cookingAmountAdded, setCookingAmountAdded] =
     useState<number>(currentAmount);
   const cookedAmountAdded = useDebounce(cookingAmountAdded);
   const [outputsToCreate, setOutputsToCreate] = useState<Array<rawOutput>>([]);
+  const [lastCustomPrice, setLastCustomPrice] = useState<number | undefined>(
+    undefined
+  );
+  const [firstPain, setFirstPain] = useState(true);
   const invoice = useGetInvoiceByQuery();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const invoice_ref = useMemo(() => invoice?.ref, [invoice?.ref.id]);
   const form_ref = useRef<HTMLFormElement>(null);
 
   const amountListener = useCallback(
@@ -107,7 +114,7 @@ export function AddOutputBase({
               amount: stock.amount,
               product_ref: productDoc.ref,
               entry_ref: stock.entry_ref,
-              sale_price: stock.sale_price,
+              sale_price: customPrice || stock.sale_price,
               purchase_price: stock.purchase_price,
               commission: stock.seller_commission,
             },
@@ -119,7 +126,7 @@ export function AddOutputBase({
               amount: remainingAmount,
               product_ref: productDoc.ref,
               entry_ref: stock.entry_ref,
-              sale_price: stock.sale_price,
+              sale_price: customPrice || stock.sale_price,
               purchase_price: stock.purchase_price,
               commission: stock.seller_commission,
             },
@@ -128,7 +135,7 @@ export function AddOutputBase({
         }
       }
     },
-    [stocks]
+    [stocks, customPrice]
   );
 
   // effect to reset the input when changes of product
@@ -138,19 +145,24 @@ export function AddOutputBase({
 
   // effect to create the new raw outputs
   useEffect(() => {
-    if (cookedAmountAdded && (cookedAmountAdded as number) >= 0)
+    if ((cookedAmountAdded as number) >= 0)
       amountListener(cookedAmountAdded as number);
-  }, [amountListener, cookedAmountAdded]);
+  }, [amountListener, cookedAmountAdded, customPrice]);
 
   // effect to add the outputs
   useEffect(() => {
-    if (!invoice_ref) return;
-    if (currentAmount === cookedAmountAdded) return;
-    if (outputsToCreate.length === 0) return;
+    if (!invoice) return;
+    if (currentAmount === cookedAmountAdded && customPrice === lastCustomPrice)
+      return;
+    if (firstPain && outputsToCreate.length === 0) return;
 
-    addOutputs(invoice_ref, productDoc.ref, outputsToCreate);
+    if (firstPain) setFirstPain(false);
+    setLastCustomPrice(customPrice);
+
+    console.log("!");
+    addOutputs(invoice, productDoc, outputsToCreate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invoice_ref?.id, outputsToCreate]);
+  }, [invoice?.ref?.id, outputsToCreate]);
 
   // useEffect to set the outputs amounts
   useEffect(() => {

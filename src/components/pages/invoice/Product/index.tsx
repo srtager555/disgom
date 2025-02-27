@@ -47,7 +47,7 @@ export type priceRequestDescription = {
 };
 
 const ColumnGrid = styled(Container)<{
-  $gridColumn: string;
+  $gridColumn?: string;
   $printGridColumn?: string;
   $title?: string;
 }>`
@@ -88,6 +88,15 @@ const ColumnGrid = styled(Container)<{
   }
 `;
 
+interface ColumnBaseProps extends React.HtmlHTMLAttributes<HTMLDivElement> {
+  children: children;
+  className?: string;
+  gridColumn?: string;
+  printGridColumn?: string;
+  title?: string;
+  hide?: boolean;
+}
+
 function ColumnBase({
   children,
   className,
@@ -95,14 +104,8 @@ function ColumnBase({
   printGridColumn,
   title,
   hide,
-}: {
-  children: children;
-  className?: string;
-  gridColumn?: string;
-  printGridColumn?: string;
-  title?: string;
-  hide?: boolean;
-}) {
+  ...props
+}: ColumnBaseProps) {
   if (hide) return <></>;
   return (
     <ColumnGrid
@@ -110,6 +113,7 @@ function ColumnBase({
       $gridColumn={$gridColumn}
       $printGridColumn={printGridColumn}
       styles={{ width: "100%", height: "100%" }}
+      {...props}
     >
       <Container className={className}>{children}</Container>
     </ColumnGrid>

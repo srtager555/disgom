@@ -56,12 +56,12 @@ export const ProductContainer = styled.div<{
   $after?: string;
 }>`
   position: relative;
-  display: ${(props) => (props.$fold ? "none" : "grid")};
+  display: grid;
   grid-column: 1 / -1;
   /* gap: 10px; */
   transition: 200ms ease all;
   height: ${(props) =>
-    !props.$hide ? (props.$fold ? "35px" : "auto") : "0px"};
+    !props.$hide ? (!props.$fold ? "36px" : "auto") : "0px"};
   /* padding: ${(props) =>
     !props.$hide ? (props.$header ? "10px" : "5px") : 0} 0; */
   visibility: ${(props) => (props.$hide ? "hidden" : "visible")};

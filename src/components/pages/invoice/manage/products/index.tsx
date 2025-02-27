@@ -38,6 +38,7 @@ export function Products({ selectedSeller, setProductsResults }: props) {
               key={i}
               doc={product}
               selectedSeller={selectedSeller}
+              hideProductWithoutStock={hideProductWithoutStock}
             />
           );
           return (

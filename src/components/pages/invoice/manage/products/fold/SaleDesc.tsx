@@ -4,6 +4,7 @@ import { memo, useEffect, useState } from "react";
 import { outputType } from "@/tools/products/addOutputs";
 import { getDoc } from "firebase/firestore";
 import { isEqual } from "lodash";
+import { ProductContainer } from "../../../ProductList";
 
 type props = {
   id: string;
@@ -67,9 +68,9 @@ export function SaleDescBase({ outputs }: propsBase) {
   return (
     <>
       <Header />
-      {Object.values(results).map((el) => {
+      {Object.values(results).map((el, i) => {
         return (
-          <>
+          <ProductContainer $children $hasInventory key={i} $withoutStock={1}>
             <Column gridColumn="7 / 8">
               {el.reduce((acc, next) => {
                 return acc + next.amount;
@@ -92,7 +93,7 @@ export function SaleDescBase({ outputs }: propsBase) {
                 return acc + (next.sale_value - next.purchase_value);
               }, 0)}
             </Column>
-          </>
+          </ProductContainer>
         );
       })}
     </>

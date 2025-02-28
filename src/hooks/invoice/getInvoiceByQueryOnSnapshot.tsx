@@ -10,6 +10,7 @@ import { Firestore } from "@/tools/firestore";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import useQueryParams from "../getQueryParams";
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
+import { isEqual } from "lodash";
 
 export function useGetInvoiceByQueryOnSnapshot() {
   const { id } = useQueryParams();
@@ -28,6 +29,8 @@ export function useGetInvoiceByQueryOnSnapshot() {
 
     const unsubscribe = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
+        if (isEqual(invoice, snap)) return;
+
         setInvoice(snap);
       } else {
         setInvoice(undefined);

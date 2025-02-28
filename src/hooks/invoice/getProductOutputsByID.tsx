@@ -35,6 +35,8 @@ export function useGetProductOutputByID(id: string) {
 
       const outputsFetcheds = await Promise.all(outputsPromises);
 
+      if (isEqual(outputsFetcheds, output)) return;
+
       setOutput(outputsFetcheds);
     }
 

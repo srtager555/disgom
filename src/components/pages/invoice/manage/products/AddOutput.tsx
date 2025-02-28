@@ -16,6 +16,7 @@ import { stockType } from "@/tools/products/addToStock";
 import { addOutputs, outputType } from "@/tools/products/addOutputs";
 import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
+import { isEqual } from "lodash";
 
 type props = {
   currentAmount: number;
@@ -85,6 +86,7 @@ export function AddOutputBase({
   const [cookingAmountAdded, setCookingAmountAdded] =
     useState<number>(currentAmount);
   const cookedAmountAdded = useDebounce(cookingAmountAdded);
+  const outputs = useGetProductOutputByID(productDoc.id);
   const [outputsToCreate, setOutputsToCreate] = useState<Array<rawOutput>>([]);
   const [lastCustomPrice, setLastCustomPrice] = useState<number | undefined>(
     undefined
@@ -138,6 +140,12 @@ export function AddOutputBase({
     [stocks, customPrice]
   );
 
+  // effect to set the currentAmount correctly
+  useEffect(() => {
+    if (isEqual(currentAmount, cookingAmountAdded)) return;
+    setCookingAmountAdded(currentAmount);
+  }, [currentAmount]);
+
   // effect to reset the input when changes of product
   useEffect(() => {
     form_ref.current?.reset();
@@ -149,6 +157,14 @@ export function AddOutputBase({
       amountListener(cookedAmountAdded as number);
   }, [amountListener, cookedAmountAdded, customPrice]);
 
+  // effect to set the custom price if exists
+  useEffect(() => {
+    if (outputs.length === 0) return;
+    const customPrice = outputs[0].data()?.sale_price as number;
+
+    setLastCustomPrice(customPrice);
+  }, [outputs]);
+
   // effect to add the outputs
   useEffect(() => {
     if (!invoice) return;
@@ -159,7 +175,6 @@ export function AddOutputBase({
     if (firstPain) setFirstPain(false);
     setLastCustomPrice(customPrice);
 
-    console.log("!");
     addOutputs(invoice, productDoc, outputsToCreate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoice?.ref?.id, outputsToCreate]);

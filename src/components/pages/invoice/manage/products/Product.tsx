@@ -119,9 +119,9 @@ export function Product({
         setAmount={setAmount}
       />
       <Price
+        product_id={doc.id}
         normalPrice={rtDocData.stock[0]?.sale_price || 0}
         setCustomPrice={setCustomPrice}
-        customPrice={customPrice}
       />
       <TotalSold
         amount={amount}

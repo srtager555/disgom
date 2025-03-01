@@ -7,6 +7,7 @@ type props = {
   inventoryAmount: number;
   devolutionAmount: number;
   setAmount: Dispatch<SetStateAction<number>>;
+  setWarn: Dispatch<SetStateAction<boolean>>;
 };
 
 export const MemoProductSold = memo(ProductSold, (prev, next) => {
@@ -22,15 +23,18 @@ export function ProductSold({
   inventoryAmount,
   devolutionAmount,
   setAmount,
+  setWarn,
 }: props) {
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
     const total = outputsAmount + inventoryAmount - devolutionAmount;
 
+    setWarn(total < 0);
+
     setTotal(total);
     setAmount(total);
-  }, [devolutionAmount, inventoryAmount, outputsAmount, setAmount]);
+  }, [devolutionAmount, inventoryAmount, outputsAmount, setAmount, setWarn]);
 
   return <Column>{numberParser(total)}</Column>;
 }

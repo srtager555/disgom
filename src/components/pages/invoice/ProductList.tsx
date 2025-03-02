@@ -79,7 +79,7 @@ export const ProductContainer = styled.div<{
     ${(props) => {
       if (props.$children) {
         return css`
-          background-color: transparent;
+          background-color: inherit;
         `;
       }
 

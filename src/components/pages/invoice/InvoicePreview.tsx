@@ -104,13 +104,13 @@ export function InvoicePreview({ doc, inSeller }: props) {
             $primary
             onClick={() => {
               if (!data.inventory_ref) {
-                router.push("/invoices/closing?id=" + doc.id);
+                router.push("/invoices/manage?id=" + doc.id);
               } else {
-                router.push("/invoices/closed?id=" + doc.id);
+                router.push("/invoices/manage?id=" + doc.id);
               }
             }}
           >
-            {!data.inventory_ref ? "Cierre" : "Más"}
+            {!data.inventory_ref ? "Inspeccionar" : "Más"}
           </ButtonBro>
         )}
       </Container>

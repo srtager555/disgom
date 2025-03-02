@@ -5,6 +5,7 @@ import { outputType } from "@/tools/products/addOutputs";
 import { getDoc } from "firebase/firestore";
 import { isEqual } from "lodash";
 import { ProductContainer } from "../../../ProductList";
+import { numberParser } from "@/tools/numberPaser";
 
 type props = {
   id: string;
@@ -69,29 +70,35 @@ export function SaleDescBase({ outputs }: propsBase) {
     <>
       <Header />
       {Object.values(results).map((el, i) => {
+        function reducer(param: keyof outputType) {
+          return el.reduce((acc, next) => {
+            const value = next[param] as number;
+
+            return acc + value;
+          }, 0);
+        }
+
+        const total_amount = numberParser(reducer("amount"));
+        const total_purchase_value = reducer("purchase_value");
+        const total_sale_value = reducer("sale_value");
+        const purchase_price = numberParser(el[0].purchase_price);
+        const sale_price = numberParser(el[0].sale_price);
+
         return (
           <ProductContainer $children $hasInventory key={i} $withoutStock={1}>
-            <Column gridColumn="7 / 8">
-              {el.reduce((acc, next) => {
-                return acc + next.amount;
-              }, 0)}
+            <Column gridColumn="7 / 8">{total_amount}</Column>
+            <Column>{purchase_price}</Column>
+            <Column title={numberParser(total_purchase_value)}>
+              {numberParser(total_purchase_value)}
             </Column>
-            <Column>{el[0].purchase_price}</Column>
-            <Column>
-              {el.reduce((acc, next) => {
-                return acc + next.purchase_value;
-              }, 0)}
+            <Column>{sale_price}</Column>
+            <Column title={numberParser(total_sale_value)}>
+              {numberParser(total_sale_value)}
             </Column>
-            <Column>{el[0].sale_price}</Column>
-            <Column>
-              {el.reduce((acc, next) => {
-                return acc + next.sale_value;
-              }, 0)}
-            </Column>
-            <Column>
-              {el.reduce((acc, next) => {
-                return acc + (next.sale_value - next.purchase_value);
-              }, 0)}
+            <Column
+              title={numberParser(total_sale_value - total_purchase_value)}
+            >
+              {numberParser(total_sale_value - total_purchase_value)}
             </Column>
           </ProductContainer>
         );

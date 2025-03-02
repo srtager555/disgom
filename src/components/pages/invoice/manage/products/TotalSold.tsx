@@ -3,12 +3,12 @@ import { Column } from "../../Product";
 import { numberParser } from "@/tools/numberPaser";
 
 type props = {
-  amount: number;
+  amount: number | undefined;
   normalPrice: number;
   customPrice: number | undefined;
 };
 
-export function TotalSold({ amount, normalPrice, customPrice }: props) {
+export function TotalSold({ amount = 0, normalPrice, customPrice }: props) {
   const [total, setTotal] = useState("0.00");
 
   useEffect(() => {

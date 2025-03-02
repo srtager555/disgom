@@ -3,11 +3,11 @@ import { Column } from "../../Product";
 import { useEffect, useState } from "react";
 
 type props = {
-  amount: number;
+  amount: number | undefined;
   commission: number;
 };
 
-export function Commission({ amount, commission }: props) {
+export function Commission({ amount = 0, commission }: props) {
   const [total, setTotal] = useState("0.00");
 
   useEffect(() => {

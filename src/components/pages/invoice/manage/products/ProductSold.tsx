@@ -6,7 +6,7 @@ type props = {
   outputsAmount: number;
   inventoryAmount: number;
   devolutionAmount: number;
-  setAmount: Dispatch<SetStateAction<number>>;
+  setAmount: Dispatch<SetStateAction<number | undefined>>;
   setWarn: Dispatch<SetStateAction<boolean>>;
 };
 

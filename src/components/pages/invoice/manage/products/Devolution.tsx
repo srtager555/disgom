@@ -4,9 +4,13 @@ import { useDebounce } from "@/hooks/debounce";
 
 type props = {
   setDevolutionAmount: Dispatch<SetStateAction<number>>;
+  setHumanAmountChanged: Dispatch<SetStateAction<boolean>>;
 };
 
-export function Devolution({ setDevolutionAmount }: props) {
+export function Devolution({
+  setDevolutionAmount,
+  setHumanAmountChanged,
+}: props) {
   const [devo, setDevo] = useState(0);
   const devoDebounce = useDebounce(devo);
 
@@ -23,6 +27,7 @@ export function Devolution({ setDevolutionAmount }: props) {
         value={devo}
         onChange={(e) => {
           setDevo(Number(e.target.value));
+          setHumanAmountChanged(true);
         }}
         type="number"
       />

@@ -1,16 +1,20 @@
 import { Products } from "@/components/pages/invoice/manage/products";
 import { SelectSeller } from "@/components/pages/invoice/manage/SelectSeller";
+import { bill, Bills } from "@/components/pages/invoice/Product/closing/Bills";
+import { Close } from "@/components/pages/invoice/Product/closing/Close";
+import { Credit } from "@/components/pages/invoice/Product/closing/closed/Credit";
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { SelectClient } from "@/components/pages/invoice/SelectClient";
 import useQueryParams from "@/hooks/getQueryParams";
+import { useGetInvoiceByQueryOnSnapshot } from "@/hooks/invoice/getInvoiceByQueryOnSnapshot";
 import { Container, FlexContainer } from "@/styles/index.styles";
-import { createInvoice } from "@/tools/invoices/createInvoice";
+import { createInvoice, invoiceType } from "@/tools/invoices/createInvoice";
 import { updateInvoice } from "@/tools/invoices/updateInvoice";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client } from "@/tools/sellers/createClient";
-import { QueryDocumentSnapshot } from "firebase/firestore";
+import { DocumentReference, QueryDocumentSnapshot } from "firebase/firestore";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { SetStateAction, useEffect, useState } from "react";
 import styled from "styled-components";
 
 const MainContainer = styled(FlexContainer)`
@@ -25,6 +29,7 @@ const MainContainer = styled(FlexContainer)`
 export default function Page() {
   const { id } = useQueryParams();
   const router = useRouter();
+  const invoice = useGetInvoiceByQueryOnSnapshot();
   const [selectedSeller, setSelectedSeller] = useState<
     QueryDocumentSnapshot<SellersDoc> | undefined
   >(undefined);
@@ -34,6 +39,12 @@ export default function Page() {
   const [productsResults, setProductsResults] = useState<
     Record<string, productResult>
   >({});
+  const [creditResult, setCreditResult] = useState(0);
+  const [bills, setBills] = useState<Record<string, bill>>({});
+  const [money, setMoney] = useState({
+    cash: 0,
+    deposit: 0,
+  });
 
   // this effect is to create an invoice when the select the seller
   useEffect(() => {
@@ -86,6 +97,35 @@ export default function Page() {
         selectedSeller={selectedSeller}
         setProductsResults={setProductsResults}
       />
+
+      <FlexContainer
+        styles={{
+          width: "100%",
+          flexDirection: "column",
+          justifyContent: "flex-start",
+          marginBottom: "50px",
+        }}
+      >
+        <Container styles={{ marginBottom: "50px" }}>
+          {invoice?.data() && (
+            <Credit
+              setCreditTotal={setCreditResult}
+              invoiceData={invoice.data()}
+              seller_ref={selectedSeller?.ref as DocumentReference<SellersDoc>}
+            />
+          )}
+        </Container>
+        <Bills bills={bills} setBills={setBills} />
+      </FlexContainer>
+      {invoice && (
+        <Close
+          totals={undefined}
+          credits={0}
+          bills={bills}
+          setMoney={setMoney}
+          invoice={invoice}
+        />
+      )}
     </MainContainer>
   );
 }

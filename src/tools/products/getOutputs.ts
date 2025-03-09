@@ -6,13 +6,14 @@ export async function getProductOutputsByID(id: string) {
   const data = invoice?.data();
   if (!data) return;
 
-  const outputsRefs = data.products_outputs[id];
-  const outputs = await Promise.all(
-    outputsRefs.map(async (output) => await getDoc(output))
-  );
-  const totalAmount = outputs.reduce((acc, now) => {
+  const outputsRefs = data.products_outputs[id] || [];
+  const outputs = outputsRefs?.map(async (output) => await getDoc(output));
+
+  const outputsResolved = await Promise.all(outputs);
+
+  const totalAmount = outputsResolved.reduce((acc, now) => {
     return acc + (now.data()?.amount || 0);
   }, 0);
 
-  return { outputs, totalAmount };
+  return { outputs: outputsResolved, totalAmount };
 }

@@ -165,3 +165,25 @@ export const BGlass = styled.div`
   backdrop-filter: blur(25px);
   z-index: -1;
 `;
+
+export const GridContainer = styled(StyledDiv)<{
+  grisTemplateColumns?: string;
+  customWidth?: string;
+}>`
+  display: grid;
+  grid-template-columns: ${(props) =>
+    props.grisTemplateColumns ||
+    "repeat(auto-fill, minmax(30px, 60px))"}; /* Cada columna tiene 30px de ancho */
+  grid-auto-flow: column; /* Hace que las celdas se agreguen en columnas */
+  grid-auto-columns: ${(props) =>
+    props.customWidth || "80px"}; /* Cada columna tiene 30px de ancho */
+  /* gap: 5px; Espaciado opcional entre columnas */
+  overflow-x: auto; /* Permite desplazamiento si hay muchas columnas */
+  white-space: nowrap; /* Evita saltos de línea */
+  border-bottom: 1px solid ${globalCSSVars["--detail"]};
+  background-color: inherit;
+
+  &:nth-child(odd) {
+    background-color: ${globalCSSVars["--background-highlight"]};
+  }
+`;

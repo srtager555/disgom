@@ -1,12 +1,8 @@
 import { productDoc } from "@/tools/products/create";
-import {
-  DocumentSnapshot,
-  onSnapshot,
-  QueryDocumentSnapshot,
-} from "firebase/firestore";
+import { onSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
 import { ProductContainer } from "../../ProductList";
 import { memo, useEffect, useMemo, useState } from "react";
-import { Column, Input } from "../../Product";
+import { Column } from "../../Product";
 import styled from "styled-components";
 import { SellersDoc } from "@/tools/sellers/create";
 import { AddOutput } from "./AddOutput";
@@ -17,6 +13,9 @@ import { TotalSold } from "./TotalSold";
 import { Commission } from "./Commission";
 import { Profit } from "./Profit";
 import { Fold } from "./fold";
+import { Devolution } from "./Devolution";
+import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
+import { ManageProductOutputsSaves } from "@/tools/products/ManageSaves";
 
 const GrabButton = styled.button`
   display: inline-block;
@@ -61,12 +60,14 @@ export function Product({
   selectedSeller,
   hideProductWithoutStock,
 }: props) {
+  const [humanAmountChanged, setHumanAmountChanged] = useState(false);
   const [outputsAmount, setOutputsAmount] = useState(0);
-  const [amount, setAmount] = useState(0);
+  const [devolutionAmount, setDevolutionAmount] = useState(0);
+  const [amount, setAmount] = useState<undefined | number>(undefined);
   const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
-  const [price, setPrice] = useState(0);
   const [isFolded, setIsFolded] = useState(true);
   const [rtDocData, setRtDocData] = useState<productDoc>(doc.data());
+  const [warn, setWarn] = useState(false);
   const currentStock = rtDocData.stock.reduce((acc, stock) => {
     return acc + stock.amount;
   }, 0);
@@ -87,6 +88,24 @@ export function Product({
     return () => unsubcribe();
   }, [doc.ref]);
 
+  // effect to save the changes
+  useEffect(() => {
+    async function manage() {
+      console.log("amount", amount);
+
+      if (!humanAmountChanged) return;
+
+      await ManageProductOutputsSaves({
+        productDoc: doc,
+        customPrice: customPrice,
+        stocks: rtDocData.stock,
+        totalSold: amount,
+      });
+    }
+
+    manage();
+  }, [amount, customPrice, doc, rtDocData.stock]);
+
   if (hideProductWithoutStock && currentStock === 0) return <></>;
   return (
     <ProductContainer
@@ -95,28 +114,34 @@ export function Product({
       $withoutStock={currentStock}
       $after={`${currentStock} / ${rtDocData.stock.length}`}
       $fold={!isFolded}
+      $warn={warn}
     >
       <Column>
         <GrabButton>-</GrabButton>
       </Column>
       <Column gridColumn="2 / 5">{rtDocData.name}</Column>
-      <Column>0</Column>
+
+      {/* ここから下は、src/components/pages/invoice/manage/products/Product.tsx のコード */}
+      {selectedSellerData?.hasInventory && <Column>0</Column>}
       <AddOutput
         productDoc={doc}
-        // rtProductData={rtDocData}
         currentStock={currentStock}
-        stocks={rtDocData.stock}
         setOutputsAmount={setOutputsAmount}
-        customPrice={customPrice}
+        setHumanAmountChanged={setHumanAmountChanged}
       />
-      <Column>
-        <Input type="number" />
-      </Column>
+      <Devolution
+        setDevolutionAmount={setDevolutionAmount}
+        setHumanAmountChanged={setHumanAmountChanged}
+        productDoc={doc}
+        sellerHasInventory={selectedSellerData?.hasInventory}
+      />
       <MemoProductSold
         outputsAmount={outputsAmount}
         inventoryAmount={0}
-        devolutionAmount={0}
+        devolutionAmount={devolutionAmount}
         setAmount={setAmount}
+        setWarn={setWarn}
+        sellerHasInventory={selectedSellerData?.hasInventory}
       />
       <Price
         product_id={doc.id}
@@ -131,8 +156,12 @@ export function Product({
       <Commission
         amount={amount}
         commission={rtDocData.stock[0]?.seller_commission}
+        sellerHasInventory={selectedSellerData?.hasInventory}
       />
-      <Profit id={doc.id} />
+      <Profit
+        sellerHasInventory={selectedSellerData?.hasInventory}
+        id={doc.id}
+      />
       <Fold
         isFolded={isFolded}
         setIsFolded={setIsFolded}

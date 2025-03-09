@@ -15,6 +15,7 @@ export const MemoProductSold = memo(ProductSold, (prev, next) => {
   if (prev.outputsAmount != next.outputsAmount) return false;
   if (prev.devolutionAmount != next.devolutionAmount) return false;
   if (prev.inventoryAmount != next.inventoryAmount) return false;
+  if (prev.sellerHasInventory != next.sellerHasInventory) return false;
 
   return true;
 });

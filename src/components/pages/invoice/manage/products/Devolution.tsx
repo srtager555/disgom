@@ -28,6 +28,7 @@ const DevolutionMemo = memo(DevolutionBase, (prev, next) => {
   if (prev.setDevolutionAmount !== next.setDevolutionAmount) return false;
   if (prev.setHumanAmountChanged !== next.setHumanAmountChanged) return false;
   if (!isEqual(prev.totalOutputs, next.totalOutputs)) return false;
+  if (prev.sellerHasInventory !== next.sellerHasInventory) return false;
 
   return true;
 });

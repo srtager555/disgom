@@ -123,6 +123,7 @@ function ColumnBase({
 export const Column = styled(ColumnBase)<{
   $removeBorder?: boolean;
   $left?: boolean;
+  $textAlign?: string;
 }>`
   ${(props) =>
     !props.$removeBorder &&
@@ -137,9 +138,10 @@ export const Column = styled(ColumnBase)<{
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: ${(props) => props.$textAlign || "start"};
   background-color: inherit;
-  padding: 5px 0;
-  padding-left: 10px;
+  padding: 5px;
+  /* padding-left: 10px; */
 
   & > button {
     padding: 0px;

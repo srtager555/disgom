@@ -1,10 +1,12 @@
 import { Select } from "@/components/Inputs/select";
 import { InputText } from "@/components/Inputs/text";
+import { useGetInvoiceByQueryOnSnapshot } from "@/hooks/invoice/getInvoiceByQueryOnSnapshot";
 import { globalCSSVars } from "@/styles/colors";
 import { Button, Form } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
+import { invoiceType } from "@/tools/invoices/createInvoice";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client, createClient } from "@/tools/sellers/createClient";
 import { updateClient } from "@/tools/sellers/udpateClient";
@@ -12,19 +14,11 @@ import {
   collection,
   CollectionReference,
   doc,
-  DocumentSnapshot,
   onSnapshot,
   QueryDocumentSnapshot,
+  updateDoc,
 } from "firebase/firestore";
-import {
-  ChangeEvent,
-  Dispatch,
-  FormEvent,
-  SetStateAction,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
 const InvoiceInfo = styled.div`
@@ -46,16 +40,12 @@ const SelectContainer = styled.div`
 interface props {
   sellerData: SellersDoc | undefined;
   sellerDoc: QueryDocumentSnapshot<SellersDoc> | undefined;
-  setClient: Dispatch<SetStateAction<QueryDocumentSnapshot<client> | null>>;
-  client: DocumentSnapshot<client> | null;
 }
 
-export function SelectClient({
-  sellerData,
-  sellerDoc,
-  setClient,
-  client,
-}: props) {
+export function SelectClient({ sellerData, sellerDoc }: props) {
+  const [client, setClient] = useState<QueryDocumentSnapshot<client> | null>(
+    null
+  );
   const [clients, setClients] = useState<QueryDocumentSnapshot<client>[]>();
   const [selectedClient, setSelectedClient] = useState<
     QueryDocumentSnapshot<client> | undefined
@@ -66,6 +56,7 @@ export function SelectClient({
   >(undefined);
   const [successfully, setSuccessfully] = useState<string | undefined>();
   const formRef = useRef<HTMLFormElement>(null);
+  const invoice = useGetInvoiceByQueryOnSnapshot();
 
   function selectTheClient(e: ChangeEvent<HTMLSelectElement> | string) {
     const value = typeof e === "string" ? e : e.target.value;
@@ -157,6 +148,37 @@ export function SelectClient({
     setSelectedClient(theClient);
     setClient(theClient || null);
   }, [clients, client, setClient]);
+
+  // effect to save the client in the invoice() {
+  useEffect(() => {
+    async function saveClient() {
+      if (!client || !invoice) return;
+      const data = invoice.data();
+
+      if (client.ref.id === data?.client_ref?.id) return;
+
+      await updateDoc(invoice.ref, {
+        client_ref: client.ref,
+      } as invoiceType);
+    }
+
+    saveClient();
+  }, [client, invoice]);
+
+  // effect to get the current client
+  useEffect(() => {
+    async function getCurrentClient() {
+      const data = invoice?.data();
+      const client_ref = data?.client_ref;
+
+      if (!client_ref) return;
+
+      const client = clients?.find((el) => el.id === client_ref.id);
+      if (client) setClient(client);
+    }
+
+    getCurrentClient();
+  }, [clients, invoice]);
 
   return (
     <>

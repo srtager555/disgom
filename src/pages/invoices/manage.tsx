@@ -33,9 +33,7 @@ export default function Page() {
   const [selectedSeller, setSelectedSeller] = useState<
     QueryDocumentSnapshot<SellersDoc> | undefined
   >(undefined);
-  const [client, setClient] = useState<QueryDocumentSnapshot<client> | null>(
-    null
-  );
+
   const [productsResults, setProductsResults] = useState<
     Record<string, productResult>
   >({});
@@ -87,8 +85,6 @@ export default function Page() {
           <SelectClient
             sellerData={selectedSeller?.data()}
             sellerDoc={selectedSeller}
-            setClient={setClient}
-            client={client}
           />
         )}
       </Container>

@@ -1,7 +1,6 @@
 import React, {
   Dispatch,
   SetStateAction,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -12,20 +11,16 @@ import { useDebounce } from "@/hooks/debounce";
 import { DocumentReference, QueryDocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { entryDoc } from "@/tools/products/addEntry";
-import { stockType } from "@/tools/products/addToStock";
-import { addOutputs, outputType } from "@/tools/products/addOutputs";
-import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
+import { outputType } from "@/tools/products/addOutputs";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
-import { isEqual } from "lodash";
 
 type props = {
   currentAmount: number;
   currentStock: number;
-  stocks: stockType[];
+  setHumanAmountChanged: Dispatch<SetStateAction<boolean>>;
   productDoc: QueryDocumentSnapshot<productDoc>;
   // rtProductData: productDoc;
   setOutputsAmount: Dispatch<SetStateAction<number>>;
-  customPrice: number | undefined;
 };
 
 export type variations = Array<{
@@ -66,7 +61,6 @@ export const AddOutput = (props: Omit<props, "currentAmount">) => {
 
 export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   if (prev.currentAmount != next.currentAmount) return false;
-  if (prev.customPrice != next.customPrice) return false;
 
   const prevProductDocID = prev.productDoc.id;
   const nextProductDocID = next.productDoc.id;
@@ -77,132 +71,43 @@ export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
 export function AddOutputBase({
   currentAmount,
   productDoc,
-  // rtProductData,
   currentStock,
-  stocks,
   setOutputsAmount,
-  customPrice,
+  setHumanAmountChanged,
 }: props) {
-  const [cookingAmountAdded, setCookingAmountAdded] =
-    useState<number>(currentAmount);
-  const cookedAmountAdded = useDebounce(cookingAmountAdded);
-  const outputs = useGetProductOutputByID(productDoc.id);
-  const [outputsToCreate, setOutputsToCreate] = useState<Array<rawOutput>>([]);
-  const [lastCustomPrice, setLastCustomPrice] = useState<number | undefined>(
-    undefined
-  );
-  const [firstPain, setFirstPain] = useState(true);
-  const invoice = useGetInvoiceByQuery();
+  const [amount, setAmount] = useState(currentAmount);
+  const cookedAmount = useDebounce(amount) as number;
   const form_ref = useRef<HTMLFormElement>(null);
 
-  const amountListener = useCallback(
-    function (n: number) {
-      let remainingAmount = n;
-
-      setOutputsToCreate([]);
-      if (remainingAmount <= 0) return;
-      if (!stocks) return;
-
-      for (let index = 0; index < stocks.length; index++) {
-        const stock = stocks[index];
-
-        const remaining = remainingAmount - stock.amount;
-
-        if (remaining > 0) {
-          remainingAmount = remaining;
-          setOutputsToCreate((props) => [
-            ...props,
-            {
-              amount: stock.amount,
-              product_ref: productDoc.ref,
-              entry_ref: stock.entry_ref,
-              sale_price: customPrice || stock.sale_price,
-              purchase_price: stock.purchase_price,
-              commission: stock.seller_commission,
-            },
-          ]);
-        } else {
-          setOutputsToCreate((props) => [
-            ...props,
-            {
-              amount: remainingAmount,
-              product_ref: productDoc.ref,
-              entry_ref: stock.entry_ref,
-              sale_price: customPrice || stock.sale_price,
-              purchase_price: stock.purchase_price,
-              commission: stock.seller_commission,
-            },
-          ]);
-          break;
-        }
-      }
-    },
-    [stocks, customPrice]
-  );
-
-  // effect to set the currentAmount correctly
+  // effect to refresh the amount when the currentAmount changes
   useEffect(() => {
-    if (isEqual(currentAmount, cookingAmountAdded)) return;
-    setCookingAmountAdded(currentAmount);
+    if (amount === currentAmount) return;
+
+    setAmount(currentAmount);
   }, [currentAmount]);
+
+  // effect to set the cooked amount to setOutputsAmount
+  useEffect(() => {
+    setOutputsAmount(cookedAmount);
+  }, [cookedAmount, setOutputsAmount]);
 
   // effect to reset the input when changes of product
   useEffect(() => {
     form_ref.current?.reset();
   }, [productDoc.id]);
 
-  // effect to create the new raw outputs
-  useEffect(() => {
-    if ((cookedAmountAdded as number) >= 0)
-      amountListener(cookedAmountAdded as number);
-  }, [amountListener, cookedAmountAdded, customPrice]);
-
-  // effect to set the custom price if exists
-  useEffect(() => {
-    if (outputs.length === 0) return;
-    const customPrice = outputs[0].data()?.sale_price as number;
-
-    setLastCustomPrice(customPrice);
-  }, [outputs]);
-
-  // effect to add the outputs
-  useEffect(() => {
-    if (!invoice) return;
-    if (currentAmount === cookedAmountAdded && customPrice === lastCustomPrice)
-      return;
-    if (firstPain && outputsToCreate.length === 0) return;
-
-    if (firstPain) setFirstPain(false);
-    setLastCustomPrice(customPrice);
-
-    addOutputs(invoice, productDoc, outputsToCreate);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invoice?.ref?.id, outputsToCreate]);
-
-  // useEffect to set the outputs amounts
-  useEffect(() => {
-    if (outputsToCreate.length > 0) {
-      const outputsAmount = outputsToCreate.reduce(
-        (acc, next) => acc + next.amount,
-        0
-      );
-      setOutputsAmount(outputsAmount);
-    } else {
-      setOutputsAmount(currentAmount);
-    }
-  }, [currentAmount, outputsToCreate, setOutputsAmount]);
-
   return (
     <Column>
       <form ref={form_ref} onSubmit={(e) => e.preventDefault()}>
         <Input
           type="number"
-          defaultValue={currentAmount}
+          value={amount}
           min={0}
           max={currentStock + currentAmount}
           onChange={(e) => {
             const value = e.target.value;
-            setCookingAmountAdded(Number(value));
+            setAmount(Number(value));
+            setHumanAmountChanged(true);
           }}
         />
       </form>

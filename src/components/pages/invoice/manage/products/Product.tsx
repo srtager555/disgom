@@ -152,6 +152,7 @@ export function Product({
         amount={amount}
         customPrice={customPrice}
         normalPrice={rtDocData.stock[0]?.sale_price}
+        sellerHasInventory={selectedSellerData?.hasInventory}
       />
       <Commission
         amount={amount}

@@ -8,6 +8,7 @@ type props = {
   devolutionAmount: number;
   setAmount: Dispatch<SetStateAction<number | undefined>>;
   setWarn: Dispatch<SetStateAction<boolean>>;
+  sellerHasInventory: boolean | undefined;
 };
 
 export const MemoProductSold = memo(ProductSold, (prev, next) => {
@@ -24,6 +25,7 @@ export function ProductSold({
   devolutionAmount,
   setAmount,
   setWarn,
+  sellerHasInventory,
 }: props) {
   const [total, setTotal] = useState(0);
 
@@ -36,5 +38,5 @@ export function ProductSold({
     setAmount(total);
   }, [devolutionAmount, inventoryAmount, outputsAmount, setAmount, setWarn]);
 
-  return <Column>{numberParser(total)}</Column>;
+  if (sellerHasInventory) return <Column>{numberParser(total)}</Column>;
 }

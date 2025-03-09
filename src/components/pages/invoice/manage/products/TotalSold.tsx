@@ -6,9 +6,15 @@ type props = {
   amount: number | undefined;
   normalPrice: number;
   customPrice: number | undefined;
+  sellerHasInventory: boolean | undefined;
 };
 
-export function TotalSold({ amount = 0, normalPrice, customPrice }: props) {
+export function TotalSold({
+  amount = 0,
+  normalPrice,
+  customPrice,
+  sellerHasInventory,
+}: props) {
   const [total, setTotal] = useState("0.00");
 
   useEffect(() => {
@@ -17,5 +23,9 @@ export function TotalSold({ amount = 0, normalPrice, customPrice }: props) {
     else setTotal("0.00");
   }, [amount, normalPrice, customPrice]);
 
-  return <Column title={total}>{total}</Column>;
+  return (
+    <Column gridColumn={!sellerHasInventory ? "-3 / -4" : ""} title={total}>
+      {total}
+    </Column>
+  );
 }

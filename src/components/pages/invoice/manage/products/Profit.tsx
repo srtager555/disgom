@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { numberParser } from "@/tools/numberPaser";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
 
-type props = { id: string };
+type props = { id: string; sellerHasInventory: boolean | undefined };
 
-export function Profit({ id }: props) {
+export function Profit({ id, sellerHasInventory }: props) {
   const [total, setTotal] = useState("0.00");
   const outputs = useGetProductOutputByID(id);
 
@@ -35,5 +35,9 @@ export function Profit({ id }: props) {
     getResults();
   }, [outputs]);
 
-  return <Column title={total}>{total}</Column>;
+  return (
+    <Column gridColumn={!sellerHasInventory ? "-2 / -3" : ""} title={total}>
+      {total}
+    </Column>
+  );
 }

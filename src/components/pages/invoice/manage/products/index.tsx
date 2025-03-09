@@ -8,6 +8,7 @@ import { SellersDoc } from "@/tools/sellers/create";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { Product as P } from "../../Product";
 import { MemoProduct } from "./Product";
+import { Button } from "@/styles/Form.styles";
 
 type props = {
   selectedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
@@ -29,6 +30,13 @@ export function Products({ selectedSeller, setProductsResults }: props) {
             hideProductWithoutStock={hideProductWithoutStock}
           />
         </Container>
+        <Button
+          onClick={() => {
+            window.print();
+          }}
+        >
+          Imprimir
+        </Button>
       </FlexContainer>
       <Container styles={{ marginBottom: "20px" }}>
         <Descriptions hasInventory={selectedSeller?.data().hasInventory} />

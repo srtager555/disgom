@@ -94,7 +94,7 @@ const Page: NextPageWithLayout = () => {
   return (
     <Container>
       <p style={{ fontStyle: "italic" }}>
-        Para ver información de un producto seleccionelo en la lista de
+        Para ver la información de un producto, selecciónelo en la lista de
         productos
       </p>
       <FadeContainer $fade={selectedProduct ? false : true}>

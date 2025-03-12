@@ -172,16 +172,14 @@ export const GridContainer = styled(StyledDiv)<{
 }>`
   display: grid;
   grid-template-columns: ${(props) =>
-    props.grisTemplateColumns ||
-    "repeat(auto-fill, minmax(30px, 60px))"}; /* Cada columna tiene 30px de ancho */
-  grid-auto-flow: column; /* Hace que las celdas se agreguen en columnas */
-  grid-auto-columns: ${(props) =>
-    props.customWidth || "80px"}; /* Cada columna tiene 30px de ancho */
-  /* gap: 5px; Espaciado opcional entre columnas */
-  overflow-x: auto; /* Permite desplazamiento si hay muchas columnas */
-  white-space: nowrap; /* Evita saltos de línea */
+    props.grisTemplateColumns || "repeat(auto-fill, minmax(30px, 60px))"};
+  grid-auto-flow: column;
+  grid-auto-columns: ${(props) => props.customWidth || "80px"};
+
+  overflow: hidden;
+  white-space: nowrap;
   border-bottom: 1px solid ${globalCSSVars["--detail"]};
-  background-color: inherit;
+  background-color: ${globalCSSVars["--background"]};
 
   &:nth-child(odd) {
     background-color: ${globalCSSVars["--background-highlight"]};

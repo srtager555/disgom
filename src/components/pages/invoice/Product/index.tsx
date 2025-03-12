@@ -69,17 +69,19 @@ const ColumnGrid = styled(Container)<{
   }
 
   &:before {
+    display: flex;
+    align-items: center;
     ${(props) =>
       props.$title &&
       css`
         content: ${JSON.stringify(props.$title)};
       `};
     position: absolute;
-    top: calc(50% - 1px);
-    left: -10px;
+    top: 50%;
+    left: 0px;
     transform: translateY(-50%);
     height: 100%;
-    padding: 5px 10px;
+    padding: 0 5px;
     background-color: inherit;
     opacity: 0;
     transition: all 200ms ease;

@@ -13,10 +13,16 @@ import { productDoc } from "@/tools/products/create";
 import { entryDoc } from "@/tools/products/addEntry";
 import { outputType } from "@/tools/products/addOutputs";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
+import { ManageProductOutputsSaves } from "@/tools/products/ManageSaves";
+import { stockType } from "@/tools/products/addToStock";
+import { isEqual } from "lodash";
 
 type props = {
   currentAmount: number;
   currentStock: number;
+  customPrice: number | undefined;
+  stock: stockType[] | [];
+  humanAmountChanged: boolean;
   setHumanAmountChanged: Dispatch<SetStateAction<boolean>>;
   productDoc: QueryDocumentSnapshot<productDoc>;
   // rtProductData: productDoc;
@@ -61,11 +67,13 @@ export const AddOutput = (props: Omit<props, "currentAmount">) => {
 
 export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   if (prev.currentAmount != next.currentAmount) return false;
+  if (!isEqual(prev.currentStock, next.currentStock)) return false;
+  if (!isEqual(prev.stock, next.stock)) return false;
+  if (prev.customPrice !== next.customPrice) return false;
+  if (prev.humanAmountChanged !== next.humanAmountChanged) return false;
+  if (prev.productDoc.id !== next.productDoc.id) return false;
 
-  const prevProductDocID = prev.productDoc.id;
-  const nextProductDocID = next.productDoc.id;
-
-  return prevProductDocID === nextProductDocID;
+  return true;
 });
 
 export function AddOutputBase({
@@ -73,6 +81,9 @@ export function AddOutputBase({
   productDoc,
   currentStock,
   setOutputsAmount,
+  stock,
+  customPrice,
+  humanAmountChanged,
   setHumanAmountChanged,
 }: props) {
   const [amount, setAmount] = useState(currentAmount);
@@ -95,6 +106,27 @@ export function AddOutputBase({
   useEffect(() => {
     form_ref.current?.reset();
   }, [productDoc.id]);
+
+  //effect to save the changes
+  useEffect(() => {
+    async function manage() {
+      console.log("amount", amount);
+      console.log(humanAmountChanged);
+
+      if (!humanAmountChanged) return;
+
+      console.log("saving");
+
+      await ManageProductOutputsSaves({
+        productDoc,
+        customPrice: customPrice,
+        stocks: stock,
+        outputs_amount_added: cookedAmount,
+      });
+    }
+
+    manage();
+  }, [cookedAmount, customPrice, productDoc, stock]);
 
   return (
     <Column>

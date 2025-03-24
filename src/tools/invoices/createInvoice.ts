@@ -27,7 +27,13 @@ export type invoiceType = {
   seller_ref: DocumentReference<SellersDoc>;
   client_ref: DocumentReference<client> | null;
   products_outputs: Record<string, Array<DocumentReference<outputType>>>;
-  inventory_ref: null;
+  devolution: DocumentReference<inventory> | null;
+  // devolution: {
+  //   amount: number | null;
+  //   inventory_ref: DocumentReference<inventory> | null;
+  // };
+  outputs_sold: Record<string, Array<DocumentReference<outputType>>>;
+  // inventory_ref: null;
   last_inventory_ref: DocumentReference<inventory> | null;
   total_sold: {
     normal: number;
@@ -82,7 +88,8 @@ export async function createInvoice(data: Pick<invoiceType, "seller_ref">) {
     seller_ref,
     client_ref: null,
     products_outputs: {},
-    inventory_ref: null,
+    devolution: null,
+    outputs_sold: {},
     total_sold: {
       normal: 0,
       withInventory: 0,

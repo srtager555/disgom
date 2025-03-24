@@ -21,7 +21,7 @@ export async function ManageProductOutputsSaves({
 }: props) {
   const invoice = await getInvoiceByQuery();
 
-  console.log(outputs_amount_added);
+  console.log("amount detected", outputs_amount_added);
 
   if (
     !invoice ||
@@ -33,8 +33,11 @@ export async function ManageProductOutputsSaves({
   const outputs = await getProductOutputsByID(productDoc.id);
   const lastPrice = outputs?.outputs[0]?.data()?.sale_price;
 
-  console.log("total amount", outputs?.totalAmount, outputs_amount_added);
-  console.log("prices", customPrice, lastPrice);
+  // console.log("total amount", outputs?.totalAmount, outputs_amount_added);
+  // console.log("prices", customPrice, lastPrice);
+
+  console.log("amounts", outputs?.totalAmount, outputs_amount_added);
+  console.log("custom price is equal to last price?", customPrice, lastPrice);
 
   if (outputs?.totalAmount === outputs_amount_added) {
     if (!customPrice || customPrice === lastPrice) return;
@@ -47,22 +50,24 @@ export async function ManageProductOutputsSaves({
     customPrice
   );
 
-  console.log(outputsToCreate);
+  console.log("outputs to create", outputsToCreate);
 
-  addOutputs(invoice, productDoc, outputsToCreate);
+  addOutputs(invoice, productDoc, outputsToCreate.outputsToCreate);
 }
 
 export const amountListener = function (
   n: number,
-  stocks: Array<stockType>,
+  stocksRoot: Array<stockType>,
   productDoc: QueryDocumentSnapshot<productDoc>,
   customPrice?: number
-): Array<rawOutput> {
+): { outputsToCreate: Array<rawOutput>; remainingStocks: Array<rawOutput> } {
   let remainingAmount = n;
   const outputsToCreate: Array<rawOutput> = [];
+  let remainingStocks: Array<rawOutput> = [];
+  const stocks = [...stocksRoot];
 
-  if (remainingAmount <= 0) return outputsToCreate;
-  if (!stocks) return outputsToCreate;
+  if (remainingAmount <= 0) return { outputsToCreate, remainingStocks };
+  if (stocks.length === 0) return { outputsToCreate, remainingStocks };
 
   for (let index = 0; index < stocks.length; index++) {
     const stock = stocks[index];
@@ -80,6 +85,22 @@ export const amountListener = function (
         commission: stock.seller_commission,
       });
     } else {
+      if (stocks.length > 1)
+        remainingStocks = stocks.slice(index + 1).map(stockToRawOutput);
+      else remainingStocks = stocks.slice(index).map(stockToRawOutput);
+
+      if (remainingStocks[0]) {
+        const currentAmount = remainingStocks[0].amount;
+
+        if (currentAmount - remainingAmount > 0) {
+          remainingStocks[0].amount = currentAmount - remainingAmount;
+        } else {
+          remainingStocks.shift();
+        }
+      }
+
+      // console.log("remain", remainingStocks);
+
       outputsToCreate.push({
         amount: remainingAmount,
         product_ref: productDoc.ref,
@@ -93,7 +114,7 @@ export const amountListener = function (
     }
   }
 
-  return outputsToCreate;
+  return { outputsToCreate, remainingStocks };
 };
 
 export function createStockFromOutputType(output: outputType): stockType {
@@ -105,5 +126,16 @@ export function createStockFromOutputType(output: outputType): stockType {
     purchase_price: output.purchase_price,
     sale_price: output.sale_price,
     seller_commission: output.commission,
+  };
+}
+
+export function stockToRawOutput(stock: stockType): rawOutput {
+  return {
+    amount: stock.amount,
+    product_ref: stock.product_ref,
+    entry_ref: stock.entry_ref,
+    sale_price: stock.sale_price,
+    purchase_price: stock.purchase_price,
+    commission: stock.seller_commission,
   };
 }

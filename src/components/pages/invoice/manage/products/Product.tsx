@@ -5,8 +5,8 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { Column } from "../../Product";
 import styled from "styled-components";
 import { SellersDoc } from "@/tools/sellers/create";
-import { AddOutput } from "./AddOutput";
-import { MemoProductSold } from "./ProductSold";
+import { AddOutput, rawOutput } from "./AddOutput";
+import { ProductSold } from "./ProductSold";
 import { Price } from "./Price";
 import { isEqual } from "lodash";
 import { TotalSold } from "./TotalSold";
@@ -14,8 +14,6 @@ import { Commission } from "./Commission";
 import { Profit } from "./Profit";
 import { Fold } from "./fold";
 import { Devolution } from "./Devolution";
-import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
-import { ManageProductOutputsSaves } from "@/tools/products/ManageSaves";
 
 const GrabButton = styled.button`
   display: inline-block;
@@ -68,6 +66,7 @@ export function Product({
   const [isFolded, setIsFolded] = useState(true);
   const [rtDocData, setRtDocData] = useState<productDoc>(doc.data());
   const [warn, setWarn] = useState(false);
+  const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
   const currentStock = rtDocData.stock.reduce((acc, stock) => {
     return acc + stock.amount;
   }, 0);
@@ -88,24 +87,6 @@ export function Product({
     return () => unsubcribe();
   }, [doc.ref]);
 
-  // effect to save the changes
-  useEffect(() => {
-    async function manage() {
-      console.log("amount", amount);
-
-      if (!humanAmountChanged) return;
-
-      await ManageProductOutputsSaves({
-        productDoc: doc,
-        customPrice: customPrice,
-        stocks: rtDocData.stock,
-        totalSold: amount,
-      });
-    }
-
-    manage();
-  }, [amount, customPrice, doc, rtDocData.stock]);
-
   if (hideProductWithoutStock && currentStock === 0) return <></>;
   return (
     <ProductContainer
@@ -125,8 +106,11 @@ export function Product({
       {selectedSellerData?.hasInventory && <Column>0</Column>}
       <AddOutput
         productDoc={doc}
+        stock={rtDocData.stock}
+        customPrice={customPrice}
         currentStock={currentStock}
         setOutputsAmount={setOutputsAmount}
+        humanAmountChanged={humanAmountChanged}
         setHumanAmountChanged={setHumanAmountChanged}
       />
       <Devolution
@@ -134,8 +118,17 @@ export function Product({
         setHumanAmountChanged={setHumanAmountChanged}
         productDoc={doc}
         sellerHasInventory={selectedSellerData?.hasInventory}
+        setRemainStock={setRemainStock}
+        humanAmountChanged={humanAmountChanged}
+        customPrice={customPrice}
+        seletedSeller={selectedSeller}
       />
-      <MemoProductSold
+      <ProductSold
+        remainStock={remainStock}
+        seletedSeller={selectedSeller}
+        humanAmountChanged={humanAmountChanged}
+        product_doc={doc}
+        customPrice={customPrice}
         outputsAmount={outputsAmount}
         inventoryAmount={0}
         devolutionAmount={devolutionAmount}

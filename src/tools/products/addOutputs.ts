@@ -1,21 +1,17 @@
-import { productResult } from "@/components/pages/invoice/ProductList";
 import {
   addDoc,
-  arrayUnion,
   collection,
   CollectionReference,
-  doc,
   DocumentReference,
-  getDoc,
+  DocumentSnapshot,
+  QueryDocumentSnapshot,
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
-import { Firestore } from "../firestore";
 import { ProductsCollection } from "../firestore/CollectionTyping";
 import { productDoc } from "./create";
 import { entryDoc } from "./addEntry";
 import { invoiceType } from "../invoices/createInvoice";
-import { updateStock } from "./updateStock";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 
 export type outputType = {
@@ -33,115 +29,116 @@ export type outputType = {
   disabled: boolean;
 };
 
-export async function a(
-  invoice_ref: DocumentReference<invoiceType>,
-  product_id: string,
-  productOutputData: productResult
-) {
-  const db = Firestore();
-  const productRef = doc(
-    db,
-    ProductsCollection.root,
-    product_id
-  ) as DocumentReference<productDoc>;
-  const outputColl = collection(
-    productRef,
-    ProductsCollection.output
-  ) as CollectionReference<outputType>;
+// export async function a(
+//   invoice_ref: DocumentReference<invoiceType>,
+//   product_id: string,
+//   productOutputData: productResult
+// ) {
+//   const db = Firestore();
+//   const productRef = doc(
+//     db,
+//     ProductsCollection.root,
+//     product_id
+//   ) as DocumentReference<productDoc>;
+//   const outputColl = collection(
+//     productRef,
+//     ProductsCollection.output
+//   ) as CollectionReference<outputType>;
 
-  const productSnap = await getDoc(productRef);
-  const { stock: stocky } = productSnap.data() as productDoc;
-  const stocks = stocky && [...stocky];
+//   const productSnap = await getDoc(productRef);
+//   const { stock: stocky } = productSnap.data() as productDoc;
+//   const stocks = stocky && [...stocky];
 
-  productOutputData.sold.variations.forEach(async (element, index) => {
-    let remainingAmount = element.amount;
-    if (remainingAmount <= 0) return;
-    // const finalData = [];
+//   productOutputData.sold.variations.forEach(async (element, index) => {
+//     let remainingAmount = element.amount;
+//     if (remainingAmount <= 0) return;
+//     // const finalData = [];
 
-    const data = (
-      amount: number,
-      cost_price: number,
-      entry_ref: DocumentReference<entryDoc>
-    ) => {
-      const purchase_cost = amount * cost_price;
-      const normal_price = element.price;
-      const seller_price =
-        productOutputData.seller_sold.variations[index].price;
-      const normal_sale_value = normal_price * amount;
-      const seller_sale_value = seller_price * amount;
+//     const data = (
+//       amount: number,
+//       cost_price: number,
+//       entry_ref: DocumentReference<entryDoc>
+//     ) => {
+//       const purchase_cost = amount * cost_price;
+//       const normal_price = element.price;
+//       const seller_price =
+//         productOutputData.seller_sold.variations[index].price;
+//       const normal_sale_value = normal_price * amount;
+//       const seller_sale_value = seller_price * amount;
 
-      return {
-        created_at: Timestamp.fromDate(new Date()),
-        amount,
-        cost_price,
-        purchase_cost,
-        sale_prices: {
-          normal: normal_price,
-          seller: seller_price,
-        },
-        sales_values: {
-          normal: normal_sale_value,
-          seller: seller_sale_value,
-        },
-        profit: {
-          normal: normal_sale_value - purchase_cost,
-          seller: seller_sale_value - normal_sale_value,
-        },
-        entry_ref,
-        invoice_ref,
-        disabled: false,
-      };
-    };
+//       return {
+//         created_at: Timestamp.fromDate(new Date()),
+//         amount,
+//         cost_price,
+//         purchase_cost,
+//         sale_prices: {
+//           normal: normal_price,
+//           seller: seller_price,
+//         },
+//         sales_values: {
+//           normal: normal_sale_value,
+//           seller: seller_sale_value,
+//         },
+//         profit: {
+//           normal: normal_sale_value - purchase_cost,
+//           seller: seller_sale_value - normal_sale_value,
+//         },
+//         entry_ref,
+//         invoice_ref,
+//         disabled: false,
+//       };
+//     };
 
-    for (let index = 0; index < stocks.length; index++) {
-      const stock = stocks[index];
+//     for (let index = 0; index < stocks.length; index++) {
+//       const stock = stocks[index];
 
-      const remaining = remainingAmount - stock.amount;
+//       const remaining = remainingAmount - stock.amount;
 
-      if (remaining > 0) {
-        remainingAmount = remaining;
+//       if (remaining > 0) {
+//         remainingAmount = remaining;
 
-        const outputRef = await addDoc(
-          outputColl,
-          data(stock.amount, stock.purchase_price, stock.entry_ref)
-        );
+//         const outputRef = await addDoc(
+//           outputColl,
+//           data(stock.amount, stock.purchase_price, stock.entry_ref)
+//         );
 
-        await updateStock(productRef, stock, undefined);
+//         await updateStock(productRef, stock, undefined);
 
-        await updateDoc(invoice_ref, {
-          products_outputs: arrayUnion(outputRef),
-        });
-      } else {
-        const outputRef = await addDoc(
-          outputColl,
-          data(remainingAmount, stock.purchase_price, stock.entry_ref)
-        );
+//         await updateDoc(invoice_ref, {
+//           products_outputs: arrayUnion(outputRef),
+//         });
+//       } else {
+//         const outputRef = await addDoc(
+//           outputColl,
+//           data(remainingAmount, stock.purchase_price, stock.entry_ref)
+//         );
 
-        await updateStock(productRef, stock, {
-          ...stock,
-          amount: stock.amount - remainingAmount,
-        });
+//         await updateStock(productRef, stock, {
+//           ...stock,
+//           amount: stock.amount - remainingAmount,
+//         });
 
-        await updateDoc(invoice_ref, {
-          products_outputs: arrayUnion(outputRef),
-        });
+//         await updateDoc(invoice_ref, {
+//           products_outputs: arrayUnion(outputRef),
+//         });
 
-        break;
-      }
-    }
-  });
-}
+//         break;
+//       }
+//     }
+//   });
+// }
 
 export async function addOutputs(
-  invoice_ref: DocumentReference<invoiceType>,
-  product_ref: DocumentReference<productDoc>,
-  rawOutputs: rawOutput[]
-) {
-  const outputColl = collection(
-    product_ref,
+  invoice: DocumentSnapshot<invoiceType>,
+  product_doc: QueryDocumentSnapshot<productDoc>,
+  rawOutputs: rawOutput[],
+  outputsKey: "products_outputs" | "outputs_sold" = "products_outputs",
+  outputColl: CollectionReference<outputType> = collection(
+    product_doc.ref,
     ProductsCollection.output
-  ) as CollectionReference<outputType>;
-
+  ) as CollectionReference<outputType>,
+  returnOutputs: boolean = false
+) {
   const outputParser = (rawOutput: rawOutput): outputType => {
     const purchase_value = rawOutput.amount * rawOutput.purchase_price;
     const sale_value = rawOutput.amount * rawOutput.sale_price;
@@ -157,25 +154,79 @@ export async function addOutputs(
       commission: rawOutput.commission,
       commission_value,
       entry_ref: rawOutput.entry_ref,
-      invoice_ref,
-      product_ref,
+      invoice_ref: invoice.ref,
+      product_ref: product_doc.ref,
       disabled: false,
     };
   };
 
+  // let remainingAmount = rawOutputs.reduce((acc, next) => acc + next.amount, 0);
+  const outputs_field = outputsKey + "." + product_doc.ref.id;
+  // const currentOutputsField = invoice.data()?.[outputsKey] as unknown as Record<
+  //   string,
+  //   DocumentReference<outputType>[]
+  // >;
+  // const currentOutputs = currentOutputsField[product_doc.ref.id];
+
+  // if (currentOutputs) {
+  //   currentOutputs.forEach(async (outputRef: DocumentReference<outputType>) => {
+  //     await disableOutput(outputRef);
+  //   });
+  // }
+
+  if (rawOutputs.length === 0) {
+    if (returnOutputs) return [];
+
+    await updateDoc(invoice.ref, {
+      [outputs_field]: [],
+    });
+
+    return;
+  }
+
+  // const docData = (await getDoc(product_doc.ref)).data() as productDoc;
+  // const stocks = docData?.stock;
+
+  // remove stock
+  // for (let index = 0; index < stocks.length; index++) {
+  //   const stock = stocks[index];
+
+  //   console.log("stock", stock);
+
+  //   const remaining = remainingAmount - stock.amount;
+
+  //   if (remaining > 0) {
+  //     remainingAmount = remaining;
+
+  //     await updateStock(product_doc.ref, stock, undefined);
+  //   } else {
+  //     await updateStock(product_doc.ref, stock, {
+  //       ...stock,
+  //       amount: stock.amount - remainingAmount,
+  //     });
+
+  //     break;
+  //   }
+  // }
+
   const outputsReady = rawOutputs.map((el) => {
     return outputParser(el);
   });
+
+  console.log("outputs coll patah", outputColl.path);
+  console.log("outputs field", outputs_field);
+  if (returnOutputs) return outputsReady;
 
   const outputsRefsPromise = outputsReady.map(async (el) => {
     return await addDoc(outputColl, el);
   });
 
   const outputsRefs = await Promise.all(outputsRefsPromise);
-  const outputs_id = "products_outputs." + product_ref.id;
 
-  await updateDoc(invoice_ref, {
-    [outputs_id]: outputsRefs,
+  // return;
+
+  await updateDoc(invoice.ref, {
+    [outputs_field]: outputsRefs,
   });
 }
 // const amountListener =

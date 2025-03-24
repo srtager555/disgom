@@ -1,12 +1,6 @@
-import {
-  addDoc,
-  collection,
-  DocumentReference,
-  Timestamp,
-} from "firebase/firestore";
+import { addDoc, collection, DocumentReference } from "firebase/firestore";
 import { inventory } from "./create";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
-import { productDoc } from "@/tools/products/create";
 import { outputType } from "@/tools/products/addOutputs";
 
 export interface inventory_output extends outputType {

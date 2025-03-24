@@ -110,11 +110,9 @@ export function AddOutputBase({
   //effect to save the changes
   useEffect(() => {
     async function manage() {
-      console.log("amount", amount);
-      console.log(humanAmountChanged);
-
       if (!humanAmountChanged) return;
 
+      console.log("amount", amount);
       console.log("saving");
 
       await ManageProductOutputsSaves({

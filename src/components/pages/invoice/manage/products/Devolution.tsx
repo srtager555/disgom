@@ -116,19 +116,23 @@ function DevolutionBase({
   // effect to set the debouce to the devo
   useEffect(() => {
     setDevolutionAmount(devoDebounce as number);
+    console.log("devo debounce setted", devoDebounce);
   }, [devoDebounce, setDevolutionAmount]);
 
   useEffect(() => {
     if (devoDebounce != currentDevolution) setDevo(currentDevolution);
+    console.log(
+      "current devo and devo deounce",
+      currentDevolution,
+      devoDebounce
+    );
   }, [currentDevolution]);
 
   // effect to save the devolution
   useEffect(() => {
-    console.log("????");
-
     async function saveDevo() {
+      console.log("starting to save the devo");
       if (!invoiceDoc) return;
-      if (!humanAmountChanged) return;
       if (!productDoc) return;
       if (!seletedSeller) return;
 
@@ -151,7 +155,9 @@ function DevolutionBase({
         devoDebounce,
         currentDevolution,
       });
+
       // check if the current devo is the same in the input
+      if (!humanAmountChanged) return;
       if (devoDebounce === currentDevolution) return;
       console.log("saving devo");
       console.log("ramain stock (product sold)", outputsWorked.remainingStocks);
@@ -203,12 +209,12 @@ function DevolutionBase({
   }, [
     // outputs,
     // inventory_outputs,
-    // invoiceDoc,
     // humanAmountChanged,
-    // productDoc,
+    invoiceDoc,
+    productDoc,
     devoDebounce,
-    // customPrice,
-    // seletedSeller,
+    customPrice,
+    seletedSeller,
     // setRemainStock,
     // currentDevolution,
   ]);

@@ -112,8 +112,8 @@ export function AddOutputBase({
     async function manage() {
       if (!humanAmountChanged) return;
 
-      console.log("amount", amount);
-      console.log("saving");
+      console.log("******** started to save outputs added");
+      console.log("amount setted", amount);
 
       await ManageProductOutputsSaves({
         productDoc,

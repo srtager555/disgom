@@ -1,26 +1,27 @@
 import { Column } from "../../Product";
 import { useEffect, useState } from "react";
 import { numberParser } from "@/tools/numberPaser";
-import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
+import { rawOutput } from "./AddOutput";
 
-type props = { id: string; sellerHasInventory: boolean | undefined };
+type props = {
+  sellerHasInventory: boolean | undefined;
+  remainStock: rawOutput[];
+};
 
-export function Profit({ id, sellerHasInventory }: props) {
+export function Profit({ sellerHasInventory, remainStock }: props) {
   const [total, setTotal] = useState("0.00");
-  const outputs = useGetProductOutputByID(id);
 
   useEffect(() => {
+    console.log("remainStock in profit", remainStock);
     async function getResults() {
-      if (!outputs) return setTotal("0.00");
+      if (remainStock.length === 0) return setTotal("0.00");
 
-      const results = outputs.reduce(
+      const results = remainStock.reduce(
         (acc, next) => {
-          const data = next.data();
-
           return {
             purchase_total:
-              acc.purchase_total + (data?.purchase_value as number),
-            sale_total: acc.sale_total + (data?.sale_value as number),
+              acc.purchase_total + next.amount * next.purchase_price,
+            sale_total: acc.sale_total + next.amount * next.sale_price,
           };
         },
         {
@@ -33,7 +34,7 @@ export function Profit({ id, sellerHasInventory }: props) {
     }
 
     getResults();
-  }, [outputs]);
+  }, [remainStock]);
 
   return (
     <Column gridColumn={!sellerHasInventory ? "-2 / -3" : ""} title={total}>

@@ -36,11 +36,24 @@ export async function ManageProductOutputsSaves({
   // console.log("total amount", outputs?.totalAmount, outputs_amount_added);
   // console.log("prices", customPrice, lastPrice);
 
-  console.log("amounts", outputs?.totalAmount, outputs_amount_added);
-  console.log("custom price is equal to last price?", customPrice, lastPrice);
+  console.log(
+    "current amount, amount added",
+    outputs?.totalAmount,
+    outputs_amount_added
+  );
 
   if (outputs?.totalAmount === outputs_amount_added) {
-    if (!customPrice || customPrice === lastPrice) return;
+    console.log("same amount, checking prices");
+    if (!customPrice) {
+      return console.log("customPrice not provided");
+    } else if (customPrice === lastPrice) {
+      return console.log(
+        "custom price is equal to the current price, saving cancelled",
+        customPrice,
+        lastPrice
+      );
+    }
+    console.log("custom price is not equal", customPrice, lastPrice);
   }
 
   const outputsToCreate = amountListener(
@@ -52,7 +65,8 @@ export async function ManageProductOutputsSaves({
 
   console.log("outputs to create", outputsToCreate);
 
-  addOutputs(invoice, productDoc, outputsToCreate.outputsToCreate);
+  await addOutputs(invoice, productDoc, outputsToCreate.outputsToCreate);
+  console.log("------- outputs saved");
 }
 
 export const amountListener = function (
@@ -66,7 +80,7 @@ export const amountListener = function (
   let remainingStocks: Array<rawOutput> = [];
   const stocks = [...stocksRoot];
 
-  if (remainingAmount <= 0) return { outputsToCreate, remainingStocks };
+  if (remainingAmount < 0) return { outputsToCreate, remainingStocks };
   if (stocks.length === 0) return { outputsToCreate, remainingStocks };
 
   for (let index = 0; index < stocks.length; index++) {
@@ -85,6 +99,7 @@ export const amountListener = function (
         commission: stock.seller_commission,
       });
     } else {
+      console.log("///// remain stocks", stocks, stocks.length);
       if (stocks.length > 1)
         remainingStocks = stocks.slice(index + 1).map(stockToRawOutput);
       else remainingStocks = stocks.slice(index).map(stockToRawOutput);

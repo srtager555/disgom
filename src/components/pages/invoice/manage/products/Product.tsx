@@ -87,6 +87,10 @@ export function Product({
     return () => unsubcribe();
   }, [doc.ref]);
 
+  useEffect(() => {
+    console.log("The remain stock root", remainStock);
+  }, [remainStock]);
+
   if (hideProductWithoutStock && currentStock === 0) return <></>;
   return (
     <ProductContainer
@@ -154,13 +158,13 @@ export function Product({
       />
       <Profit
         sellerHasInventory={selectedSellerData?.hasInventory}
-        id={doc.id}
+        remainStock={remainStock}
       />
       <Fold
         isFolded={isFolded}
         setIsFolded={setIsFolded}
         selectedSellerData={selectedSellerData}
-        product_id={doc.id}
+        product_ref={doc.ref}
       />
     </ProductContainer>
   );

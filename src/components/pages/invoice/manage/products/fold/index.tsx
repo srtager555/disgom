@@ -5,19 +5,21 @@ import { Dispatch, SetStateAction } from "react";
 import { SellersDoc } from "@/tools/sellers/create";
 import { ProductContainer } from "../../../ProductList";
 import { SaleDesc } from "./SaleDesc";
+import { DocumentReference } from "firebase/firestore";
+import { productDoc } from "@/tools/products/create";
 
 type props = {
   setIsFolded: Dispatch<SetStateAction<boolean>>;
   isFolded: boolean;
   selectedSellerData: SellersDoc | undefined;
-  product_id: string;
+  product_ref: DocumentReference<productDoc>;
 };
 
 export function Fold({
   setIsFolded,
   isFolded,
   selectedSellerData,
-  product_id,
+  product_ref,
 }: props) {
   return (
     <>
@@ -38,7 +40,7 @@ export function Fold({
           $withoutStock={1}
           $fold
         >
-          <SaleDesc id={product_id} />
+          <SaleDesc product_ref={product_ref} />
         </ProductContainer>
       )}
     </>

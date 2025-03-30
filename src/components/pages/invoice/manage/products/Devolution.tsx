@@ -144,7 +144,7 @@ function DevolutionBase({
       if (!seletedSeller)
         return console.log("seller doc is not ready, operation canceled");
 
-      const allOutputs = outputs.concat(inventory_outputs);
+      const allOutputs = [...inventory_outputs, ...[...outputs].reverse()];
       const stock = allOutputs.map((el) =>
         createStockFromOutputType(el.data() as outputType)
       );
@@ -157,7 +157,7 @@ function DevolutionBase({
       );
       const outputsWorked = amountListener(
         devoDebounce as number,
-        stock.reverse(),
+        stock,
         productDoc as QueryDocumentSnapshot<productDoc>,
         customPrice
       );

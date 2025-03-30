@@ -157,7 +157,7 @@ function DevolutionBase({
       );
       const outputsWorked = amountListener(
         devoDebounce as number,
-        stock,
+        stock.reverse(),
         productDoc as QueryDocumentSnapshot<productDoc>,
         customPrice
       );

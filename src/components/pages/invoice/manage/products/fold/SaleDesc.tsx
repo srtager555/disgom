@@ -1,14 +1,15 @@
-import { useGetInvoiceByQueryOnSnapshot } from "@/hooks/invoice/getInvoiceByQueryOnSnapshot";
 import { Column } from "../../../Product";
 import { memo, useEffect, useState } from "react";
 import { outputType } from "@/tools/products/addOutputs";
-import { getDoc } from "firebase/firestore";
+import { DocumentReference, getDoc } from "firebase/firestore";
 import { isEqual } from "lodash";
 import { ProductContainer } from "../../../ProductList";
 import { numberParser } from "@/tools/numberPaser";
+import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
+import { productDoc } from "@/tools/products/create";
 
 type props = {
-  id: string;
+  product_ref: DocumentReference<productDoc>;
 };
 
 type propsBase = {
@@ -16,30 +17,37 @@ type propsBase = {
 };
 
 export const SaleDescMemo = memo(SaleDesc, (prev, next) => {
-  if (prev.id != next.id) return false;
+  if (isEqual(prev.product_ref, next.product_ref)) return false;
 
   return true;
 });
 
-export function SaleDesc({ id }: props) {
-  const invoice = useGetInvoiceByQueryOnSnapshot();
+export function SaleDesc({ product_ref }: props) {
+  const invoice = useGetInvoiceByQuery();
   const [outputs, setOutputs] = useState<Array<outputType>>([]);
 
   useEffect(() => {
     async function getOutputs() {
-      const data = invoice?.data();
-      if (!data) return;
+      const product_id = product_ref.id;
+      const outputs_sold = invoice?.data()?.outputs_sold[product_id] || [];
 
-      const outputs_refs = data.products_outputs[id] || [];
-      const outputs = await Promise.all(
-        outputs_refs.map(async (el) => (await getDoc(el)).data() as outputType)
-      );
+      const outputs = outputs_sold.map(async (el) => {
+        const output = (await getDoc(el)).data() as outputType;
 
-      setOutputs(outputs);
+        return output;
+      });
+
+      console.log("desc of outputs", outputs);
+
+      setOutputs(await Promise.all(outputs));
     }
 
     getOutputs();
-  }, [id, invoice]);
+
+    return () => {
+      setOutputs([]);
+    };
+  }, [product_ref, invoice]);
 
   return <SaleDescBaseMemo outputs={outputs} />;
 }
@@ -51,8 +59,11 @@ const SaleDescBaseMemo = memo(SaleDescBase, (prev, next) => {
 });
 
 export function SaleDescBase({ outputs }: propsBase) {
-  const [results, setResults] = useState<Record<number, Array<outputType>>>({});
+  const [outputsByPrices, setOutputsByPrices] = useState<
+    Record<number, Array<outputType>>
+  >({});
 
+  // effect to divide the outputs by purchase price
   useEffect(() => {
     const divition: Record<number, Array<outputType>> = {};
 
@@ -63,13 +74,13 @@ export function SaleDescBase({ outputs }: propsBase) {
       ];
     });
 
-    setResults(divition);
+    setOutputsByPrices(divition);
   }, [outputs]);
 
   return (
     <>
       <Header />
-      {Object.values(results).map((el, i) => {
+      {Object.values(outputsByPrices).map((el, i) => {
         function reducer(param: keyof outputType) {
           return el.reduce((acc, next) => {
             const value = next[param] as number;

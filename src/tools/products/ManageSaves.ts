@@ -85,7 +85,6 @@ export const amountListener = function (
 
   for (let index = 0; index < stocks.length; index++) {
     const stock = stocks[index];
-
     const remaining = remainingAmount - stock.amount;
 
     if (remaining > 0) {
@@ -99,32 +98,36 @@ export const amountListener = function (
         commission: stock.seller_commission,
       });
     } else {
-      console.log("///// remain stocks", stocks, stocks.length);
-      if (stocks.length > 1)
-        remainingStocks = stocks.slice(index + 1).map(stockToRawOutput);
-      else remainingStocks = stocks.slice(index).map(stockToRawOutput);
+      // Si no necesitamos todo el stock actual
+      if (remainingAmount > 0) {
+        outputsToCreate.push({
+          amount: remainingAmount,
+          product_ref: productDoc.ref,
+          entry_ref: stock.entry_ref,
+          sale_price: customPrice || stock.sale_price,
+          purchase_price: stock.purchase_price,
+          commission: stock.seller_commission,
+        });
 
-      if (remainingStocks[0]) {
-        const currentAmount = remainingStocks[0].amount;
-
-        if (currentAmount - remainingAmount > 0) {
-          remainingStocks[0].amount = currentAmount - remainingAmount;
-        } else {
-          remainingStocks.shift();
-        }
+        // Agregamos el stock restante del lote actual
+        remainingStocks.push({
+          amount: stock.amount - remainingAmount,
+          product_ref: productDoc.ref,
+          entry_ref: stock.entry_ref,
+          sale_price: stock.sale_price,
+          purchase_price: stock.purchase_price,
+          commission: stock.seller_commission,
+        });
+      } else {
+        // Si no necesitamos nada del stock actual, lo agregamos completo a remainingStocks
+        remainingStocks.push(stockToRawOutput(stock));
       }
 
-      // console.log("remain", remainingStocks);
-
-      outputsToCreate.push({
-        amount: remainingAmount,
-        product_ref: productDoc.ref,
-        entry_ref: stock.entry_ref,
-        sale_price: customPrice || stock.sale_price,
-        purchase_price: stock.purchase_price,
-        commission: stock.seller_commission,
-      });
-
+      // Agregamos los stocks restantes
+      remainingStocks = [
+        ...remainingStocks,
+        ...stocks.slice(index + 1).map(stockToRawOutput),
+      ];
       break;
     }
   }

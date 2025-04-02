@@ -8,16 +8,22 @@ import React, {
 } from "react";
 import { Column, Input } from "../../Product";
 import { useDebounce } from "@/hooks/debounce";
-import { DocumentReference, QueryDocumentSnapshot } from "firebase/firestore";
+import {
+  DocumentReference,
+  DocumentSnapshot,
+  QueryDocumentSnapshot,
+} from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { entryDoc } from "@/tools/products/addEntry";
 import { outputType } from "@/tools/products/addOutputs";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
-import { ManageProductOutputsSaves } from "@/tools/products/ManageSaves";
 import { stockType } from "@/tools/products/addToStock";
 import { isEqual } from "lodash";
+import { getInvoiceByQuery } from "@/tools/invoices/getInvoiceByQuery";
+import { restaOutputs } from "@/tools/products/restaOutputs";
 
 type props = {
+  outputs: DocumentSnapshot<outputType>[];
   currentAmount: number;
   currentStock: number;
   customPrice: number | undefined;
@@ -54,15 +60,26 @@ export type product_outputs = {
 };
 
 export const AddOutput = (props: Omit<props, "currentAmount">) => {
-  const output = useGetProductOutputByID(props.productDoc.id);
+  const outputs = useGetProductOutputByID(props.productDoc.id);
   const currentAmount = useMemo(() => {
-    return output.reduce((acc, now) => {
+    return outputs.reduce((acc, now) => {
       const nowAmount = now.data()?.amount || 0;
       return acc + nowAmount;
     }, 0);
-  }, [output]);
+  }, [outputs]);
 
-  return <MemoAddOutput currentAmount={currentAmount} {...props} />;
+  return (
+    <MemoAddOutput
+      currentAmount={currentAmount}
+      productDoc={props.productDoc}
+      currentStock={props.currentStock}
+      setOutputsAmount={props.setOutputsAmount}
+      stock={props.stock}
+      customPrice={props.customPrice}
+      humanAmountChanged={props.humanAmountChanged}
+      setHumanAmountChanged={props.setHumanAmountChanged}
+    />
+  );
 };
 
 export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
@@ -76,6 +93,8 @@ export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   return true;
 });
 
+type baseProps = Omit<props, "currentAmount" | "outputs">;
+
 export function AddOutputBase({
   currentAmount,
   productDoc,
@@ -85,7 +104,7 @@ export function AddOutputBase({
   customPrice,
   humanAmountChanged,
   setHumanAmountChanged,
-}: props) {
+}: baseProps & { currentAmount: number }) {
   const [amount, setAmount] = useState(currentAmount);
   const cookedAmount = useDebounce(amount) as number;
   const form_ref = useRef<HTMLFormElement>(null);
@@ -115,16 +134,31 @@ export function AddOutputBase({
       console.log("******** started to save outputs added");
       console.log("amount setted", amount);
 
-      await ManageProductOutputsSaves({
-        productDoc,
-        customPrice: customPrice,
-        stocks: stock,
-        outputs_amount_added: cookedAmount,
-      });
+      // Obtener la factura actual
+      const invoice = await getInvoiceByQuery();
+      if (!invoice) return;
+
+      // Comprobar si es una resta o suma
+      if (amount < currentAmount) {
+        // Lógica de resta
+        console.log("Iniciando proceso de resta");
+        await restaOutputs(invoice, productDoc, amount, currentAmount);
+      } else if (amount > currentAmount) {
+        // TODO: Implementar lógica de suma
+        console.log("Lógica de suma pendiente de implementar");
+      }
     }
 
     manage();
-  }, [cookedAmount, customPrice, productDoc, stock]);
+  }, [
+    cookedAmount,
+    customPrice,
+    productDoc,
+    stock,
+    currentAmount,
+    amount,
+    humanAmountChanged,
+  ]);
 
   return (
     <Column>

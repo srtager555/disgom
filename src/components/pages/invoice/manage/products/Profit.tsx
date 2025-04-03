@@ -1,5 +1,5 @@
 import { Column } from "../../Product";
-import { useEffect, useState } from "react";
+import { memo, useMemo } from "react";
 import { numberParser } from "@/tools/numberPaser";
 import { rawOutput } from "./AddOutput";
 
@@ -8,32 +8,28 @@ type props = {
   remainStock: rawOutput[];
 };
 
-export function Profit({ sellerHasInventory, remainStock }: props) {
-  const [total, setTotal] = useState("0.00");
+export const Profit = memo(function Profit({
+  sellerHasInventory,
+  remainStock,
+}: props) {
+  const total = useMemo(() => {
+    if (remainStock.length === 0) return "0.00";
 
-  useEffect(() => {
-    console.log("remainStock in profit", remainStock);
-    async function getResults() {
-      if (remainStock.length === 0) return setTotal("0.00");
+    const results = remainStock.reduce(
+      (acc, next) => {
+        return {
+          purchase_total:
+            acc.purchase_total + next.amount * next.purchase_price,
+          sale_total: acc.sale_total + next.amount * next.sale_price,
+        };
+      },
+      {
+        purchase_total: 0,
+        sale_total: 0,
+      }
+    );
 
-      const results = remainStock.reduce(
-        (acc, next) => {
-          return {
-            purchase_total:
-              acc.purchase_total + next.amount * next.purchase_price,
-            sale_total: acc.sale_total + next.amount * next.sale_price,
-          };
-        },
-        {
-          purchase_total: 0,
-          sale_total: 0,
-        }
-      );
-
-      setTotal(numberParser(results.sale_total - results.purchase_total));
-    }
-
-    getResults();
+    return numberParser(results.sale_total - results.purchase_total);
   }, [remainStock]);
 
   return (
@@ -41,4 +37,4 @@ export function Profit({ sellerHasInventory, remainStock }: props) {
       {total}
     </Column>
   );
-}
+});

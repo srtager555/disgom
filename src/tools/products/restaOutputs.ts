@@ -14,12 +14,14 @@ import {
   amountListener,
   saveNewOutputs,
 } from "./ManageSaves";
+import { invoiceType } from "@/tools/invoices/createInvoice";
 
 export async function restaOutputs(
-  invoice: DocumentSnapshot,
+  invoice: DocumentSnapshot<invoiceType>,
   productDoc: QueryDocumentSnapshot<productDoc>,
   amount: number,
-  currentAmount: number
+  currentAmount: number,
+  customPrice?: number
 ) {
   // 1. Comprobar que amount no sea menor que 0
   const finalAmount = Math.max(0, amount);
@@ -43,7 +45,8 @@ export async function restaOutputs(
   const { outputsToCreate, remainingStocks } = amountListener(
     difference,
     stocks,
-    productDoc
+    productDoc,
+    customPrice
   );
 
   // 6. Deshabilitar outputs anteriores
@@ -61,7 +64,7 @@ export async function restaOutputs(
   );
 
   // 8. Guardar los nuevos outputs
-  await saveNewOutputs(invoice.ref, productDoc, remainingStocks);
+  await saveNewOutputs(invoice, productDoc, remainingStocks);
 
   console.log("Proceso de resta completado");
 }

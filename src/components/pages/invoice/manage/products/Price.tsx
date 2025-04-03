@@ -8,6 +8,7 @@ type props = {
   product_id: string;
   normalPrice: number;
   setCustomPrice: Dispatch<SetStateAction<number | undefined>>;
+  setHumanAmountChanged: Dispatch<SetStateAction<boolean>>;
 };
 
 export const Price = memo(PriceBase, (prev, next) => {
@@ -16,7 +17,12 @@ export const Price = memo(PriceBase, (prev, next) => {
   return true;
 });
 
-export function PriceBase({ product_id, normalPrice, setCustomPrice }: props) {
+export function PriceBase({
+  product_id,
+  normalPrice,
+  setCustomPrice,
+  setHumanAmountChanged,
+}: props) {
   const [newPrice, setNewPrice] = useState(normalPrice);
   const outputs = useGetProductOutputByID(product_id);
   const debounceNewPrice = useDebounce(newPrice);
@@ -40,6 +46,7 @@ export function PriceBase({ product_id, normalPrice, setCustomPrice }: props) {
         newPrice={newPrice}
         normalPrice={normalPrice}
         setNewPrice={setNewPrice}
+        setHumanAmountChanged={setHumanAmountChanged}
       />
     </Column>
   );
@@ -49,6 +56,7 @@ type inputProps = {
   newPrice: number;
   normalPrice: number;
   setNewPrice: Dispatch<SetStateAction<number>>;
+  setHumanAmountChanged: Dispatch<SetStateAction<boolean>>;
 };
 
 const PriceInputMemo = memo(PriceInputBase, (prev, next) => {
@@ -58,13 +66,19 @@ const PriceInputMemo = memo(PriceInputBase, (prev, next) => {
   return true;
 });
 
-function PriceInputBase({ newPrice, normalPrice, setNewPrice }: inputProps) {
+function PriceInputBase({
+  newPrice,
+  normalPrice,
+  setNewPrice,
+  setHumanAmountChanged,
+}: inputProps) {
   return (
     <>
       <Input
         onChange={(e) => {
           const value = e.target.value;
           setNewPrice(Number(value));
+          setHumanAmountChanged(true);
         }}
         value={newPrice || normalPrice}
         style={{ zIndex: "1", position: "relative" }}

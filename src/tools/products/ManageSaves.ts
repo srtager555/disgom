@@ -2,7 +2,7 @@ import {
   QueryDocumentSnapshot,
   Timestamp,
   updateDoc,
-  DocumentReference,
+  DocumentSnapshot,
 } from "firebase/firestore";
 import { addOutputs, outputType } from "./addOutputs";
 import { productDoc } from "./create";
@@ -10,6 +10,7 @@ import { stockType } from "./addToStock";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 import { getInvoiceByQuery } from "../invoices/getInvoiceByQuery";
 import { getProductOutputsByID } from "./getOutputs";
+import { invoiceType } from "../invoices/createInvoice";
 
 export function createStockFromOutputType(output: outputType): stockType {
   return {
@@ -101,7 +102,7 @@ function stockToRawOutput(stock: stockType): rawOutput {
 }
 
 export async function saveNewOutputs(
-  invoice: DocumentReference,
+  invoice: DocumentSnapshot<invoiceType>,
   productDoc: QueryDocumentSnapshot<productDoc>,
   outputs: Array<rawOutput>
 ) {

@@ -67,12 +67,6 @@ export const Devolution = (
       ) || 0,
     [currentInventory]
   );
-  // const outputs = useGetProductOutputByID(props.productDoc.id);
-  // const totalOutputs = [...outputs];
-
-  useEffect(() => {
-    console.log("current devo", currentDevolution);
-  }, [currentInventory]);
 
   return (
     <DevolutionMemo

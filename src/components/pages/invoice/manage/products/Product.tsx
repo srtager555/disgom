@@ -110,7 +110,6 @@ export function Product({
       {selectedSellerData?.hasInventory && <Column>0</Column>}
       <AddOutput
         productDoc={doc}
-        stock={rtDocData.stock}
         customPrice={customPrice}
         currentStock={currentStock}
         setOutputsAmount={setOutputsAmount}
@@ -144,6 +143,7 @@ export function Product({
         product_id={doc.id}
         normalPrice={rtDocData.stock[0]?.sale_price || 0}
         setCustomPrice={setCustomPrice}
+        setHumanAmountChanged={setHumanAmountChanged}
       />
       <TotalSold
         amount={amount}

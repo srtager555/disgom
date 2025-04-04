@@ -3,34 +3,37 @@ import { Column, Input } from "../../Product";
 import { Container } from "@/styles/index.styles";
 import { useDebounce } from "@/hooks/debounce";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
-
+import { someHumanChangesDetected } from "./Product";
 type props = {
   product_id: string;
   normalPrice: number;
   setCustomPrice: Dispatch<SetStateAction<number | undefined>>;
-  setHumanAmountChanged: Dispatch<SetStateAction<boolean>>;
+  setSomeHumanChangesDetected: Dispatch<
+    SetStateAction<someHumanChangesDetected>
+  >;
 };
 
-export const Price = memo(PriceBase, (prev, next) => {
-  if (prev.normalPrice != next.normalPrice) return false;
-
-  return true;
-});
-
-export function PriceBase({
+export function Price({
   product_id,
   normalPrice,
   setCustomPrice,
-  setHumanAmountChanged,
+  setSomeHumanChangesDetected,
 }: props) {
   const [newPrice, setNewPrice] = useState(normalPrice);
+  const [humanAmountChanged, setHumanAmountChanged] = useState(false);
   const outputs = useGetProductOutputByID(product_id);
   const debounceNewPrice = useDebounce(newPrice);
 
   useEffect(() => {
-    if (debounceNewPrice === normalPrice) return setCustomPrice(undefined);
-    else setCustomPrice(debounceNewPrice as number);
-  }, [debounceNewPrice, normalPrice, setCustomPrice]);
+    if (!humanAmountChanged) return;
+
+    if (debounceNewPrice === normalPrice) {
+      setCustomPrice(undefined);
+    } else {
+      setCustomPrice(debounceNewPrice as number);
+    }
+    setHumanAmountChanged(false);
+  }, [debounceNewPrice, normalPrice, setCustomPrice, humanAmountChanged]);
 
   // effect to set the custom price if exists
   useEffect(() => {
@@ -47,6 +50,7 @@ export function PriceBase({
         normalPrice={normalPrice}
         setNewPrice={setNewPrice}
         setHumanAmountChanged={setHumanAmountChanged}
+        setSomeHumanChangesDetected={setSomeHumanChangesDetected}
       />
     </Column>
   );
@@ -57,6 +61,9 @@ type inputProps = {
   normalPrice: number;
   setNewPrice: Dispatch<SetStateAction<number>>;
   setHumanAmountChanged: Dispatch<SetStateAction<boolean>>;
+  setSomeHumanChangesDetected: Dispatch<
+    SetStateAction<someHumanChangesDetected>
+  >;
 };
 
 const PriceInputMemo = memo(PriceInputBase, (prev, next) => {
@@ -71,6 +78,7 @@ function PriceInputBase({
   normalPrice,
   setNewPrice,
   setHumanAmountChanged,
+  setSomeHumanChangesDetected,
 }: inputProps) {
   return (
     <>
@@ -79,6 +87,10 @@ function PriceInputBase({
           const value = e.target.value;
           setNewPrice(Number(value));
           setHumanAmountChanged(true);
+          setSomeHumanChangesDetected((prev) => ({
+            ...prev,
+            price: true,
+          }));
         }}
         value={newPrice || normalPrice}
         style={{ zIndex: "1", position: "relative" }}

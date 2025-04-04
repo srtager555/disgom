@@ -22,18 +22,18 @@ import { getInvoiceByQuery } from "@/tools/invoices/getInvoiceByQuery";
 import { restaOutputs } from "@/tools/products/restaOutputs";
 import { sumaOutputs } from "@/tools/products/sumaOutputs";
 import { updatePrice } from "@/tools/products/updatePrice";
+import { someHumanChangesDetected } from "./Product";
 
 type props = {
   outputs: DocumentSnapshot<outputType>[];
   currentAmount: number;
   currentStock: number;
   customPrice: number | undefined;
-  // stock: stockType[] | [];
-  humanAmountChanged: boolean;
-  setHumanAmountChanged: Dispatch<SetStateAction<boolean>>;
   productDoc: QueryDocumentSnapshot<productDoc>;
-  // rtProductData: productDoc;
   setOutputsAmount: Dispatch<SetStateAction<number>>;
+  setSomeHumanChangeDetected: Dispatch<
+    SetStateAction<someHumanChangesDetected>
+  >;
 };
 
 export type variations = Array<{
@@ -75,10 +75,8 @@ export const AddOutput = (props: Omit<props, "currentAmount" | "outputs">) => {
       productDoc={props.productDoc}
       currentStock={props.currentStock}
       setOutputsAmount={props.setOutputsAmount}
-      // stock={props.stock}
       customPrice={props.customPrice}
-      humanAmountChanged={props.humanAmountChanged}
-      setHumanAmountChanged={props.setHumanAmountChanged}
+      setSomeHumanChangeDetected={props.setSomeHumanChangeDetected}
     />
   );
 };
@@ -86,9 +84,7 @@ export const AddOutput = (props: Omit<props, "currentAmount" | "outputs">) => {
 export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   if (prev.currentAmount != next.currentAmount) return false;
   if (!isEqual(prev.currentStock, next.currentStock)) return false;
-  // if (!isEqual(prev.stock, next.stock)) return false;
   if (prev.customPrice !== next.customPrice) return false;
-  if (prev.humanAmountChanged !== next.humanAmountChanged) return false;
   if (prev.productDoc.id !== next.productDoc.id) return false;
 
   return true;
@@ -102,11 +98,11 @@ export function AddOutputBase({
   currentStock,
   setOutputsAmount,
   customPrice,
-  humanAmountChanged,
-  setHumanAmountChanged,
+  setSomeHumanChangeDetected,
 }: baseProps & { currentAmount: number }) {
   const [amount, setAmount] = useState(currentAmount);
   const [lastCustomPrice, setLastCustomPrice] = useState(customPrice);
+  const [humanAmountChanged, setHumanAmountChanged] = useState(false);
   const cookedAmount = useDebounce(amount) as number;
   const form_ref = useRef<HTMLFormElement>(null);
 
@@ -127,6 +123,13 @@ export function AddOutputBase({
     form_ref.current?.reset();
   }, [productDoc.id]);
 
+  // effect to detect custom price changes
+  useEffect(() => {
+    if (customPrice === lastCustomPrice) return;
+    setHumanAmountChanged(true);
+    setLastCustomPrice(customPrice);
+  }, [customPrice, lastCustomPrice]);
+
   //effect to save the changes
   useEffect(() => {
     async function manage() {
@@ -143,6 +146,7 @@ export function AddOutputBase({
       if (cookedAmount === currentAmount && customPrice !== lastCustomPrice) {
         setLastCustomPrice(customPrice);
         await updatePrice(invoice, productDoc, cookedAmount, customPrice);
+        setHumanAmountChanged(false);
         return;
       }
 
@@ -168,6 +172,7 @@ export function AddOutputBase({
           customPrice
         );
       }
+      setHumanAmountChanged(false);
     }
 
     manage();
@@ -177,6 +182,7 @@ export function AddOutputBase({
     productDoc,
     currentAmount,
     humanAmountChanged,
+    lastCustomPrice,
   ]);
 
   return (
@@ -191,6 +197,10 @@ export function AddOutputBase({
             const value = e.target.value;
             setAmount(Number(value));
             setHumanAmountChanged(true);
+            setSomeHumanChangeDetected((prev) => ({
+              ...prev,
+              addOutput: true,
+            }));
           }}
         />
       </form>

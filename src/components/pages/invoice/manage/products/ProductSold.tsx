@@ -16,9 +16,19 @@ import { rawOutput } from "./AddOutput";
 
 type props = {
   product_doc: QueryDocumentSnapshot<productDoc>;
-  // outputs: DocumentSnapshot<outputType>[];
+  someHumanChangesDetected: {
+    addOutput: boolean;
+    devolution: boolean;
+    price: boolean;
+  };
+  setSomeHumanChangesDetected: Dispatch<
+    SetStateAction<{
+      addOutput: boolean;
+      devolution: boolean;
+      price: boolean;
+    }>
+  >;
   customPrice: number | undefined;
-  humanAmountChanged: boolean;
   remainStock: rawOutput[];
   outputsAmount: number;
   inventoryAmount: number;
@@ -47,9 +57,7 @@ export const MemoProductSold = memo(ProductSoldBase, (prev, next) => {
   if (prev.sellerHasInventory != next.sellerHasInventory) return false;
   if (!isEqual(prev.product_doc.id, next.product_doc.id)) return false;
   if (prev.customPrice != next.customPrice) return false;
-  if (prev.humanAmountChanged != next.humanAmountChanged) return false;
   if (!isEqual(prev.remainStock, next.remainStock)) return false;
-  // if (!isEqual(prev.outputs, next.outputs)) return false;
 
   return true;
 });
@@ -64,7 +72,8 @@ export function ProductSoldBase({
   setAmount,
   setWarn,
   sellerHasInventory,
-  humanAmountChanged,
+  someHumanChangesDetected,
+  setSomeHumanChangesDetected,
 }: props) {
   const [total, setTotal] = useState(0);
   const inventory_outputs = [] as DocumentSnapshot<outputType>[];
@@ -82,7 +91,7 @@ export function ProductSoldBase({
   useEffect(() => {
     async function saveOutputsSolds() {
       if (!invoiceDoc) return;
-      if (!humanAmountChanged) return;
+      if (Object.values(someHumanChangesDetected).every((v) => !v)) return;
 
       const coll = collection(
         invoiceDoc.ref,
@@ -96,19 +105,25 @@ export function ProductSoldBase({
         remainStock,
         "outputs_sold",
         coll
-        // true
       );
+
+      setSomeHumanChangesDetected({
+        addOutput: false,
+        devolution: false,
+        price: false,
+      });
     }
 
     saveOutputsSolds();
   }, [
-    // outputs,
     inventory_outputs,
-    // product_doc,
     customPrice,
     total,
-    // invoiceDoc,
-    humanAmountChanged,
+    someHumanChangesDetected,
+    invoiceDoc,
+    product_doc,
+    remainStock,
+    setSomeHumanChangesDetected,
   ]);
 
   if (sellerHasInventory) return <Column>{numberParser(total)}</Column>;

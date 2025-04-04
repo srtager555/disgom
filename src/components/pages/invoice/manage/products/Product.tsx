@@ -38,6 +38,12 @@ type props = {
   hideProductWithoutStock: boolean;
 };
 
+export type someHumanChangesDetected = {
+  addOutput: boolean;
+  devolution: boolean;
+  price: boolean;
+};
+
 export const MemoProduct = memo(Product, (prev, next) => {
   const prevDocID = prev.doc.id;
   const nextDocID = next.doc.id;
@@ -58,7 +64,6 @@ export function Product({
   selectedSeller,
   hideProductWithoutStock,
 }: props) {
-  const [humanAmountChanged, setHumanAmountChanged] = useState(false);
   const [outputsAmount, setOutputsAmount] = useState(0);
   const [devolutionAmount, setDevolutionAmount] = useState(0);
   const [amount, setAmount] = useState<undefined | number>(undefined);
@@ -67,6 +72,12 @@ export function Product({
   const [rtDocData, setRtDocData] = useState<productDoc>(doc.data());
   const [warn, setWarn] = useState(false);
   const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
+  const [someHumanChangesDetected, setSomeHumanChangesDetected] =
+    useState<someHumanChangesDetected>({
+      addOutput: false,
+      devolution: false,
+      price: false,
+    });
   const currentStock = rtDocData.stock.reduce((acc, stock) => {
     return acc + stock.amount;
   }, 0);
@@ -87,11 +98,8 @@ export function Product({
     return () => unsubcribe();
   }, [doc.ref]);
 
-  useEffect(() => {
-    console.log("The remain stock root", remainStock);
-  }, [remainStock]);
-
   if (hideProductWithoutStock && currentStock === 0) return <></>;
+
   return (
     <ProductContainer
       $hide={false}
@@ -113,23 +121,20 @@ export function Product({
         customPrice={customPrice}
         currentStock={currentStock}
         setOutputsAmount={setOutputsAmount}
-        humanAmountChanged={humanAmountChanged}
-        setHumanAmountChanged={setHumanAmountChanged}
+        setSomeHumanChangeDetected={setSomeHumanChangesDetected}
       />
       <Devolution
         setDevolutionAmount={setDevolutionAmount}
-        setHumanAmountChanged={setHumanAmountChanged}
         productDoc={doc}
         sellerHasInventory={selectedSellerData?.hasInventory}
         setRemainStock={setRemainStock}
-        humanAmountChanged={humanAmountChanged}
         customPrice={customPrice}
         seletedSeller={selectedSeller}
+        setSomeHumanChangeDetected={setSomeHumanChangesDetected}
       />
       <ProductSold
         remainStock={remainStock}
         seletedSeller={selectedSeller}
-        humanAmountChanged={humanAmountChanged}
         product_doc={doc}
         customPrice={customPrice}
         outputsAmount={outputsAmount}
@@ -138,12 +143,14 @@ export function Product({
         setAmount={setAmount}
         setWarn={setWarn}
         sellerHasInventory={selectedSellerData?.hasInventory}
+        someHumanChangesDetected={someHumanChangesDetected}
+        setSomeHumanChangesDetected={setSomeHumanChangesDetected}
       />
       <Price
         product_id={doc.id}
         normalPrice={rtDocData.stock[0]?.sale_price || 0}
         setCustomPrice={setCustomPrice}
-        setHumanAmountChanged={setHumanAmountChanged}
+        setSomeHumanChangesDetected={setSomeHumanChangesDetected}
       />
       <TotalSold
         amount={amount}

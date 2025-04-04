@@ -4,38 +4,23 @@ import {
   SetStateAction,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { Column, Input } from "../../Product";
 import { useDebounce } from "@/hooks/debounce";
-import {
-  collection,
-  DocumentSnapshot,
-  getDocs,
-  query,
-  QueryDocumentSnapshot,
-  updateDoc,
-  where,
-} from "firebase/firestore";
+import { DocumentSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { useGetCurrentDevolutionByProduct } from "@/hooks/invoice/getCurrentDevolution";
 import { outputType } from "@/tools/products/addOutputs";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
-import {
-  amountListener,
-  createStockFromOutputType,
-} from "@/tools/products/ManageSaves";
 import { rawOutput } from "./AddOutput";
 import { SellersDoc } from "@/tools/sellers/create";
-import { isEqual } from "lodash";
-import { createInventory } from "@/tools/sellers/invetory/create";
-import {
-  addInventoryProduct,
-  inventory_output,
-} from "@/tools/sellers/invetory/addProduct";
+import { debounce, isEqual } from "lodash";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { someHumanChangesDetected } from "./Product";
+import { saveDevolution } from "@/tools/products/saveDevolution";
 
 type devolutionBase = {
   outputs: DocumentSnapshot<outputType>[];
@@ -105,11 +90,19 @@ function DevolutionBase({
   currentDevolution,
   setSomeHumanChangeDetected,
 }: devolutionBase) {
-  const [devo, setDevo] = useState(0);
-  const [humanAmountChanged, setHumanAmountChanged] = useState(false);
-  const [lastCustomPrice, setLastCustomPrice] = useState(customPrice);
-  const devoDebounce = useDebounce(devo);
   const inventory_outputs = [] as DocumentSnapshot<outputType>[];
+  const [devo, setDevo] = useState(0);
+  const lastCustomPrice = useRef(customPrice);
+  const humanAmountChanged = useRef(false);
+  const devoDebounce = useDebounce(devo);
+  const debouncedDetectChange = useRef(
+    debounce(() => {
+      setSomeHumanChangeDetected((prev) => ({
+        ...prev,
+        devolution: true,
+      }));
+    }, 1000)
+  ).current;
 
   // effect to set the debouce to the devo
   useEffect(() => {
@@ -128,97 +121,48 @@ function DevolutionBase({
 
   // effect to detect custom price changes
   useEffect(() => {
-    if (customPrice === lastCustomPrice) return;
-    setHumanAmountChanged(true);
-    setLastCustomPrice(customPrice);
+    if (customPrice === lastCustomPrice.current) return;
+    humanAmountChanged.current = true;
+    lastCustomPrice.current = customPrice;
   }, [customPrice, lastCustomPrice]);
+
+  // effect to clear the debouncedDetectChange
+  useEffect(() => {
+    return () => {
+      debouncedDetectChange.cancel();
+    };
+  }, []);
 
   // effect to save the devolution
   useEffect(() => {
-    async function saveDevo() {
-      if (!invoiceDoc) return;
-      if (!productDoc) return;
-      if (!seletedSeller) return;
+    if (!invoiceDoc) return;
+    if (!productDoc) return;
+    if (!seletedSeller) return;
+    if (!devoDebounce) return;
+    if (!customPrice) return;
 
-      const allOutputs = [...inventory_outputs, ...[...outputs].reverse()];
-      const stock = allOutputs.map((el) =>
-        createStockFromOutputType(el.data() as outputType)
-      );
-
-      const outputsWorked = amountListener(
-        devoDebounce as number,
-        stock,
-        productDoc as QueryDocumentSnapshot<productDoc>,
-        customPrice
-      );
-
-      // save sold product
-      setRemainStock(outputsWorked.remainingStocks);
-
-      // check if a human make the changes
-      if (!humanAmountChanged) {
-        console.log("Human change not detected, saving cancelated");
-        return;
-      }
-      setHumanAmountChanged(false);
-
-      // check if the current devo is the same in the input
-      if (devoDebounce === currentDevolution) return;
-
-      let inventoryRef = invoiceDoc.data()?.devolution;
-      if (!inventoryRef) {
-        inventoryRef = await createInventory(
-          invoiceDoc.ref,
-          seletedSeller?.ref
-        );
-      }
-
-      const q = query(
-        collection(inventoryRef, "products"),
-        where("product_ref", "==", productDoc.ref)
-      );
-
-      const oldDevo = await getDocs(q);
-      if (oldDevo.size > 0) {
-        console.log("disable old devolution");
-
-        oldDevo.forEach(async (el) => {
-          await updateDoc(el.ref, {
-            disabled: true,
-          });
-        });
-      }
-
-      const newInventory = outputsWorked.outputsToCreate.map(
-        async (el) =>
-          await addInventoryProduct(inventoryRef, {
-            ...el,
-            inventory_ref: inventoryRef,
-            disabled: false,
-          } as inventory_output)
-      );
-
-      await Promise.all(newInventory);
-
-      await updateDoc(invoiceDoc.ref, {
-        devolution: inventoryRef,
-      });
-
-      console.log("devo saved");
-    }
-
-    saveDevo();
+    saveDevolution(
+      invoiceDoc,
+      productDoc,
+      seletedSeller,
+      inventory_outputs,
+      outputs,
+      devoDebounce as number,
+      customPrice,
+      setRemainStock,
+      humanAmountChanged,
+      currentDevolution
+    );
   }, [
-    outputs,
-    humanAmountChanged,
-    invoiceDoc,
-    productDoc,
-    devoDebounce,
     customPrice,
     seletedSeller,
     currentDevolution,
     inventory_outputs,
     setRemainStock,
+    // invoiceDoc,
+    // productDoc,
+    // devoDebounce,
+    // outputs,
   ]);
 
   if (sellerHasInventory) {
@@ -228,11 +172,9 @@ function DevolutionBase({
           value={devo}
           onChange={(e) => {
             setDevo(Number(e.target.value));
-            setHumanAmountChanged(true);
-            setSomeHumanChangeDetected((prev) => ({
-              ...prev,
-              devolution: true,
-            }));
+            console.log("devo changed", e.target.value);
+            humanAmountChanged.current = true;
+            debouncedDetectChange();
           }}
           type="number"
         />

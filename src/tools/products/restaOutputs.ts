@@ -3,6 +3,8 @@ import {
   DocumentSnapshot,
   QueryDocumentSnapshot,
   getDoc,
+  updateDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { productDoc } from "./create";
 import { outputType } from "./addOutputs";
@@ -63,7 +65,40 @@ export async function restaOutputs(
     )
   );
 
-  // 8. Guardar los nuevos outputs
+  // 8. Consolidar los stocks basados en entry_ref y precio de venta
+  const currentProductStock = productDoc.data()?.stock || [];
+  const consolidatedStocks = [...currentProductStock];
+
+  for (const newStock of remainingStocks) {
+    const existingStockIndex = consolidatedStocks.findIndex(
+      (stock) =>
+        stock.entry_ref.path === newStock.entry_ref.path &&
+        stock.sale_price === newStock.sale_price
+    );
+
+    if (existingStockIndex !== -1) {
+      // Si encontramos un stock con el mismo entry_ref y precio de venta, sumamos la cantidad
+      consolidatedStocks[existingStockIndex].amount += newStock.amount;
+    } else {
+      // Si no encontramos un stock con el mismo entry_ref o tiene diferente precio, lo agregamos como nuevo
+      consolidatedStocks.push({
+        created_at: Timestamp.now(),
+        amount: newStock.amount,
+        product_ref: newStock.product_ref,
+        entry_ref: newStock.entry_ref,
+        purchase_price: newStock.purchase_price,
+        sale_price: newStock.sale_price,
+        seller_commission: newStock.commission,
+      });
+    }
+  }
+
+  // 9. Actualizar el stock del producto con los stocks consolidados
+  await updateDoc(productDoc.ref, {
+    stock: consolidatedStocks,
+  });
+
+  // 10. Guardar los nuevos outputs
   await saveNewOutputs(invoice, productDoc, remainingStocks);
 
   console.log("Proceso de resta completado");

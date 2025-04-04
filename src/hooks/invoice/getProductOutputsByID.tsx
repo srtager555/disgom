@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useGetInvoiceByQueryOnSnapshot } from "./getInvoiceByQueryOnSnapshot";
+import { useInvoice } from "@/contexts/InvoiceContext";
 import { outputType } from "@/tools/products/addOutputs";
 import {
   DocumentReference,
@@ -9,7 +9,7 @@ import {
 import { isEqual } from "lodash";
 
 export function useGetProductOutputByID(id: string) {
-  const invoice = useGetInvoiceByQueryOnSnapshot();
+  const { invoice } = useInvoice();
   const [output, setOutput] = useState<Array<DocumentSnapshot<outputType>>>([]);
   const [currentOutputs, setCurrentOutputs] = useState<
     Record<string, DocumentReference<outputType>[]>

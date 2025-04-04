@@ -1,6 +1,6 @@
 import { Select } from "@/components/Inputs/select";
 import { InputText } from "@/components/Inputs/text";
-import { useGetInvoiceByQueryOnSnapshot } from "@/hooks/invoice/getInvoiceByQueryOnSnapshot";
+import { useInvoice } from "@/contexts/InvoiceContext";
 import { globalCSSVars } from "@/styles/colors";
 import { Button, Form } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
@@ -56,7 +56,7 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
   >(undefined);
   const [successfully, setSuccessfully] = useState<string | undefined>();
   const formRef = useRef<HTMLFormElement>(null);
-  const invoice = useGetInvoiceByQueryOnSnapshot();
+  const { invoice } = useInvoice();
 
   function selectTheClient(e: ChangeEvent<HTMLSelectElement> | string) {
     const value = typeof e === "string" ? e : e.target.value;

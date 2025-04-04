@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useGetInvoiceByQueryOnSnapshot } from "./getInvoiceByQueryOnSnapshot";
+import { useInvoice } from "@/contexts/InvoiceContext";
 import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 import {
   collection,
@@ -14,7 +14,7 @@ import { Firestore } from "@/tools/firestore";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
 
 export function useGetCurrentDevolutionByProduct(product_id: string) {
-  const invoice = useGetInvoiceByQueryOnSnapshot();
+  const { invoice } = useInvoice();
   const [devolutionOutputs, setDevolutionOutputs] =
     useState<QueryDocumentSnapshot<inventory_output>[]>();
   const [amount, setAmount] = useState(0);

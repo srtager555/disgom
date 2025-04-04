@@ -6,15 +6,14 @@ import { Credit } from "@/components/pages/invoice/Product/closing/closed/Credit
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { SelectClient } from "@/components/pages/invoice/SelectClient";
 import useQueryParams from "@/hooks/getQueryParams";
-import { useGetInvoiceByQueryOnSnapshot } from "@/hooks/invoice/getInvoiceByQueryOnSnapshot";
+import { useInvoice, InvoiceProvider } from "@/contexts/InvoiceContext";
 import { Container, FlexContainer } from "@/styles/index.styles";
-import { createInvoice, invoiceType } from "@/tools/invoices/createInvoice";
+import { createInvoice } from "@/tools/invoices/createInvoice";
 import { updateInvoice } from "@/tools/invoices/updateInvoice";
 import { SellersDoc } from "@/tools/sellers/create";
-import { client } from "@/tools/sellers/createClient";
 import { DocumentReference, QueryDocumentSnapshot } from "firebase/firestore";
 import { useRouter } from "next/router";
-import { SetStateAction, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 
 const MainContainer = styled(FlexContainer)`
@@ -26,10 +25,10 @@ const MainContainer = styled(FlexContainer)`
   padding: 20px;
 `;
 
-export default function Page() {
+function InvoiceManager() {
   const { id } = useQueryParams();
   const router = useRouter();
-  const invoice = useGetInvoiceByQueryOnSnapshot();
+  const { invoice } = useInvoice();
   const [selectedSeller, setSelectedSeller] = useState<
     QueryDocumentSnapshot<SellersDoc> | undefined
   >(undefined);
@@ -123,5 +122,13 @@ export default function Page() {
         />
       )}
     </MainContainer>
+  );
+}
+
+export default function Page() {
+  return (
+    <InvoiceProvider>
+      <InvoiceManager />
+    </InvoiceProvider>
   );
 }

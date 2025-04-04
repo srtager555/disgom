@@ -1,5 +1,5 @@
 import { Select } from "@/components/Inputs/select";
-import { useGetInvoiceByQueryOnSnapshot } from "@/hooks/invoice/getInvoiceByQueryOnSnapshot";
+import { useInvoice } from "@/contexts/InvoiceContext";
 import { useGetSellers } from "@/hooks/sellers/getSellers";
 import { FlexContainer } from "@/styles/index.styles";
 import { SellersDoc } from "@/tools/sellers/create";
@@ -37,7 +37,7 @@ export function SelectSeller({
   setSelectedSeller,
   currentSeller,
 }: SelectSellerProps) {
-  const invoice = useGetInvoiceByQueryOnSnapshot();
+  const { invoice } = useInvoice();
   const seller_id = useMemo(() => invoice?.data().seller_ref.id, [invoice]);
   const sellers = useGetSellers();
   const [lastSellerID, setLastSellerID] = useState<string>();

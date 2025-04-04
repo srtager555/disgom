@@ -33,7 +33,7 @@ import {
   addInventoryProduct,
   inventory_output,
 } from "@/tools/sellers/invetory/addProduct";
-import { useGetInvoiceByQueryOnSnapshot } from "@/hooks/invoice/getInvoiceByQueryOnSnapshot";
+import { useInvoice } from "@/contexts/InvoiceContext";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 
 type devolutionBase = {
@@ -58,7 +58,7 @@ export const Devolution = (
     props.productDoc.id
   );
   const outputs = useGetProductOutputByID(props.productDoc.id);
-  const invoiceDoc = useGetInvoiceByQueryOnSnapshot();
+  const { invoice: invoiceDoc } = useInvoice();
   const currentDevolution = useMemo(
     () =>
       currentInventory.outputs?.reduce(

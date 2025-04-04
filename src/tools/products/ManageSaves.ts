@@ -65,23 +65,29 @@ export const amountListener = function (
         });
 
         // Agregamos el stock restante del lote actual
-        remainingStocks.push({
-          amount: stock.amount - remainingAmount,
-          product_ref: productDoc.ref,
-          entry_ref: stock.entry_ref,
-          sale_price: stock.sale_price,
-          purchase_price: stock.purchase_price,
-          commission: stock.seller_commission,
-        });
+        const remainingStockAmount = stock.amount - remainingAmount;
+        if (remainingStockAmount > 0) {
+          remainingStocks.push({
+            amount: remainingStockAmount,
+            product_ref: productDoc.ref,
+            entry_ref: stock.entry_ref,
+            sale_price: stock.sale_price,
+            purchase_price: stock.purchase_price,
+            commission: stock.seller_commission,
+          });
+        }
       } else {
         // Si no necesitamos nada del stock actual, lo agregamos completo a remainingStocks
         remainingStocks.push(stockToRawOutput(stock));
       }
 
-      // Agregamos los stocks restantes
+      // Agregamos los stocks restantes, filtrando los que tengan cantidad 0
       remainingStocks = [
         ...remainingStocks,
-        ...stocks.slice(index + 1).map(stockToRawOutput),
+        ...stocks
+          .slice(index + 1)
+          .map(stockToRawOutput)
+          .filter((stock) => stock.amount > 0),
       ];
       break;
     }

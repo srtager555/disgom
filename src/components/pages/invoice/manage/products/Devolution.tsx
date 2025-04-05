@@ -1,6 +1,7 @@
 import {
   Dispatch,
   memo,
+  RefObject,
   SetStateAction,
   useEffect,
   useMemo,
@@ -32,9 +33,7 @@ type devolutionBase = {
   seletedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
   sellerHasInventory: boolean | undefined;
   currentDevolution: number;
-  setSomeHumanChangeDetected: Dispatch<
-    SetStateAction<someHumanChangesDetected>
-  >;
+  someHumanChangesDetected: RefObject<someHumanChangesDetected>;
 };
 
 export const Devolution = (
@@ -88,7 +87,7 @@ function DevolutionBase({
   seletedSeller,
   sellerHasInventory,
   currentDevolution,
-  setSomeHumanChangeDetected,
+  someHumanChangesDetected,
 }: devolutionBase) {
   const inventory_outputs = [] as DocumentSnapshot<outputType>[];
   const [devo, setDevo] = useState(0);
@@ -97,10 +96,7 @@ function DevolutionBase({
   const devoDebounce = useDebounce(devo);
   const debouncedDetectChange = useRef(
     debounce(() => {
-      setSomeHumanChangeDetected((prev) => ({
-        ...prev,
-        devolution: true,
-      }));
+      someHumanChangesDetected.current.devolution = true;
     }, 1000)
   ).current;
 
@@ -124,6 +120,7 @@ function DevolutionBase({
     if (customPrice === lastCustomPrice.current) return;
     humanAmountChanged.current = true;
     lastCustomPrice.current = customPrice;
+    console.log("price changed in devolution", customPrice);
   }, [customPrice, lastCustomPrice]);
 
   // effect to clear the debouncedDetectChange
@@ -138,8 +135,8 @@ function DevolutionBase({
     if (!invoiceDoc) return;
     if (!productDoc) return;
     if (!seletedSeller) return;
-    if (!devoDebounce) return;
-    if (!customPrice) return;
+
+    console.log("humanAmountChanged in devolution", humanAmountChanged.current);
 
     saveDevolution(
       invoiceDoc,
@@ -159,9 +156,9 @@ function DevolutionBase({
     currentDevolution,
     inventory_outputs,
     setRemainStock,
+    devoDebounce,
     // invoiceDoc,
     // productDoc,
-    // devoDebounce,
     // outputs,
   ]);
 

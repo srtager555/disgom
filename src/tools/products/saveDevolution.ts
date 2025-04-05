@@ -27,7 +27,7 @@ export async function saveDevolution(
   inventory_outputs: DocumentSnapshot<outputType>[],
   outputs: DocumentSnapshot<outputType>[],
   devoDebounce: number,
-  customPrice: number,
+  customPrice: number | undefined,
   setRemainStock: Dispatch<SetStateAction<rawOutput[]>>,
   humanAmountChanged: RefObject<boolean>,
   currentDevolution: number
@@ -48,14 +48,23 @@ export async function saveDevolution(
   setRemainStock(outputsWorked.remainingStocks);
 
   // check if a human make the changes
-  if (!humanAmountChanged) {
+  if (!humanAmountChanged.current) {
     console.log("Human change not detected, saving cancelated");
     return;
   }
-  humanAmountChanged.current = false;
+  console.log("Human change detected, saving devolution");
 
   // check if the current devo is the same in the input
-  if (devoDebounce === currentDevolution) return;
+  if (devoDebounce === currentDevolution) {
+    console.log(
+      "devoDebounce is the same as currentDevolution, saving cancelated",
+      devoDebounce,
+      currentDevolution
+    );
+    return;
+  }
+
+  humanAmountChanged.current = false;
 
   let inventoryRef = invoiceDoc.data()?.devolution;
   if (!inventoryRef) {

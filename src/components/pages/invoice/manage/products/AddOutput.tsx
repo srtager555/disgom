@@ -150,7 +150,7 @@ export function AddOutputBase({
         cookedAmount === currentAmount &&
         customPrice !== lastCustomPrice.current
       ) {
-        console.log("price change detected");
+        console.log("price change detected in add output");
         lastCustomPrice.current = customPrice;
         humanAmountChanged.current = false;
         await updatePrice(invoice, productDoc, cookedAmount, customPrice);

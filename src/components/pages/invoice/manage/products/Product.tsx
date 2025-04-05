@@ -1,7 +1,7 @@
 import { productDoc } from "@/tools/products/create";
 import { onSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
 import { ProductContainer } from "../../ProductList";
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Column } from "../../Product";
 import styled from "styled-components";
 import { SellersDoc } from "@/tools/sellers/create";
@@ -72,12 +72,6 @@ export function Product({
   const [rtDocData, setRtDocData] = useState<productDoc>(doc.data());
   const [warn, setWarn] = useState(false);
   const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
-  const [someHumanChangesDetected, setSomeHumanChangesDetected] =
-    useState<someHumanChangesDetected>({
-      addOutput: false,
-      devolution: false,
-      price: false,
-    });
   const currentStock = rtDocData.stock.reduce((acc, stock) => {
     return acc + stock.amount;
   }, 0);
@@ -85,6 +79,11 @@ export function Product({
     () => selectedSeller?.data(),
     [selectedSeller]
   );
+  const someHumanChangesDetected = useRef<someHumanChangesDetected>({
+    addOutput: false,
+    devolution: false,
+    price: false,
+  });
 
   // effect to get the real time data from the product
   useEffect(() => {
@@ -121,7 +120,7 @@ export function Product({
         customPrice={customPrice}
         currentStock={currentStock}
         setOutputsAmount={setOutputsAmount}
-        setSomeHumanChangeDetected={setSomeHumanChangesDetected}
+        someHumanChangesDetected={someHumanChangesDetected}
       />
       <Devolution
         setDevolutionAmount={setDevolutionAmount}
@@ -130,7 +129,7 @@ export function Product({
         setRemainStock={setRemainStock}
         customPrice={customPrice}
         seletedSeller={selectedSeller}
-        setSomeHumanChangeDetected={setSomeHumanChangesDetected}
+        someHumanChangesDetected={someHumanChangesDetected}
       />
       <ProductSold
         remainStock={remainStock}
@@ -144,13 +143,12 @@ export function Product({
         setWarn={setWarn}
         sellerHasInventory={selectedSellerData?.hasInventory}
         someHumanChangesDetected={someHumanChangesDetected}
-        setSomeHumanChangesDetected={setSomeHumanChangesDetected}
       />
       <Price
         product_id={doc.id}
         normalPrice={rtDocData.stock[0]?.sale_price || 0}
         setCustomPrice={setCustomPrice}
-        setSomeHumanChangesDetected={setSomeHumanChangesDetected}
+        someHumanChangesDetected={someHumanChangesDetected}
       />
       <TotalSold
         amount={amount}

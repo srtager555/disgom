@@ -1,6 +1,13 @@
 import { numberParser } from "@/tools/numberPaser";
 import { Column } from "../../Product";
-import { Dispatch, memo, SetStateAction, useEffect, useState } from "react";
+import {
+  Dispatch,
+  memo,
+  RefObject,
+  SetStateAction,
+  useEffect,
+  useState,
+} from "react";
 import { addOutputs, outputType } from "@/tools/products/addOutputs";
 import {
   collection,
@@ -13,21 +20,11 @@ import { isEqual } from "lodash";
 import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
 import { SellersDoc } from "@/tools/sellers/create";
 import { rawOutput } from "./AddOutput";
+import { someHumanChangesDetected } from "./Product";
 
 type props = {
   product_doc: QueryDocumentSnapshot<productDoc>;
-  someHumanChangesDetected: {
-    addOutput: boolean;
-    devolution: boolean;
-    price: boolean;
-  };
-  setSomeHumanChangesDetected: Dispatch<
-    SetStateAction<{
-      addOutput: boolean;
-      devolution: boolean;
-      price: boolean;
-    }>
-  >;
+  someHumanChangesDetected: RefObject<someHumanChangesDetected>;
   customPrice: number | undefined;
   remainStock: rawOutput[];
   outputsAmount: number;
@@ -73,7 +70,6 @@ export function ProductSoldBase({
   setWarn,
   sellerHasInventory,
   someHumanChangesDetected,
-  setSomeHumanChangesDetected,
 }: props) {
   const [total, setTotal] = useState(0);
   const inventory_outputs = [] as DocumentSnapshot<outputType>[];
@@ -91,7 +87,11 @@ export function ProductSoldBase({
   useEffect(() => {
     async function saveOutputsSolds() {
       if (!invoiceDoc) return;
-      if (Object.values(someHumanChangesDetected).every((v) => !v)) return;
+      if (Object.values(someHumanChangesDetected.current).every((v) => !v))
+        return;
+
+      console.log("someHumanChangesDetected", someHumanChangesDetected);
+      console.log("saveOutputsSolds");
 
       const coll = collection(
         invoiceDoc.ref,
@@ -107,11 +107,11 @@ export function ProductSoldBase({
         coll
       );
 
-      setSomeHumanChangesDetected({
+      someHumanChangesDetected.current = {
         addOutput: false,
         devolution: false,
         price: false,
-      });
+      };
     }
 
     saveOutputsSolds();
@@ -123,7 +123,6 @@ export function ProductSoldBase({
     invoiceDoc,
     product_doc,
     remainStock,
-    setSomeHumanChangesDetected,
   ]);
 
   if (sellerHasInventory) return <Column>{numberParser(total)}</Column>;

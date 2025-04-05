@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useMemo,
   useRef,
+  RefObject,
   useState,
 } from "react";
 import { Column, Input } from "../../Product";
@@ -17,7 +18,7 @@ import { productDoc } from "@/tools/products/create";
 import { entryDoc } from "@/tools/products/addEntry";
 import { outputType } from "@/tools/products/addOutputs";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
-import { isEqual } from "lodash";
+import { debounce, isEqual } from "lodash";
 import { getInvoiceByQuery } from "@/tools/invoices/getInvoiceByQuery";
 import { restaOutputs } from "@/tools/products/restaOutputs";
 import { sumaOutputs } from "@/tools/products/sumaOutputs";
@@ -31,9 +32,7 @@ type props = {
   customPrice: number | undefined;
   productDoc: QueryDocumentSnapshot<productDoc>;
   setOutputsAmount: Dispatch<SetStateAction<number>>;
-  setSomeHumanChangeDetected: Dispatch<
-    SetStateAction<someHumanChangesDetected>
-  >;
+  someHumanChangesDetected: RefObject<someHumanChangesDetected>;
 };
 
 export type variations = Array<{
@@ -76,7 +75,7 @@ export const AddOutput = (props: Omit<props, "currentAmount" | "outputs">) => {
       currentStock={props.currentStock}
       setOutputsAmount={props.setOutputsAmount}
       customPrice={props.customPrice}
-      setSomeHumanChangeDetected={props.setSomeHumanChangeDetected}
+      someHumanChangesDetected={props.someHumanChangesDetected}
     />
   );
 };
@@ -98,13 +97,18 @@ export function AddOutputBase({
   currentStock,
   setOutputsAmount,
   customPrice,
-  setSomeHumanChangeDetected,
+  someHumanChangesDetected,
 }: baseProps & { currentAmount: number }) {
   const [amount, setAmount] = useState(currentAmount);
-  const [lastCustomPrice, setLastCustomPrice] = useState(customPrice);
-  const [humanAmountChanged, setHumanAmountChanged] = useState(false);
   const cookedAmount = useDebounce(amount) as number;
+  const lastCustomPrice = useRef(customPrice);
+  const humanAmountChanged = useRef(false);
   const form_ref = useRef<HTMLFormElement>(null);
+  const debouncedDetectChange = useRef(
+    debounce(() => {
+      someHumanChangesDetected.current.addOutput = true;
+    }, 1000)
+  ).current;
 
   // effect to refresh the amount when the currentAmount changes
   useEffect(() => {
@@ -125,15 +129,14 @@ export function AddOutputBase({
 
   // effect to detect custom price changes
   useEffect(() => {
-    if (customPrice === lastCustomPrice) return;
-    setHumanAmountChanged(true);
-    setLastCustomPrice(customPrice);
+    if (customPrice === lastCustomPrice.current) return;
+    humanAmountChanged.current = true;
   }, [customPrice, lastCustomPrice]);
 
   //effect to save the changes
   useEffect(() => {
     async function manage() {
-      if (!humanAmountChanged) return;
+      if (!humanAmountChanged.current) return;
 
       console.log("******** started to save outputs added");
       console.log("amount setted", cookedAmount);
@@ -143,10 +146,15 @@ export function AddOutputBase({
       if (!invoice) return;
 
       // Si solo cambia el precio (amount es igual y hay customPrice)
-      if (cookedAmount === currentAmount && customPrice !== lastCustomPrice) {
-        setLastCustomPrice(customPrice);
+      if (
+        cookedAmount === currentAmount &&
+        customPrice !== lastCustomPrice.current
+      ) {
+        console.log("price change detected");
+        lastCustomPrice.current = customPrice;
+        humanAmountChanged.current = false;
         await updatePrice(invoice, productDoc, cookedAmount, customPrice);
-        setHumanAmountChanged(false);
+
         return;
       }
 
@@ -172,7 +180,7 @@ export function AddOutputBase({
           customPrice
         );
       }
-      setHumanAmountChanged(false);
+      humanAmountChanged.current = false;
     }
 
     manage();
@@ -196,11 +204,8 @@ export function AddOutputBase({
           onChange={(e) => {
             const value = e.target.value;
             setAmount(Number(value));
-            setHumanAmountChanged(true);
-            setSomeHumanChangeDetected((prev) => ({
-              ...prev,
-              addOutput: true,
-            }));
+            humanAmountChanged.current = true;
+            debouncedDetectChange();
           }}
         />
       </form>

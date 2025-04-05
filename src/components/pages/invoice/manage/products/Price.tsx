@@ -1,38 +1,50 @@
-import { Dispatch, memo, SetStateAction, useEffect, useState } from "react";
+import {
+  Dispatch,
+  memo,
+  SetStateAction,
+  useEffect,
+  useRef,
+  RefObject,
+  useState,
+} from "react";
 import { Column, Input } from "../../Product";
 import { Container } from "@/styles/index.styles";
 import { useDebounce } from "@/hooks/debounce";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
 import { someHumanChangesDetected } from "./Product";
+import { debounce } from "lodash";
 type props = {
   product_id: string;
   normalPrice: number;
   setCustomPrice: Dispatch<SetStateAction<number | undefined>>;
-  setSomeHumanChangesDetected: Dispatch<
-    SetStateAction<someHumanChangesDetected>
-  >;
+  someHumanChangesDetected: RefObject<someHumanChangesDetected>;
 };
 
 export function Price({
   product_id,
   normalPrice,
   setCustomPrice,
-  setSomeHumanChangesDetected,
+  someHumanChangesDetected,
 }: props) {
   const [newPrice, setNewPrice] = useState(normalPrice);
-  const [humanAmountChanged, setHumanAmountChanged] = useState(false);
+  const humanAmountChanged = useRef(false);
   const outputs = useGetProductOutputByID(product_id);
   const debounceNewPrice = useDebounce(newPrice);
+  const debouncedDetectChange = useRef(
+    debounce(() => {
+      someHumanChangesDetected.current.price = true;
+    }, 1000)
+  ).current;
 
   useEffect(() => {
-    if (!humanAmountChanged) return;
+    if (!humanAmountChanged.current) return;
 
     if (debounceNewPrice === normalPrice) {
       setCustomPrice(undefined);
     } else {
       setCustomPrice(debounceNewPrice as number);
     }
-    setHumanAmountChanged(false);
+    humanAmountChanged.current = false;
   }, [debounceNewPrice, normalPrice, setCustomPrice, humanAmountChanged]);
 
   // effect to set the custom price if exists
@@ -49,8 +61,8 @@ export function Price({
         newPrice={newPrice}
         normalPrice={normalPrice}
         setNewPrice={setNewPrice}
-        setHumanAmountChanged={setHumanAmountChanged}
-        setSomeHumanChangesDetected={setSomeHumanChangesDetected}
+        humanAmountChanged={humanAmountChanged}
+        debouncedDetectChange={debouncedDetectChange}
       />
     </Column>
   );
@@ -60,10 +72,8 @@ type inputProps = {
   newPrice: number;
   normalPrice: number;
   setNewPrice: Dispatch<SetStateAction<number>>;
-  setHumanAmountChanged: Dispatch<SetStateAction<boolean>>;
-  setSomeHumanChangesDetected: Dispatch<
-    SetStateAction<someHumanChangesDetected>
-  >;
+  humanAmountChanged: RefObject<boolean>;
+  debouncedDetectChange: () => void;
 };
 
 const PriceInputMemo = memo(PriceInputBase, (prev, next) => {
@@ -77,8 +87,8 @@ function PriceInputBase({
   newPrice,
   normalPrice,
   setNewPrice,
-  setHumanAmountChanged,
-  setSomeHumanChangesDetected,
+  humanAmountChanged,
+  debouncedDetectChange,
 }: inputProps) {
   return (
     <>
@@ -86,11 +96,8 @@ function PriceInputBase({
         onChange={(e) => {
           const value = e.target.value;
           setNewPrice(Number(value));
-          setHumanAmountChanged(true);
-          setSomeHumanChangesDetected((prev) => ({
-            ...prev,
-            price: true,
-          }));
+          humanAmountChanged.current = true;
+          debouncedDetectChange();
         }}
         value={newPrice || normalPrice}
         style={{ zIndex: "1", position: "relative" }}

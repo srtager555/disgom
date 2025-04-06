@@ -1,5 +1,9 @@
 import { productDoc } from "@/tools/products/create";
-import { onSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
+import {
+  DocumentSnapshot,
+  onSnapshot,
+  QueryDocumentSnapshot,
+} from "firebase/firestore";
 import { ProductContainer } from "../../ProductList";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Column } from "../../Product";
@@ -67,12 +71,18 @@ export function Product({
   const [amount, setAmount] = useState<undefined | number>(undefined);
   const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
   const [isFolded, setIsFolded] = useState(true);
-  const [rtDocData, setRtDocData] = useState<productDoc>(doc.data());
+  const [rtDoc, setRtDoc] = useState<DocumentSnapshot<productDoc>>(doc);
   const [warn, setWarn] = useState(false);
   const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
-  const currentStock = rtDocData.stock.reduce((acc, stock) => {
-    return acc + stock.amount;
-  }, 0);
+  const rtDocData = rtDoc.data();
+  const currentStock = useMemo(() => {
+    const data = rtDoc.data();
+    if (!data) return 0;
+
+    return data.stock.reduce((acc, stock) => {
+      return acc + stock.amount;
+    }, 0);
+  }, [rtDoc]);
   const selectedSellerData = useMemo(
     () => selectedSeller?.data(),
     [selectedSeller]
@@ -86,10 +96,7 @@ export function Product({
   // effect to get the real time data from the product
   useEffect(() => {
     const unsubcribe = onSnapshot(doc.ref, (snap) => {
-      const newData = snap.data();
-
-      if (!isEqual(newData, rtDocData))
-        setRtDocData(snap.data() as unknown as productDoc);
+      if (!isEqual(snap, rtDoc)) setRtDoc(snap);
     });
 
     return () => unsubcribe();
@@ -102,19 +109,19 @@ export function Product({
       $hide={false}
       $hasInventory={selectedSellerData?.hasInventory}
       $withoutStock={currentStock}
-      $after={`${currentStock} / ${rtDocData.stock.length}`}
+      $after={`${currentStock} / ${rtDocData?.stock.length}`}
       $fold={!isFolded}
       $warn={warn}
     >
       <Column>
         <GrabButton>-</GrabButton>
       </Column>
-      <Column gridColumn="2 / 5">{rtDocData.name}</Column>
+      <Column gridColumn="2 / 5">{rtDocData?.name}</Column>
 
       {/* ここから下は、src/components/pages/invoice/manage/products/Product.tsx のコード */}
       {selectedSellerData?.hasInventory && <Column>0</Column>}
       <AddOutput
-        productDoc={doc}
+        productDoc={rtDoc}
         customPrice={customPrice}
         currentStock={currentStock}
         someHumanChangesDetected={someHumanChangesDetected}
@@ -138,19 +145,19 @@ export function Product({
       />
       <Price
         product_id={doc.id}
-        normalPrice={rtDocData.stock[0]?.sale_price || 0}
+        normalPrice={rtDocData?.stock[0]?.sale_price || 0}
         setCustomPrice={setCustomPrice}
         someHumanChangesDetected={someHumanChangesDetected}
       />
       <TotalSold
         amount={amount}
         customPrice={customPrice}
-        normalPrice={rtDocData.stock[0]?.sale_price}
+        normalPrice={rtDocData?.stock[0]?.sale_price || 0}
         sellerHasInventory={selectedSellerData?.hasInventory}
       />
       <Commission
         amount={amount}
-        commission={rtDocData.stock[0]?.seller_commission}
+        commission={rtDocData?.stock[0]?.seller_commission || 0}
         sellerHasInventory={selectedSellerData?.hasInventory}
       />
       <Profit

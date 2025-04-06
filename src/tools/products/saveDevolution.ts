@@ -37,8 +37,12 @@ export async function saveDevolution(
     createStockFromOutputType(el.data() as outputType)
   );
 
+  const amountToAmountListener = seletedSeller.data()?.hasInventory
+    ? (devoDebounce as number)
+    : 0;
+
   const outputsWorked = amountListener(
-    devoDebounce as number,
+    amountToAmountListener,
     stock,
     productDoc as QueryDocumentSnapshot<productDoc>,
     customPrice

@@ -1,6 +1,5 @@
 import {
   DocumentSnapshot,
-  QueryDocumentSnapshot,
   addDoc,
   arrayUnion,
   collection,
@@ -8,10 +7,11 @@ import {
 } from "firebase/firestore";
 import { productDoc } from "./create";
 import { amountListener, rawOutputToStock } from "./ManageSaves";
+import { invoiceType } from "../invoices/createInvoice";
 
 export async function sumaOutputs(
-  invoice: DocumentSnapshot,
-  productDoc: QueryDocumentSnapshot<productDoc>,
+  invoice: DocumentSnapshot<invoiceType>,
+  productDoc: DocumentSnapshot<productDoc>,
   amount: number,
   currentAmount: number,
   customPrice?: number

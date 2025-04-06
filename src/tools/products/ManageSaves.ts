@@ -27,7 +27,7 @@ export function createStockFromOutputType(output: outputType): stockType {
 export const amountListener = function (
   n: number,
   stocksRoot: Array<stockType>,
-  productDoc: QueryDocumentSnapshot<productDoc>,
+  productDoc: DocumentSnapshot<productDoc>,
   customPrice?: number
 ): { outputsToCreate: Array<rawOutput>; remainingStocks: Array<rawOutput> } {
   let remainingAmount = n;
@@ -109,7 +109,7 @@ function stockToRawOutput(stock: stockType): rawOutput {
 
 export async function saveNewOutputs(
   invoice: DocumentSnapshot<invoiceType>,
-  productDoc: QueryDocumentSnapshot<productDoc>,
+  productDoc: DocumentSnapshot<productDoc>,
   outputs: Array<rawOutput>
 ) {
   await addOutputs(invoice, productDoc, outputs);

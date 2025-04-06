@@ -1,7 +1,6 @@
 import {
   DocumentReference,
   DocumentSnapshot,
-  QueryDocumentSnapshot,
   getDoc,
 } from "firebase/firestore";
 import { productDoc } from "./create";
@@ -14,7 +13,7 @@ import { invoiceType } from "@/tools/invoices/createInvoice";
 
 export async function updatePrice(
   invoice: DocumentSnapshot<invoiceType>,
-  productDoc: QueryDocumentSnapshot<productDoc>,
+  productDoc: DocumentSnapshot<productDoc>,
   amount: number,
   customPrice?: number
 ) {

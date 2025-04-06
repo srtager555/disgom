@@ -1,11 +1,7 @@
 import React, { useEffect, useMemo, useRef, RefObject, useState } from "react";
 import { Column, Input } from "../../Product";
 import { useDebounce } from "@/hooks/debounce";
-import {
-  DocumentReference,
-  DocumentSnapshot,
-  QueryDocumentSnapshot,
-} from "firebase/firestore";
+import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { entryDoc } from "@/tools/products/addEntry";
 import { outputType } from "@/tools/products/addOutputs";
@@ -22,7 +18,7 @@ type props = {
   currentAmount: number;
   currentStock: number;
   customPrice: number | undefined;
-  productDoc: QueryDocumentSnapshot<productDoc>;
+  productDoc: DocumentSnapshot<productDoc>;
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
 };
 
@@ -74,7 +70,7 @@ export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   if (prev.currentAmount != next.currentAmount) return false;
   if (!isEqual(prev.currentStock, next.currentStock)) return false;
   if (prev.customPrice !== next.customPrice) return false;
-  if (prev.productDoc.id !== next.productDoc.id) return false;
+  if (isEqual(prev.productDoc, next.productDoc)) return false;
 
   return true;
 });
@@ -116,6 +112,7 @@ export function AddOutputBase({
   useEffect(() => {
     async function manage() {
       if (!humanAmountChanged.current) return;
+      humanAmountChanged.current = false;
 
       console.log("******** started to save outputs added");
       console.log("amount setted", cookedAmount);
@@ -131,7 +128,6 @@ export function AddOutputBase({
       ) {
         console.log("price change detected in add output");
         lastCustomPrice.current = customPrice;
-        humanAmountChanged.current = false;
         await updatePrice(invoice, productDoc, cookedAmount, customPrice);
 
         return;
@@ -159,7 +155,6 @@ export function AddOutputBase({
           customPrice
         );
       }
-      humanAmountChanged.current = false;
     }
 
     manage();

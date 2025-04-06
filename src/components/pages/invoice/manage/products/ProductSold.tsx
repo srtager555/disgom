@@ -60,12 +60,8 @@ export const MemoProductSold = memo(ProductSoldBase, (prev, next) => {
 });
 
 export function ProductSoldBase({
-  customPrice,
   remainStock,
   product_doc,
-  outputsAmount,
-  inventoryAmount,
-  devolutionAmount,
   setAmount,
   setWarn,
   sellerHasInventory,
@@ -76,22 +72,23 @@ export function ProductSoldBase({
   const invoiceDoc = useGetInvoiceByQuery();
 
   useEffect(() => {
-    const total = outputsAmount + inventoryAmount - devolutionAmount;
+    const total = remainStock.reduce((acc, next) => acc + next.amount, 0);
 
     setWarn(total < 0);
-
     setTotal(total);
     setAmount(total);
-  }, [devolutionAmount, inventoryAmount, outputsAmount, setAmount, setWarn]);
+  }, [remainStock, setAmount, setWarn]);
 
   useEffect(() => {
     async function saveOutputsSolds() {
-      if (!invoiceDoc) return;
-      if (Object.values(someHumanChangesDetected.current).every((v) => !v))
-        return;
+      const isHumanChanges = Object.values(
+        someHumanChangesDetected.current
+      ).some((v) => v);
 
-      console.log("someHumanChangesDetected", someHumanChangesDetected);
-      console.log("saveOutputsSolds");
+      if (!invoiceDoc) return;
+      if (!isHumanChanges) return;
+
+      console.log("save outputs solds");
 
       const coll = collection(
         invoiceDoc.ref,
@@ -115,15 +112,7 @@ export function ProductSoldBase({
     }
 
     saveOutputsSolds();
-  }, [
-    inventory_outputs,
-    customPrice,
-    total,
-    someHumanChangesDetected,
-    invoiceDoc,
-    product_doc,
-    remainStock,
-  ]);
+  }, [remainStock, inventory_outputs, someHumanChangesDetected]);
 
   if (sellerHasInventory) return <Column>{numberParser(total)}</Column>;
 }

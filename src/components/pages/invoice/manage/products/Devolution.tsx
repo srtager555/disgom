@@ -17,7 +17,7 @@ import { outputType } from "@/tools/products/addOutputs";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
 import { rawOutput } from "./AddOutput";
 import { SellersDoc } from "@/tools/sellers/create";
-import { debounce, isEqual } from "lodash";
+import { isEqual } from "lodash";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { someHumanChangesDetected } from "./Product";
@@ -94,11 +94,6 @@ function DevolutionBase({
   const lastCustomPrice = useRef(customPrice);
   const humanAmountChanged = useRef(false);
   const devoDebounce = useDebounce(devo);
-  const debouncedDetectChange = useRef(
-    debounce(() => {
-      someHumanChangesDetected.current.devolution = true;
-    }, 1000)
-  ).current;
 
   // effect to set the debouce to the devo
   useEffect(() => {
@@ -123,20 +118,11 @@ function DevolutionBase({
     console.log("price changed in devolution", customPrice);
   }, [customPrice, lastCustomPrice]);
 
-  // effect to clear the debouncedDetectChange
-  useEffect(() => {
-    return () => {
-      debouncedDetectChange.cancel();
-    };
-  }, []);
-
   // effect to save the devolution
   useEffect(() => {
     if (!invoiceDoc) return;
     if (!productDoc) return;
     if (!seletedSeller) return;
-
-    console.log("humanAmountChanged in devolution", humanAmountChanged.current);
 
     saveDevolution(
       invoiceDoc,
@@ -150,17 +136,7 @@ function DevolutionBase({
       humanAmountChanged,
       currentDevolution
     );
-  }, [
-    customPrice,
-    seletedSeller,
-    currentDevolution,
-    inventory_outputs,
-    setRemainStock,
-    devoDebounce,
-    // invoiceDoc,
-    // productDoc,
-    // outputs,
-  ]);
+  }, [customPrice, seletedSeller, devoDebounce, outputs]);
 
   if (sellerHasInventory) {
     return (
@@ -171,7 +147,7 @@ function DevolutionBase({
             setDevo(Number(e.target.value));
             console.log("devo changed", e.target.value);
             humanAmountChanged.current = true;
-            debouncedDetectChange();
+            someHumanChangesDetected.current.devolution = true;
           }}
           type="number"
         />

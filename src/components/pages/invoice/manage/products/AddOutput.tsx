@@ -18,7 +18,7 @@ import { productDoc } from "@/tools/products/create";
 import { entryDoc } from "@/tools/products/addEntry";
 import { outputType } from "@/tools/products/addOutputs";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
-import { debounce, isEqual } from "lodash";
+import { isEqual } from "lodash";
 import { getInvoiceByQuery } from "@/tools/invoices/getInvoiceByQuery";
 import { restaOutputs } from "@/tools/products/restaOutputs";
 import { sumaOutputs } from "@/tools/products/sumaOutputs";
@@ -104,11 +104,6 @@ export function AddOutputBase({
   const lastCustomPrice = useRef(customPrice);
   const humanAmountChanged = useRef(false);
   const form_ref = useRef<HTMLFormElement>(null);
-  const debouncedDetectChange = useRef(
-    debounce(() => {
-      someHumanChangesDetected.current.addOutput = true;
-    }, 1000)
-  ).current;
 
   // effect to refresh the amount when the currentAmount changes
   useEffect(() => {
@@ -205,7 +200,7 @@ export function AddOutputBase({
             const value = e.target.value;
             setAmount(Number(value));
             humanAmountChanged.current = true;
-            debouncedDetectChange();
+            someHumanChangesDetected.current.addOutput = true;
           }}
         />
       </form>

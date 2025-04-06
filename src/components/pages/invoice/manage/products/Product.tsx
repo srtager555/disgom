@@ -64,8 +64,6 @@ export function Product({
   selectedSeller,
   hideProductWithoutStock,
 }: props) {
-  const [outputsAmount, setOutputsAmount] = useState(0);
-  const [devolutionAmount, setDevolutionAmount] = useState(0);
   const [amount, setAmount] = useState<undefined | number>(undefined);
   const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
   const [isFolded, setIsFolded] = useState(true);
@@ -119,11 +117,9 @@ export function Product({
         productDoc={doc}
         customPrice={customPrice}
         currentStock={currentStock}
-        setOutputsAmount={setOutputsAmount}
         someHumanChangesDetected={someHumanChangesDetected}
       />
       <Devolution
-        setDevolutionAmount={setDevolutionAmount}
         productDoc={doc}
         sellerHasInventory={selectedSellerData?.hasInventory}
         setRemainStock={setRemainStock}
@@ -135,10 +131,6 @@ export function Product({
         remainStock={remainStock}
         seletedSeller={selectedSeller}
         product_doc={doc}
-        customPrice={customPrice}
-        outputsAmount={outputsAmount}
-        inventoryAmount={0}
-        devolutionAmount={devolutionAmount}
         setAmount={setAmount}
         setWarn={setWarn}
         sellerHasInventory={selectedSellerData?.hasInventory}

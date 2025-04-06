@@ -28,7 +28,7 @@ type devolutionBase = {
   productDoc: DocumentSnapshot<productDoc>;
   invoiceDoc: DocumentSnapshot<invoiceType> | undefined;
   setRemainStock: Dispatch<SetStateAction<rawOutput[]>>;
-  setDevolutionAmount: Dispatch<SetStateAction<number>>;
+
   customPrice: number | undefined;
   seletedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
   sellerHasInventory: boolean | undefined;
@@ -82,7 +82,6 @@ function DevolutionBase({
   productDoc,
   invoiceDoc,
   customPrice,
-  setDevolutionAmount,
   setRemainStock,
   seletedSeller,
   sellerHasInventory,
@@ -94,12 +93,6 @@ function DevolutionBase({
   const lastCustomPrice = useRef(customPrice);
   const humanAmountChanged = useRef(false);
   const devoDebounce = useDebounce(devo);
-
-  // effect to set the debouce to the devo
-  useEffect(() => {
-    setDevolutionAmount(devoDebounce as number);
-    console.log("devo debounce setted", devoDebounce);
-  }, [devoDebounce, setDevolutionAmount]);
 
   useEffect(() => {
     if (devoDebounce != currentDevolution) setDevo(currentDevolution);

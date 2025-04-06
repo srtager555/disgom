@@ -1,12 +1,4 @@
-import React, {
-  Dispatch,
-  SetStateAction,
-  useEffect,
-  useMemo,
-  useRef,
-  RefObject,
-  useState,
-} from "react";
+import React, { useEffect, useMemo, useRef, RefObject, useState } from "react";
 import { Column, Input } from "../../Product";
 import { useDebounce } from "@/hooks/debounce";
 import {
@@ -31,7 +23,6 @@ type props = {
   currentStock: number;
   customPrice: number | undefined;
   productDoc: QueryDocumentSnapshot<productDoc>;
-  setOutputsAmount: Dispatch<SetStateAction<number>>;
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
 };
 
@@ -73,7 +64,6 @@ export const AddOutput = (props: Omit<props, "currentAmount" | "outputs">) => {
       currentAmount={currentAmount}
       productDoc={props.productDoc}
       currentStock={props.currentStock}
-      setOutputsAmount={props.setOutputsAmount}
       customPrice={props.customPrice}
       someHumanChangesDetected={props.someHumanChangesDetected}
     />
@@ -95,7 +85,6 @@ export function AddOutputBase({
   currentAmount,
   productDoc,
   currentStock,
-  setOutputsAmount,
   customPrice,
   someHumanChangesDetected,
 }: baseProps & { currentAmount: number }) {
@@ -111,11 +100,6 @@ export function AddOutputBase({
 
     setAmount(currentAmount);
   }, [currentAmount]);
-
-  // effect to set the cooked amount to setOutputsAmount
-  useEffect(() => {
-    setOutputsAmount(cookedAmount);
-  }, [cookedAmount, setOutputsAmount]);
 
   // effect to reset the input when changes of product
   useEffect(() => {

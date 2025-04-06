@@ -4,7 +4,6 @@ import {
   CollectionReference,
   DocumentReference,
   DocumentSnapshot,
-  QueryDocumentSnapshot,
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
@@ -130,7 +129,7 @@ export type outputType = {
 
 export async function addOutputs(
   invoice: DocumentSnapshot<invoiceType>,
-  product_doc: QueryDocumentSnapshot<productDoc>,
+  product_doc: DocumentSnapshot<productDoc>,
   rawOutputs: rawOutput[],
   outputsKey: "products_outputs" | "outputs_sold" = "products_outputs",
   outputColl: CollectionReference<outputType> = collection(

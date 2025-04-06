@@ -90,6 +90,9 @@ function DevolutionBase({
 }: devolutionBase) {
   const inventory_outputs = [] as DocumentSnapshot<outputType>[];
   const [devo, setDevo] = useState(0);
+  const [lastHasInventory, setLastHasInventory] = useState<boolean | undefined>(
+    sellerHasInventory
+  );
   const lastCustomPrice = useRef(customPrice);
   const humanAmountChanged = useRef(false);
   const devoDebounce = useDebounce(devo);
@@ -110,6 +113,14 @@ function DevolutionBase({
     lastCustomPrice.current = customPrice;
     console.log("price changed in devolution", customPrice);
   }, [customPrice, lastCustomPrice]);
+
+  // effect to detect if the seller havent inventory
+  useEffect(() => {
+    if (sellerHasInventory !== lastHasInventory) {
+      someHumanChangesDetected.current.devolution = true;
+      setLastHasInventory(sellerHasInventory);
+    }
+  }, [sellerHasInventory]);
 
   // effect to save the devolution
   useEffect(() => {

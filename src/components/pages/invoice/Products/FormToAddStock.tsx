@@ -89,7 +89,14 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
   }
 
   // functions to remove a stock
-  function handlerRemoveStock() {
+  async function handlerRemoveStock() {
+    if (process.env.NODE_ENV === "development") {
+      if (!entryToEdit || !selectedProduct?.ref) return;
+      await removeEntry(entryToEdit, selectedProduct?.ref, false);
+      setEntryToEdit(undefined);
+      return;
+    }
+
     setTimeoutSaved(
       setTimeout(async () => {
         if (!entryToEdit || !selectedProduct?.ref) return;
@@ -99,6 +106,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
       }, 5000)
     );
   }
+
   function handlerCancelRemoveStock() {
     clearTimeout(timeoutSaved);
   }

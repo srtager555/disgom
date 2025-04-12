@@ -9,6 +9,8 @@ import { QueryDocumentSnapshot } from "firebase/firestore";
 import { Product as P } from "../../Product";
 import { MemoProduct } from "./Product";
 import { Button } from "@/styles/Form.styles";
+import { useGetAllInventory } from "@/hooks/invoice/getAllInventory";
+import { useInvoice } from "@/contexts/InvoiceContext";
 
 type props = {
   selectedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
@@ -16,9 +18,13 @@ type props = {
 };
 
 export function Products({ selectedSeller, setProductsResults }: props) {
+  const { invoice } = useInvoice();
   const [tagSelected, setTagSelected] = useState("");
   const productsList = useGetProducts(tagSelected);
   const [hideProductWithoutStock, setHideProductWithoutStock] = useState(false);
+  const allInventory = useGetAllInventory(
+    invoice?.data()?.last_inventory_ref || undefined
+  );
 
   return (
     <Container styles={{ margin: "20px 0px" }}>
@@ -47,6 +53,7 @@ export function Products({ selectedSeller, setProductsResults }: props) {
               doc={product}
               selectedSeller={selectedSeller}
               hideProductWithoutStock={hideProductWithoutStock}
+              allInventory={allInventory}
             />
           );
           return (

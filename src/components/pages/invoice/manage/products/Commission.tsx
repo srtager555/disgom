@@ -11,8 +11,8 @@ export function Commission({ remainStockTotals, sellerHasInventory }: props) {
   if (!sellerHasInventory) return <></>;
 
   return (
-    <Column title={numberParser(remainStockTotals.seller_sold)}>
-      {numberParser(remainStockTotals.seller_sold)}
+    <Column title={numberParser(remainStockTotals.seller_profit)}>
+      {numberParser(remainStockTotals.seller_profit)}
     </Column>
   );
 }

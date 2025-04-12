@@ -20,6 +20,7 @@ import { Fold } from "./fold";
 import { Devolution } from "./Devolution";
 import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 import { getInventoryByProduct } from "@/tools/invoices/getInventoryByProduct";
+import { productResult } from "@/components/pages/invoice/ProductList";
 
 const GrabButton = styled.button`
   display: inline-block;
@@ -43,6 +44,9 @@ type props = {
   selectedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
   hideProductWithoutStock: boolean;
   allInventory: DocumentSnapshot<inventory_output>[];
+  setProductsResults: React.Dispatch<
+    React.SetStateAction<Record<string, productResult>>
+  >;
 };
 
 export type someHumanChangesDetected = {
@@ -72,13 +76,21 @@ export function Product({
   selectedSeller,
   hideProductWithoutStock,
   allInventory,
+  setProductsResults,
 }: props) {
-  const [amount, setAmount] = useState<undefined | number>(undefined);
   const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
   const [isFolded, setIsFolded] = useState(true);
   const [rtDoc, setRtDoc] = useState<DocumentSnapshot<productDoc>>(doc);
   const [warn, setWarn] = useState(false);
   const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
+  const [remainStockTotals, setRemainStockTotals] = useState<productResult>({
+    amount: 0,
+    cost: 0,
+    sold: 0,
+    profit: 0,
+    seller_sold: 0,
+    seller_profit: 0,
+  });
   const rtDocData = rtDoc.data();
   const inventory = useMemo(() => {
     return getInventoryByProduct(allInventory, doc.ref);
@@ -110,6 +122,45 @@ export function Product({
 
     return () => unsubcribe();
   }, [doc.ref]);
+
+  useEffect(() => {
+    if (!remainStock.length) return;
+
+    const results = remainStock.reduce<productResult>(
+      (acc, stock) => {
+        const amount = stock.amount;
+        const cost = stock.purchase_price * amount;
+        const sold = stock.sale_price * amount;
+        const profit = sold - cost;
+        const seller_sold =
+          (stock.sale_price - (stock.commission || 0)) * amount;
+        const seller_profit = seller_sold - cost;
+
+        return {
+          amount: acc.amount + amount,
+          cost: acc.cost + cost,
+          sold: acc.sold + sold,
+          profit: acc.profit + profit,
+          seller_sold: acc.seller_sold + seller_sold,
+          seller_profit: acc.seller_profit + seller_profit,
+        };
+      },
+      {
+        amount: 0,
+        cost: 0,
+        sold: 0,
+        profit: 0,
+        seller_sold: 0,
+        seller_profit: 0,
+      }
+    );
+
+    setRemainStockTotals(results);
+    setProductsResults((prev) => ({
+      ...prev,
+      [doc.id]: results,
+    }));
+  }, [remainStock, doc.id, setProductsResults]);
 
   if (hideProductWithoutStock && currentStock === 0) return <></>;
 
@@ -148,9 +199,9 @@ export function Product({
       />
       <ProductSold
         remainStock={remainStock}
+        remainStockTotals={remainStockTotals}
         seletedSeller={selectedSeller}
         product_doc={doc}
-        setAmount={setAmount}
         setWarn={setWarn}
         sellerHasInventory={selectedSellerData?.hasInventory}
         someHumanChangesDetected={someHumanChangesDetected}
@@ -162,19 +213,16 @@ export function Product({
         someHumanChangesDetected={someHumanChangesDetected}
       />
       <TotalSold
-        amount={amount}
-        customPrice={customPrice}
-        normalPrice={rtDocData?.stock[0]?.sale_price || 0}
+        remainStockTotals={remainStockTotals}
         sellerHasInventory={selectedSellerData?.hasInventory}
       />
       <Commission
-        amount={amount}
-        commission={rtDocData?.stock[0]?.seller_commission || 0}
+        remainStockTotals={remainStockTotals}
         sellerHasInventory={selectedSellerData?.hasInventory}
       />
       <Profit
         sellerHasInventory={selectedSellerData?.hasInventory}
-        remainStock={remainStock}
+        remainStockTotals={remainStockTotals}
       />
       <Fold
         isFolded={isFolded}

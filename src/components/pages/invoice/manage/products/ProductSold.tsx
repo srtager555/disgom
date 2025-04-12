@@ -1,13 +1,6 @@
 import { numberParser } from "@/tools/numberPaser";
 import { Column } from "../../Product";
-import {
-  Dispatch,
-  memo,
-  RefObject,
-  SetStateAction,
-  useEffect,
-  useState,
-} from "react";
+import { Dispatch, memo, RefObject, SetStateAction, useEffect } from "react";
 import { addOutputs, outputType } from "@/tools/products/addOutputs";
 import {
   collection,
@@ -20,32 +13,27 @@ import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
 import { SellersDoc } from "@/tools/sellers/create";
 import { rawOutput } from "./AddOutput";
 import { someHumanChangesDetected } from "./Product";
+import { productResult } from "@/components/pages/invoice/ProductList";
 
 type props = {
   product_doc: QueryDocumentSnapshot<productDoc>;
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
   remainStock: rawOutput[];
-  setAmount: Dispatch<SetStateAction<number | undefined>>;
+  remainStockTotals: productResult;
   setWarn: Dispatch<SetStateAction<boolean>>;
   sellerHasInventory: boolean | undefined;
   seletedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
 };
 
 export const ProductSold = (props: Omit<props, "outputs">) => {
-  // const outputs = useGetProductOutputByID(props.product_doc.id);
-
-  return (
-    <MemoProductSold
-      {...props}
-      // outputs={outputs}
-    />
-  );
+  return <MemoProductSold {...props} />;
 };
 
 export const MemoProductSold = memo(ProductSoldBase, (prev, next) => {
   if (prev.sellerHasInventory != next.sellerHasInventory) return false;
   if (!isEqual(prev.product_doc.id, next.product_doc.id)) return false;
   if (!isEqual(prev.remainStock, next.remainStock)) return false;
+  if (!isEqual(prev.remainStockTotals, next.remainStockTotals)) return false;
 
   return true;
 });
@@ -53,21 +41,18 @@ export const MemoProductSold = memo(ProductSoldBase, (prev, next) => {
 export function ProductSoldBase({
   remainStock,
   product_doc,
-  setAmount,
+  remainStockTotals,
   setWarn,
   sellerHasInventory,
   someHumanChangesDetected,
 }: props) {
-  const [total, setTotal] = useState(0);
   const invoiceDoc = useGetInvoiceByQuery();
 
-  useEffect(() => {
-    const total = remainStock.reduce((acc, next) => acc + next.amount, 0);
+  console.log("remainStockTotals", remainStockTotals);
 
-    setWarn(total < 0);
-    setTotal(total);
-    setAmount(total);
-  }, [remainStock, setAmount, setWarn]);
+  useEffect(() => {
+    setWarn(remainStockTotals.amount < 0);
+  }, [remainStockTotals.amount, setWarn]);
 
   useEffect(() => {
     async function saveOutputsSolds() {
@@ -104,5 +89,6 @@ export function ProductSoldBase({
     saveOutputsSolds();
   }, [remainStock]);
 
-  if (sellerHasInventory) return <Column>{numberParser(total)}</Column>;
+  if (sellerHasInventory)
+    return <Column>{numberParser(remainStockTotals.amount)}</Column>;
 }

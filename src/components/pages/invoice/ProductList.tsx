@@ -38,9 +38,9 @@ export type priceVariation = {
 export type productResult = {
   amount: number;
   cost: number;
-  sold: priceVariation;
+  sold: number;
   profit: number;
-  seller_sold: priceVariation;
+  seller_sold: number;
   seller_profit: number;
 };
 

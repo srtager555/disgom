@@ -15,6 +15,7 @@ import { DocumentReference, QueryDocumentSnapshot } from "firebase/firestore";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
+import { useProductResults } from "@/hooks/useProductResults";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -42,6 +43,8 @@ function InvoiceManager() {
     cash: 0,
     deposit: 0,
   });
+
+  const { totalResults, calculateResults } = useProductResults();
 
   // this effect is to create an invoice when the select the seller
   useEffect(() => {
@@ -73,6 +76,11 @@ function InvoiceManager() {
     updateSeller();
   }, [id, selectedSeller]);
 
+  useEffect(() => {
+    const results = calculateResults(productsResults);
+    console.log("Resultados totales:", results);
+  }, [productsResults]);
+
   return (
     <MainContainer>
       <Container styles={{ marginBottom: "20px" }}>
@@ -103,11 +111,15 @@ function InvoiceManager() {
       >
         <Container styles={{ marginBottom: "50px" }}>
           {invoice?.data() && (
-            <Credit
-              setCreditTotal={setCreditResult}
-              invoiceData={invoice.data()}
-              seller_ref={selectedSeller?.ref as DocumentReference<SellersDoc>}
-            />
+            <>
+              <Credit
+                setCreditTotal={setCreditResult}
+                invoiceData={invoice.data()}
+                seller_ref={
+                  selectedSeller?.ref as DocumentReference<SellersDoc>
+                }
+              />
+            </>
           )}
         </Container>
         <Bills bills={bills} setBills={setBills} />

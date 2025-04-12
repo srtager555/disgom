@@ -54,6 +54,7 @@ export function Products({ selectedSeller, setProductsResults }: props) {
               selectedSeller={selectedSeller}
               hideProductWithoutStock={hideProductWithoutStock}
               allInventory={allInventory}
+              setProductsResults={setProductsResults}
             />
           );
           return (

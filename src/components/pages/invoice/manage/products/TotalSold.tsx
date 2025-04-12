@@ -1,31 +1,19 @@
-import { useEffect, useState } from "react";
 import { Column } from "../../Product";
 import { numberParser } from "@/tools/numberPaser";
+import { productResult } from "@/components/pages/invoice/ProductList";
 
 type props = {
-  amount: number | undefined;
-  normalPrice: number;
-  customPrice: number | undefined;
+  remainStockTotals: productResult;
   sellerHasInventory: boolean | undefined;
 };
 
-export function TotalSold({
-  amount = 0,
-  normalPrice,
-  customPrice,
-  sellerHasInventory,
-}: props) {
-  const [total, setTotal] = useState("0.00");
-
-  useEffect(() => {
-    if (customPrice) setTotal(numberParser(amount * customPrice));
-    else if (normalPrice) setTotal(numberParser(amount * normalPrice));
-    else setTotal("0.00");
-  }, [amount, normalPrice, customPrice]);
-
+export function TotalSold({ remainStockTotals, sellerHasInventory }: props) {
   return (
-    <Column gridColumn={!sellerHasInventory ? "-3 / -4" : ""} title={total}>
-      {total}
+    <Column
+      gridColumn={!sellerHasInventory ? "-3 / -4" : ""}
+      title={numberParser(remainStockTotals.sold)}
+    >
+      {numberParser(remainStockTotals.sold)}
     </Column>
   );
 }

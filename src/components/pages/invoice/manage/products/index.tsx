@@ -27,7 +27,7 @@ export function Products({ selectedSeller, setProductsResults }: props) {
   );
 
   return (
-    <Container styles={{ margin: "20px 0px" }}>
+    <Container styles={{ marginTop: "20px" }}>
       <FlexContainer styles={{ marginBottom: "20px" }}>
         <SelectTag setTagSelected={setTagSelected} />
         <Container styles={{ marginRight: "20px" }}>
@@ -44,7 +44,7 @@ export function Products({ selectedSeller, setProductsResults }: props) {
           Imprimir
         </Button>
       </FlexContainer>
-      <Container styles={{ marginBottom: "20px" }}>
+      <Container>
         <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
         {productsList?.docs?.map((product, i) => {
           return (

@@ -132,9 +132,8 @@ export function Product({
         const cost = stock.purchase_price * amount;
         const sold = stock.sale_price * amount;
         const profit = sold - cost;
-        const seller_sold =
-          (stock.sale_price - (stock.commission || 0)) * amount;
-        const seller_profit = seller_sold - cost;
+        const seller_profit = stock.commission * amount;
+        const seller_sold = sold + seller_profit;
 
         return {
           amount: acc.amount + amount,

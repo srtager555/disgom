@@ -1,7 +1,7 @@
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { useState } from "react";
 
-type TotalResults = {
+export type TotalResults = {
   totalAmount: number;
   totalCost: number;
   totalSold: number;

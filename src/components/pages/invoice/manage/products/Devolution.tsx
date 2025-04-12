@@ -22,29 +22,33 @@ import { useInvoice } from "@/contexts/InvoiceContext";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { someHumanChangesDetected } from "./Product";
 import { saveDevolution } from "@/tools/products/saveDevolution";
+import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 
 type devolutionBase = {
   outputs: DocumentSnapshot<outputType>[];
   productDoc: DocumentSnapshot<productDoc>;
   invoiceDoc: DocumentSnapshot<invoiceType> | undefined;
   setRemainStock: Dispatch<SetStateAction<rawOutput[]>>;
-
+  inventory: DocumentSnapshot<inventory_output>[];
   customPrice: number | undefined;
   seletedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
   sellerHasInventory: boolean | undefined;
-  currentDevolution: number;
+  currentServerDevolution: number;
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
 };
 
 export const Devolution = (
-  props: Omit<devolutionBase, "currentDevolution" | "outputs" | "invoiceDoc">
+  props: Omit<
+    devolutionBase,
+    "currentServerDevolution" | "outputs" | "invoiceDoc"
+  >
 ) => {
   const currentInventory = useGetCurrentDevolutionByProduct(
     props.productDoc.id
   );
   const outputs = useGetProductOutputByID(props.productDoc.id);
   const { invoice: invoiceDoc } = useInvoice();
-  const currentDevolution = useMemo(
+  const currentServerDevolution = useMemo(
     () =>
       currentInventory.outputs?.reduce(
         (acc, next) => acc + next.data().amount,
@@ -58,7 +62,7 @@ export const Devolution = (
       {...props}
       outputs={outputs}
       invoiceDoc={invoiceDoc}
-      currentDevolution={currentDevolution}
+      currentServerDevolution={currentServerDevolution}
     />
   );
 };
@@ -66,14 +70,16 @@ export const Devolution = (
 const DevolutionMemo = memo(DevolutionBase, (prev, next) => {
   if (prev.productDoc.id !== next.productDoc.id) return false;
   if (prev.sellerHasInventory !== next.sellerHasInventory) return false;
-  if (prev.currentDevolution !== next.currentDevolution) return false;
+  if (prev.currentServerDevolution !== next.currentServerDevolution)
+    return false;
   if (!isEqual(prev.outputs, next.outputs)) return false;
   if (!isEqual(prev.invoiceDoc, next.invoiceDoc)) return false;
   if (!isEqual(prev.customPrice, next.customPrice)) return false;
   if (!isEqual(prev.seletedSeller, next.seletedSeller)) return false;
   if (!isEqual(prev.sellerHasInventory, next.sellerHasInventory)) return false;
-  if (!isEqual(prev.currentDevolution, next.currentDevolution)) return false;
-
+  if (!isEqual(prev.currentServerDevolution, next.currentServerDevolution))
+    return false;
+  if (!isEqual(prev.inventory, next.inventory)) return false;
   return true;
 });
 
@@ -81,30 +87,46 @@ function DevolutionBase({
   outputs,
   productDoc,
   invoiceDoc,
+  inventory: inventory_outputs,
   customPrice,
   setRemainStock,
   seletedSeller,
   sellerHasInventory,
-  currentDevolution,
+  currentServerDevolution,
   someHumanChangesDetected,
 }: devolutionBase) {
-  const inventory_outputs = [] as DocumentSnapshot<outputType>[];
   const [devo, setDevo] = useState(0);
   const [lastHasInventory, setLastHasInventory] = useState<boolean | undefined>(
     sellerHasInventory
   );
+  const [itsSaving, setItsSaving] = useState(false);
+  const [localCurrentDevo, setLocalCurrentDevo] = useState(
+    currentServerDevolution
+  );
+  const [localCurrentDevoHistory, setLocalCurrentDevoHistory] = useState<
+    number[]
+  >([]);
+  const lastDevo = useRef<number | null>(null);
   const lastCustomPrice = useRef(customPrice);
   const humanAmountChanged = useRef(false);
   const devoDebounce = useDebounce(devo);
 
+  // effect to save the current devo
   useEffect(() => {
-    if (devoDebounce != currentDevolution) setDevo(currentDevolution);
+    if (!localCurrentDevoHistory.includes(currentServerDevolution)) {
+      setLocalCurrentDevo(currentServerDevolution);
+    }
+  }, [currentServerDevolution]);
+
+  useEffect(() => {
+    if (devoDebounce != currentServerDevolution)
+      setDevo(currentServerDevolution);
     console.log(
       "current devo and devo debounce",
-      currentDevolution,
+      currentServerDevolution,
       devoDebounce
     );
-  }, [currentDevolution]);
+  }, [currentServerDevolution]);
 
   // effect to detect custom price changes
   useEffect(() => {
@@ -128,19 +150,43 @@ function DevolutionBase({
     if (!productDoc) return;
     if (!seletedSeller) return;
 
+    // if the devo is being saved, save the devo to the lastDevo
+    let devoToWork = devoDebounce as number;
+    if (itsSaving) {
+      console.log("devo is being saved, saving to lastDevo");
+      lastDevo.current = devoToWork as number;
+      return;
+    } else if (lastDevo.current) {
+      console.log("devo is not being saved, getting devo from lastDevo");
+      devoToWork = lastDevo.current as number;
+      lastDevo.current = null;
+    }
+    setItsSaving(true);
+
     saveDevolution(
       invoiceDoc,
       productDoc,
       seletedSeller,
       inventory_outputs,
       outputs,
-      devoDebounce as number,
+      devoToWork,
       customPrice,
       setRemainStock,
       humanAmountChanged,
-      currentDevolution
+      localCurrentDevo
     );
-  }, [customPrice, seletedSeller, devoDebounce, outputs]);
+
+    setLocalCurrentDevoHistory([...localCurrentDevoHistory, localCurrentDevo]);
+    setLocalCurrentDevo(devoToWork);
+    setItsSaving(false);
+  }, [
+    customPrice,
+    seletedSeller,
+    devoDebounce,
+    outputs,
+    itsSaving,
+    inventory_outputs,
+  ]);
 
   if (sellerHasInventory) {
     return (

@@ -1,6 +1,6 @@
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { productDoc } from "@/tools/products/create";
-import { inventoryProductDoc } from "@/tools/sellers/invetory/addProduct";
+import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 import { inventory } from "@/tools/sellers/invetory/create";
 import {
   collection,
@@ -10,6 +10,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
+import { isEqual } from "lodash";
 import { useEffect, useState } from "react";
 
 export function useGetInventoryByProduct(
@@ -18,20 +19,34 @@ export function useGetInventoryByProduct(
 ) {
   const [inventoriesProducts, setInventoriesProducts] = useState<{
     totalAmount: number;
-    inv: inventoryProductDoc[];
+    inv: inventory_output[];
   }>({ totalAmount: 0, inv: [] });
+  const [lastInventoryRef, setlastInventoryRef] = useState(last_inventory_ref);
+  const [lastProductRef, setlastProductRef] = useState(product_ref);
 
   // effect to get the inventory
   useEffect(() => {
+    if (
+      isEqual(lastInventoryRef, last_inventory_ref) &&
+      isEqual(lastProductRef, product_ref)
+    )
+      return;
+    setlastInventoryRef(last_inventory_ref);
+    setlastProductRef(product_ref);
+
     async function getInventory() {
       if (!last_inventory_ref) return;
 
       const coll = collection(
         last_inventory_ref,
         SellersCollection.inventories.products
-      ) as CollectionReference<inventoryProductDoc>;
+      ) as CollectionReference<inventory_output>;
 
-      const q = query(coll, where("product_ref", "==", product_ref));
+      const q = query(
+        coll,
+        where("product_ref", "==", product_ref),
+        where("disabled", "==", false)
+      );
       const invent_products = await getDocs(q);
 
       const inv = invent_products.docs.map((doc) => doc.data());

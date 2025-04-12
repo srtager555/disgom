@@ -15,7 +15,7 @@ import { someHumanChangesDetected } from "./Product";
 
 type props = {
   outputs: DocumentSnapshot<outputType>[];
-  currentAmount: number;
+  serverCurrentAmount: number;
   currentStock: number;
   customPrice: number | undefined;
   productDoc: DocumentSnapshot<productDoc>;
@@ -46,9 +46,11 @@ export type product_outputs = {
   [key: string]: Array<DocumentReference<outputType>>;
 };
 
-export const AddOutput = (props: Omit<props, "currentAmount" | "outputs">) => {
+export const AddOutput = (
+  props: Omit<props, "serverCurrentAmount" | "outputs">
+) => {
   const outputs = useGetProductOutputByID(props.productDoc.id);
-  const currentAmount = useMemo(() => {
+  const serverCurrentAmount = useMemo(() => {
     return outputs.reduce((acc, now) => {
       const nowAmount = now.data()?.amount || 0;
       return acc + nowAmount;
@@ -57,7 +59,7 @@ export const AddOutput = (props: Omit<props, "currentAmount" | "outputs">) => {
 
   return (
     <MemoAddOutput
-      currentAmount={currentAmount}
+      serverCurrentAmount={serverCurrentAmount}
       productDoc={props.productDoc}
       currentStock={props.currentStock}
       customPrice={props.customPrice}
@@ -67,7 +69,7 @@ export const AddOutput = (props: Omit<props, "currentAmount" | "outputs">) => {
 };
 
 export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
-  if (prev.currentAmount != next.currentAmount) return false;
+  if (prev.serverCurrentAmount != next.serverCurrentAmount) return false;
   if (!isEqual(prev.currentStock, next.currentStock)) return false;
   if (prev.customPrice !== next.customPrice) return false;
   if (isEqual(prev.productDoc, next.productDoc)) return false;
@@ -75,27 +77,45 @@ export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   return true;
 });
 
-type baseProps = Omit<props, "currentAmount" | "outputs">;
+type baseProps = Omit<props, "outputs">;
+type lastAmountToChange = {
+  amount: number;
+  customPrice: number | undefined;
+};
 
 export function AddOutputBase({
-  currentAmount,
+  serverCurrentAmount,
   productDoc,
   currentStock,
   customPrice,
   someHumanChangesDetected,
-}: baseProps & { currentAmount: number }) {
-  const [amount, setAmount] = useState(currentAmount);
+}: baseProps) {
+  const [amount, setAmount] = useState(serverCurrentAmount);
+  const [localCurrentAmount, setLocalCurrentAmount] =
+    useState(serverCurrentAmount);
+  const [localCurrentAmountHistory, setLocalCurrentAmountHistory] = useState<
+    number[]
+  >([]);
   const cookedAmount = useDebounce(amount) as number;
   const lastCustomPrice = useRef(customPrice);
   const humanAmountChanged = useRef(false);
   const form_ref = useRef<HTMLFormElement>(null);
+  const [itsSavingNow, setItsSavingNow] = useState(false);
+  const lastDataToChange = useRef<lastAmountToChange | null>(null);
 
-  // effect to refresh the amount when the currentAmount changes
+  // effect to check if the serverCurrentAmount is in the localCurrentAmountHistory
   useEffect(() => {
-    if (amount === currentAmount) return;
+    if (!localCurrentAmountHistory.includes(serverCurrentAmount)) {
+      setLocalCurrentAmount(serverCurrentAmount);
+    }
+  }, [serverCurrentAmount]);
 
-    setAmount(currentAmount);
-  }, [currentAmount]);
+  // effect to refresh the amount when the localCurrentAmount changes
+  useEffect(() => {
+    if (amount === localCurrentAmount) return;
+
+    setAmount(localCurrentAmount);
+  }, [localCurrentAmount]);
 
   // effect to reset the input when changes of product
   useEffect(() => {
@@ -111,11 +131,38 @@ export function AddOutputBase({
   //effect to save the changes
   useEffect(() => {
     async function manage() {
-      if (!humanAmountChanged.current) return;
+      let amountToWork: lastAmountToChange = {
+        amount: cookedAmount,
+        customPrice,
+      };
+
+      // check if has been changed by human and if there is an data in queue
+      if (!humanAmountChanged.current && !lastDataToChange.current) return;
+      setItsSavingNow(true);
       humanAmountChanged.current = false;
 
+      // if the code is saving now, save the data to the queue
+      if (itsSavingNow) {
+        lastDataToChange.current = {
+          amount: cookedAmount as number,
+          customPrice,
+        };
+        console.log(
+          "the code is saving now, the queue is",
+          lastDataToChange.current
+        );
+        return;
+      }
+
+      // if there is an data in queue, get the data
+      if (lastDataToChange.current) {
+        amountToWork = lastDataToChange.current;
+        lastDataToChange.current = null;
+        console.log("there is a data in queue, getting the data", amountToWork);
+      }
+
       console.log("******** started to save outputs added");
-      console.log("amount setted", cookedAmount);
+      console.log("amount setted", amountToWork.amount);
 
       // Obtener la factura actual
       const invoice = await getInvoiceByQuery();
@@ -123,38 +170,54 @@ export function AddOutputBase({
 
       // Si solo cambia el precio (amount es igual y hay customPrice)
       if (
-        cookedAmount === currentAmount &&
-        customPrice !== lastCustomPrice.current
+        amountToWork.amount === localCurrentAmount &&
+        amountToWork.customPrice !== lastCustomPrice.current
       ) {
         console.log("price change detected in add output");
         lastCustomPrice.current = customPrice;
-        await updatePrice(invoice, productDoc, cookedAmount, customPrice);
+        await updatePrice(
+          invoice,
+          productDoc,
+          amountToWork.amount,
+          amountToWork.customPrice
+        );
+        setItsSavingNow(false);
 
         return;
       }
 
       // Comprobar si es una resta o suma
-      if (cookedAmount < currentAmount) {
+      if (amountToWork.amount < localCurrentAmount) {
         // Lógica de resta
         console.log("Iniciando proceso de resta");
         await restaOutputs(
           invoice,
           productDoc,
-          cookedAmount,
-          currentAmount,
-          customPrice
+          amountToWork.amount,
+          localCurrentAmount,
+          amountToWork.customPrice
         );
-      } else if (cookedAmount > currentAmount) {
+      } else if (amountToWork.amount > localCurrentAmount) {
         // Lógica de suma
         console.log("Iniciando proceso de suma");
         await sumaOutputs(
           invoice,
           productDoc,
-          cookedAmount,
-          currentAmount,
-          customPrice
+          amountToWork.amount,
+          localCurrentAmount,
+          amountToWork.customPrice
         );
       }
+
+      setLocalCurrentAmount(amountToWork.amount);
+      setLocalCurrentAmountHistory([
+        ...localCurrentAmountHistory,
+        amountToWork.amount,
+      ]);
+      if (localCurrentAmountHistory.length > 10) {
+        localCurrentAmountHistory.shift();
+      }
+      setItsSavingNow(false);
     }
 
     manage();
@@ -162,9 +225,10 @@ export function AddOutputBase({
     cookedAmount,
     customPrice,
     productDoc,
-    currentAmount,
+    localCurrentAmount,
     humanAmountChanged,
     lastCustomPrice,
+    itsSavingNow,
   ]);
 
   return (
@@ -174,7 +238,7 @@ export function AddOutputBase({
           type="number"
           value={amount}
           min={0}
-          max={currentStock + currentAmount}
+          max={currentStock + serverCurrentAmount}
           onChange={(e) => {
             const value = e.target.value;
             setAmount(Number(value));

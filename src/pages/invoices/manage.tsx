@@ -13,9 +13,11 @@ import { updateInvoice } from "@/tools/invoices/updateInvoice";
 import { SellersDoc } from "@/tools/sellers/create";
 import { DocumentReference, QueryDocumentSnapshot } from "firebase/firestore";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import { useProductResults } from "@/hooks/useProductResults";
+import { InvoiceTotals } from "@/components/pages/invoice/manage/InvoiceTotals";
+import { isEqual } from "lodash";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -37,6 +39,7 @@ function InvoiceManager() {
   const [productsResults, setProductsResults] = useState<
     Record<string, productResult>
   >({});
+  const prevProductsResultsRef = useRef<Record<string, productResult>>({});
   const [creditResult, setCreditResult] = useState(0);
   const [bills, setBills] = useState<Record<string, bill>>({});
   const [money, setMoney] = useState({
@@ -77,9 +80,12 @@ function InvoiceManager() {
   }, [id, selectedSeller]);
 
   useEffect(() => {
-    const results = calculateResults(productsResults);
-    console.log("Resultados totales:", results);
-  }, [productsResults]);
+    if (!isEqual(prevProductsResultsRef.current, productsResults)) {
+      const results = calculateResults(productsResults);
+      console.log("Resultados totales:", results);
+      prevProductsResultsRef.current = productsResults;
+    }
+  }, [productsResults, calculateResults]);
 
   return (
     <MainContainer>
@@ -99,6 +105,11 @@ function InvoiceManager() {
       <Products
         selectedSeller={selectedSeller}
         setProductsResults={setProductsResults}
+      />
+
+      <InvoiceTotals
+        totalResults={totalResults}
+        hasInventory={selectedSeller?.data()?.hasInventory}
       />
 
       <FlexContainer

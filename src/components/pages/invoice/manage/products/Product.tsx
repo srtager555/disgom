@@ -18,6 +18,8 @@ import { Commission } from "./Commission";
 import { Profit } from "./Profit";
 import { Fold } from "./fold";
 import { Devolution } from "./Devolution";
+import { inventory_output } from "@/tools/sellers/invetory/addProduct";
+import { getInventoryByProduct } from "@/tools/invoices/getInventoryByProduct";
 
 const GrabButton = styled.button`
   display: inline-block;
@@ -40,6 +42,7 @@ type props = {
   doc: QueryDocumentSnapshot<productDoc>;
   selectedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
   hideProductWithoutStock: boolean;
+  allInventory: DocumentSnapshot<inventory_output>[];
 };
 
 export type someHumanChangesDetected = {
@@ -59,6 +62,7 @@ export const MemoProduct = memo(Product, (prev, next) => {
     return false;
   if (prevDocID !== nextDocID) return false;
   if (prevSellerID !== nextSellerID) return false;
+  if (!isEqual(prev.allInventory, next.allInventory)) return false;
 
   return true;
 });
@@ -67,6 +71,7 @@ export function Product({
   doc,
   selectedSeller,
   hideProductWithoutStock,
+  allInventory,
 }: props) {
   const [amount, setAmount] = useState<undefined | number>(undefined);
   const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
@@ -75,6 +80,10 @@ export function Product({
   const [warn, setWarn] = useState(false);
   const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
   const rtDocData = rtDoc.data();
+  const inventory = useMemo(() => {
+    return getInventoryByProduct(allInventory, doc.ref);
+  }, [allInventory, doc.ref]);
+
   const currentStock = useMemo(() => {
     const data = rtDoc.data();
     if (!data) return 0;
@@ -119,7 +128,9 @@ export function Product({
       <Column gridColumn="2 / 5">{rtDocData?.name}</Column>
 
       {/* ここから下は、src/components/pages/invoice/manage/products/Product.tsx のコード */}
-      {selectedSellerData?.hasInventory && <Column>0</Column>}
+      {selectedSellerData?.hasInventory && (
+        <Column>{inventory.totalAmount}</Column>
+      )}
       <AddOutput
         productDoc={rtDoc}
         customPrice={customPrice}
@@ -133,6 +144,7 @@ export function Product({
         customPrice={customPrice}
         seletedSeller={selectedSeller}
         someHumanChangesDetected={someHumanChangesDetected}
+        inventory={inventory.outputs}
       />
       <ProductSold
         remainStock={remainStock}

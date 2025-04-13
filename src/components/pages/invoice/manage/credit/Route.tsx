@@ -2,12 +2,11 @@ import { Select } from "@/components/Inputs/select";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { FlexContainer } from "@/styles/index.styles";
 import { updateDoc } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 export function Route() {
   const { invoice } = useInvoice();
-  const [route, setRoute] = useState<string>("");
-  const routes = [
+  const r = [
     { name: "Seleccionar", value: "0", disabled: true, selected: true },
     { name: "Ruta 1", value: "1" },
     { name: "Ruta 2", value: "2" },
@@ -16,17 +15,23 @@ export function Route() {
     { name: "Ruta 5", value: "5" },
     { name: "Ruta 6", value: "6" },
   ];
+  const routes = useMemo(() => {
+    const router = invoice?.data()?.route;
 
-  // Update the route of the invoice
-  useEffect(() => {
-    async function updateRoute() {
-      if (!invoice) return;
-      await updateDoc(invoice.ref, {
-        route: Number(route),
-      });
-    }
-    updateRoute();
-  }, [route, invoice]);
+    return r.map((r) => ({
+      ...r,
+      selected: Number(r.value) == router,
+    }));
+  }, [invoice]);
+
+  const handlerUpdateRoute = async (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    if (!invoice) return;
+    await updateDoc(invoice.ref, {
+      route: Number(e.target.value),
+    });
+  };
 
   return (
     <FlexContainer
@@ -39,11 +44,7 @@ export function Route() {
       <h2>
         ¿Que <b>Ruta</b> toca hoy?
       </h2>
-      <Select
-        name="route"
-        options={routes}
-        onChange={(e) => setRoute(e.target.value)}
-      />
+      <Select name="route" options={routes} onChange={handlerUpdateRoute} />
     </FlexContainer>
   );
 }

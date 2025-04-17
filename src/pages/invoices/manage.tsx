@@ -2,7 +2,7 @@ import { Products } from "@/components/pages/invoice/manage/products";
 import { SelectSeller } from "@/components/pages/invoice/manage/SelectSeller";
 import { bill, Bills } from "@/components/pages/invoice/Product/closing/Bills";
 import { Close } from "@/components/pages/invoice/Product/closing/Close";
-import { Credit } from "@/components/pages/invoice/Product/closing/closed/Credit";
+// import { Credit } from "@/components/pages/invoice/Product/closing/closed/Credit";
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { SelectClient } from "@/components/pages/invoice/SelectClient";
 import useQueryParams from "@/hooks/getQueryParams";
@@ -11,13 +11,15 @@ import { Container, FlexContainer } from "@/styles/index.styles";
 import { createInvoice } from "@/tools/invoices/createInvoice";
 import { updateInvoice } from "@/tools/invoices/updateInvoice";
 import { SellersDoc } from "@/tools/sellers/create";
-import { DocumentReference, QueryDocumentSnapshot } from "firebase/firestore";
+import { QueryDocumentSnapshot } from "firebase/firestore";
 import { useRouter } from "next/router";
 import { useEffect, useState, useRef } from "react";
 import styled from "styled-components";
 import { useProductResults } from "@/hooks/useProductResults";
 import { InvoiceTotals } from "@/components/pages/invoice/manage/InvoiceTotals";
 import { isEqual } from "lodash";
+import { Credit } from "@/components/pages/invoice/manage/credit";
+import { Route } from "@/components/pages/invoice/manage/credit/Route";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -82,7 +84,7 @@ function InvoiceManager() {
   useEffect(() => {
     if (!isEqual(prevProductsResultsRef.current, productsResults)) {
       const results = calculateResults(productsResults);
-      console.log("Resultados totales:", results);
+      // console.log("Resultados totales:", results);
       prevProductsResultsRef.current = productsResults;
     }
   }, [productsResults, calculateResults]);
@@ -112,7 +114,15 @@ function InvoiceManager() {
         hasInventory={selectedSeller?.data()?.hasInventory}
       />
 
+      <Route />
       <FlexContainer
+        styles={{ justifyContent: "space-between", width: "100%" }}
+      >
+        <Credit />
+        <Bills bills={bills} setBills={setBills} />
+      </FlexContainer>
+
+      {/* <FlexContainer
         styles={{
           width: "100%",
           flexDirection: "column",
@@ -133,8 +143,7 @@ function InvoiceManager() {
             </>
           )}
         </Container>
-        <Bills bills={bills} setBills={setBills} />
-      </FlexContainer>
+      </FlexContainer> */}
       {invoice && (
         <Close
           totals={undefined}

@@ -57,7 +57,7 @@ export type invoiceType = {
     paid: boolean;
     paid_at: Timestamp | null;
   } | null;
-  newCredits: Array<DocumentReference<credit>> | null;
+  newCredits: Array<DocumentReference<credit>>;
   disabled: boolean;
 };
 
@@ -106,7 +106,7 @@ export async function createInvoice(data: Pick<invoiceType, "seller_ref">) {
     bills: null,
     money: null,
     credit: null,
-    newCredits: null,
+    newCredits: [],
     disabled: false,
     last_inventory_ref: last_inventory?.ref || null,
   });

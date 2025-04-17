@@ -6,7 +6,6 @@ import {
   limit,
   orderBy,
   query,
-  QueryDocumentSnapshot,
   where,
 } from "firebase/firestore";
 import { SellersDoc } from "../create";
@@ -30,10 +29,10 @@ export async function getCredits(
 }
 
 export async function getClientCredits(
-  clientCreditDoc: QueryDocumentSnapshot<clientCredit>
+  clientCreditDocRef: DocumentReference<clientCredit>
 ) {
   const coll = collection(
-    clientCreditDoc.ref,
+    clientCreditDocRef,
     "credits"
   ) as CollectionReference<credit>;
   const q = query(coll, orderBy("created_at", "desc"), limit(1));

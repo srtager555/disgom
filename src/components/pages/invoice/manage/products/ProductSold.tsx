@@ -48,8 +48,6 @@ export function ProductSoldBase({
 }: props) {
   const invoiceDoc = useGetInvoiceByQuery();
 
-  console.log("remainStockTotals", remainStockTotals);
-
   useEffect(() => {
     setWarn(remainStockTotals.amount < 0);
   }, [remainStockTotals.amount, setWarn]);

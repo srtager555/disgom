@@ -176,7 +176,7 @@ export const GridContainer = styled(StyledDiv)<{
   grid-auto-flow: column;
   grid-auto-columns: ${(props) => props.customWidth || "80px"};
 
-  overflow: hidden;
+  /* overflow: hidden; */
   white-space: nowrap;
   border-bottom: 1px solid ${globalCSSVars["--detail"]};
   background-color: ${globalCSSVars["--background"]};

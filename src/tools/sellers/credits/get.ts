@@ -4,15 +4,26 @@ import {
   DocumentReference,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
+  QueryDocumentSnapshot,
   where,
 } from "firebase/firestore";
 import { SellersDoc } from "../create";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { clientCredit, credit } from "./create";
+import { Dispatch, SetStateAction } from "react";
 
-export async function getCredits(
+/**
+ * Realtime credits
+ * @param route the route
+ * @param seller_ref the seller refference
+ * @param all if we need get all credit insteance of by route
+ * @returns the function to cancel the subcription
+ */
+export function getCredits(
+  setter: Dispatch<SetStateAction<Array<QueryDocumentSnapshot<clientCredit>>>>,
   route: number,
   seller_ref: DocumentReference<SellersDoc>,
   all: boolean = false
@@ -23,9 +34,12 @@ export async function getCredits(
   ) as CollectionReference<clientCredit>;
 
   const q = query(creditColl, where("route", "==", route));
-  const clients = await getDocs(all ? creditColl : q);
 
-  return clients;
+  const subcription = onSnapshot(all ? creditColl : q, (snap) => {
+    setter(snap.docs);
+  });
+
+  return subcription;
 }
 
 export async function getClientCredits(

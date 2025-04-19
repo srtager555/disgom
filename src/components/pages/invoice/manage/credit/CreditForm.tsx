@@ -4,9 +4,13 @@ import { useInvoice } from "@/contexts/InvoiceContext";
 import { Form, Button } from "@/styles/Form.styles";
 import { FlexContainer } from "@/styles/index.styles";
 import { createClientCredit } from "@/tools/sellers/credits/create";
-import { useRef } from "react";
+import { Dispatch, SetStateAction, useRef } from "react";
 
-export const CreditForm = () => {
+export const CreditForm = ({
+  setShowForm,
+}: {
+  setShowForm: Dispatch<SetStateAction<boolean>>;
+}) => {
   const { invoice } = useInvoice();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -14,9 +18,8 @@ export const CreditForm = () => {
     e.preventDefault();
     const route = invoice?.data()?.route;
     const seller_ref = invoice?.data()?.seller_ref;
-    console.log("before", route, seller_ref);
+
     if (!route || !seller_ref) return;
-    console.log("after");
 
     const target = e.target as HTMLFormElement & {
       creditName: HTMLInputElement;
@@ -35,6 +38,7 @@ export const CreditForm = () => {
     );
 
     formRef.current?.reset();
+    setShowForm(false);
   };
 
   return (

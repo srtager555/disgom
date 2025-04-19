@@ -19,7 +19,6 @@ import { useProductResults } from "@/hooks/useProductResults";
 import { InvoiceTotals } from "@/components/pages/invoice/manage/InvoiceTotals";
 import { isEqual } from "lodash";
 import { Credit } from "@/components/pages/invoice/manage/credit";
-import { Route } from "@/components/pages/invoice/manage/credit/Route";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -114,7 +113,6 @@ function InvoiceManager() {
         hasInventory={selectedSeller?.data()?.hasInventory}
       />
 
-      <Route />
       <FlexContainer
         styles={{ justifyContent: "space-between", width: "100%" }}
       >

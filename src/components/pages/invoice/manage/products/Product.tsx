@@ -168,14 +168,14 @@ export function Product({
       $hide={false}
       $hasInventory={selectedSellerData?.hasInventory}
       $withoutStock={currentStock}
-      $after={`${currentStock} / ${rtDocData?.stock.length}`}
       $fold={!isFolded}
       $warn={warn}
     >
       <Column>
         <GrabButton>-</GrabButton>
       </Column>
-      <Column gridColumn="2 / 5">{rtDocData?.name}</Column>
+      <Column>{currentStock}</Column>
+      <Column gridColumn="3 / 6">{rtDocData?.name}</Column>
 
       {/* ここから下は、src/components/pages/invoice/manage/products/Product.tsx のコード */}
       {selectedSellerData?.hasInventory && (

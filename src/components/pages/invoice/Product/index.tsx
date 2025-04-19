@@ -50,10 +50,21 @@ const ColumnGrid = styled(Container)<{
   $gridColumn?: string;
   $printGridColumn?: string;
   $title?: string;
+  $removeBorder?: boolean;
 }>`
   grid-column: ${(props) => props.$gridColumn};
   width: 100%;
-  height: calc(25px + 10px);
+  height: 100%;
+  ${(props) => {
+    if (props.$removeBorder) return;
+
+    return css`
+      &:last-child {
+        border-right: none;
+      }
+      border-right: 1px solid ${globalCSSVars["--detail"]};
+    `;
+  }}
 
   @media print {
     display: ${(props) => (props.$printGridColumn ? "block" : "none")};
@@ -91,7 +102,7 @@ const ColumnGrid = styled(Container)<{
 `;
 
 interface ColumnBaseProps extends React.HtmlHTMLAttributes<HTMLDivElement> {
-  children: children;
+  children?: children;
   className?: string;
   gridColumn?: string;
   printGridColumn?: string;
@@ -123,13 +134,9 @@ function ColumnBase({
 }
 
 export const Column = styled(ColumnBase)<{
-  $removeBorder?: boolean;
   $left?: boolean;
   $textAlign?: string;
 }>`
-  ${(props) =>
-    !props.$removeBorder && `outline: solid 1px ${globalCSSVars["--detail"]};`}
-
   @media print {
     padding-right: 10px;
     ${(props) => props.$left && `text-align: end;`}

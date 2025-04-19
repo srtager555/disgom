@@ -181,6 +181,14 @@ export const GridContainer = styled(StyledDiv)<{
   border-bottom: 1px solid ${globalCSSVars["--detail"]};
   background-color: ${globalCSSVars["--background"]};
 
+  border-left: 1px solid ${globalCSSVars["--detail"]};
+  border-right: 1px solid ${globalCSSVars["--detail"]};
+  border-bottom: 1px solid ${globalCSSVars["--detail"]};
+
+  &:first-child {
+    border-top: 1px solid ${globalCSSVars["--detail"]};
+  }
+
   &:nth-child(odd) {
     background-color: ${globalCSSVars["--background-highlight"]};
   }

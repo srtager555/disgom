@@ -61,23 +61,13 @@ export const CreditClient = ({
 
       // 3. Intentar obtener el Snapshot si la info existe en newCredits
       if (creditInfoForClient) {
-        try {
-          const creditDoc = await getDoc(creditInfoForClient);
-          if (creditDoc.exists()) {
-            console.log("se obtuvo el credit correctamente");
-            existingCreditSnapshot = creditDoc;
-          } else {
-            console.warn(
-              `Referencia de crédito en newCredits para ${clientCredit.id} apunta a un documento inexistente. Se creará uno nuevo.`
-            );
-            // Tratar como si no existiera para proceder a la creación
-          }
-        } catch (error) {
-          console.error(
-            `Error al obtener documento de crédito desde referencia para ${clientCredit.id}:`,
-            error
+        const creditDoc = await getDoc(creditInfoForClient);
+        if (creditDoc.exists()) {
+          existingCreditSnapshot = creditDoc;
+        } else {
+          console.warn(
+            `Referencia de crédito en newCredits para ${clientCredit.id} apunta a un documento inexistente. Se creará uno nuevo.`
           );
-          // Considerar si se debe intentar crear uno nuevo o mostrar error
         }
       }
 
@@ -85,52 +75,33 @@ export const CreditClient = ({
       if (existingCreditSnapshot) {
         setCurrentCredit(existingCreditSnapshot);
         setAmount(existingCreditSnapshot.data()?.amount ?? 0);
-        console.log(
-          `Usando crédito actual de la facturapara cliente ${clientCredit.id}`
-        );
       } else {
         // 5. Si NO está en `invoice.data().newCredits` (o la referencia era inválida), crearlo.
         console.log(
           `Crédito NO encontrado en invoice.data().newCredits para cliente ${clientCredit.id}, creando nuevo...`
         );
 
-        try {
-          const lastCredit = await getClientCredits(clientCredit.ref);
+        const lastCredit = await getClientCredits(clientCredit.ref);
 
-          const newCurrentRef = await createCredit({
-            amount: 0, // Iniciar en 0 para la nueva factura
-            client_ref: clientCredit.ref,
-            last_amount: lastCredit?.data()?.amount ?? null,
-            last_credit: lastCredit?.ref ?? null,
-            next_credit: null,
-            invoice_ref: invoice.ref,
-            seller_ref: invoice.data().seller_ref, // Asegúrate que seller_ref exista
+        const newCurrentRef = await createCredit({
+          amount: 0, // Iniciar en 0 para la nueva factura
+          client_ref: clientCredit.ref,
+          last_amount: lastCredit?.data()?.amount ?? null,
+          last_credit: lastCredit?.ref ?? null,
+          next_credit: null,
+          invoice_ref: invoice.ref,
+          seller_ref: invoice.data().seller_ref, // Asegúrate que seller_ref exista
+        });
+
+        if (lastCredit)
+          await updateCredits(lastCredit.ref, {
+            next_credit: lastCredit,
           });
 
-          if (lastCredit)
-            await updateCredits(lastCredit.ref, {
-              next_credit: lastCredit,
-            });
+        const newCurrent = await getDoc(newCurrentRef);
 
-          const newCurrent = await getDoc(newCurrentRef);
-
-          if (newCurrent.exists()) {
-            setCurrentCredit(newCurrent as DocumentSnapshot<credit>);
-            setAmount(0);
-
-            console.log(`Nuevo crédito creado para cliente ${clientCredit.id}`);
-          } else {
-            console.error(
-              "Error: No se pudo obtener el documento del crédito recién creado."
-            );
-            setCurrentCredit(undefined); // Limpiar estado en caso de error
-            setAmount(0);
-          }
-        } catch (error) {
-          console.error("Error al crear el crédito:", error);
-          setCurrentCredit(undefined); // Limpiar estado en caso de error
-          setAmount(0);
-        }
+        setCurrentCredit(newCurrent as DocumentSnapshot<credit>);
+        setAmount(0);
       }
     };
 
@@ -159,12 +130,7 @@ export const CreditClient = ({
 
       const currentAmountInDb = currentCredit.data()?.amount ?? 0;
 
-      if (newAmount === currentAmountInDb) {
-        console.log(
-          `Guardado omitido para ${clientCredit.id}: Monto (${newAmount}) no ha cambiado.`
-        );
-        return;
-      }
+      if (newAmount === currentAmountInDb) return;
 
       console.log(`Guardando crédito para ${clientCredit.id}: ${newAmount}`);
       try {

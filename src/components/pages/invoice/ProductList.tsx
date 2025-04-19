@@ -65,15 +65,22 @@ export const ProductContainer = styled.div<{
   /* padding: ${(props) =>
     !props.$hide ? (props.$header ? "10px" : "5px") : 0} 0; */
   visibility: ${(props) => (props.$hide ? "hidden" : "visible")};
-  border-bottom: 1px solid ${globalCSSVars["--detail"]};
   grid-template-columns: ${(props) => {
-    if (props.$closing) return "repeat(17, 75px)";
+    if (props.$closing) return "15px 50px repeat(17, 75px)";
     if (props.$hasInventory) {
-      return "15px repeat(12, 75px)";
+      return "15px 50px repeat(12, 75px)";
     } else {
-      return "15px repeat(12, 75px)";
+      return "15px 50px repeat(12, 75px)";
     }
   }};
+
+  border-left: 1px solid ${globalCSSVars["--detail"]};
+  border-right: 1px solid ${globalCSSVars["--detail"]};
+  border-bottom: 1px solid ${globalCSSVars["--detail"]};
+
+  &:first-child {
+    border-top: 1px solid ${globalCSSVars["--detail"]};
+  }
 
   &:nth-child(even) {
     ${(props) => {
@@ -259,28 +266,24 @@ export const Descriptions = ({
   hasInventory: boolean | undefined;
 }) => (
   <ProductContainer $header $withoutStock={1} $hasInventory={hasInventory}>
-    <Column gridColumn="2 / 5" printGridColumn="1 / 8">
+    <Column>-</Column>
+    <Column>Inventario</Column>
+    <Column gridColumn="3 / 6" printGridColumn="1 / 8">
       Producto
     </Column>
-    <Column gridColumn="" printGridColumn="8 / 10" hide={!hasInventory}>
+    <Column printGridColumn="8 / 10" hide={!hasInventory}>
       Guardo
     </Column>
-    <Column gridColumn="">{hasInventory ? "Consig." : "Cantidad"}</Column>
-    <Column gridColumn="" hide={!hasInventory}>
-      Devol.
-    </Column>
-    <Column gridColumn="" printGridColumn="-4 / -6" hide={!hasInventory}>
+    <Column>{hasInventory ? "Consig." : "Cantidad"}</Column>
+    <Column hide={!hasInventory}>Devol.</Column>
+    <Column printGridColumn="-4 / -6" hide={!hasInventory}>
       Venta
     </Column>
-    <Column gridColumn="" printGridColumn="-1 / -4">
-      Precio
-    </Column>
+    <Column printGridColumn="-1 / -4">Precio</Column>
     <Column gridColumn={hasInventory ? "" : "-3 / -4"}>Total</Column>
-    <Column gridColumn="" hide={!hasInventory}>
-      Comision
-    </Column>
-    <Column gridColumn="-2 / -3">Utilidad</Column>
-    <Column gridColumn="-1 / -2">
+    <Column hide={!hasInventory}>Comision</Column>
+    <Column>Utilidad</Column>
+    <Column>
       <Container styles={{ marginRight: "10px" }}>
         <Icon iconType="fold" />
       </Container>

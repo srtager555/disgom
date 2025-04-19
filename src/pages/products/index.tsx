@@ -39,7 +39,7 @@ const Page: NextPageWithLayout = () => {
         const product_value = totalStock * price;
 
         return (
-          <GridContainer grisTemplateColumns="200px" key={i}>
+          <GridContainer $gridTemplateColumns="200px" key={i}>
             <Column>{data.name}</Column>
             <Column>0</Column>
             <Column>0</Column>
@@ -58,7 +58,7 @@ const Page: NextPageWithLayout = () => {
 };
 
 const Description = () => (
-  <GridContainer grisTemplateColumns="200px">
+  <GridContainer $gridTemplateColumns="200px">
     <Column>Producto</Column>
     <Column $textAlign="center">Cargado</Column>
     <Column $textAlign="center">Vendido</Column>

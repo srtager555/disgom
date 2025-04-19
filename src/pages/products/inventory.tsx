@@ -51,7 +51,7 @@ const productNameWidth = "200px";
 const DescriptionWithSellers = () => {
   const sellers = useGetSellers();
   return (
-    <GridContainer grisTemplateColumns={productNameWidth}>
+    <GridContainer $gridTemplateColumns={productNameWidth}>
       <Column>Productos</Column>
       {sellers?.docs
         .sort((a, b) => a.data().name.localeCompare(b.data().name))
@@ -75,7 +75,7 @@ type props = {
 
 const ProductInventory = ({ name }: props) => {
   return (
-    <GridContainer grisTemplateColumns={productNameWidth}>
+    <GridContainer $gridTemplateColumns={productNameWidth}>
       <Column>{name}</Column>
       <Column>0</Column>
     </GridContainer>

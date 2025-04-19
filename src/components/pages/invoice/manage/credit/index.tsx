@@ -41,7 +41,7 @@ export function Credit() {
       </FlexContainer>
       {showForm && <CreditForm setShowForm={setShowForm} />}
       <CreditHeader />
-      <GridContainer grisTemplateColumns="repeat(4, 75px) 1fr">
+      <GridContainer $gridTemplateColumns="repeat(4, 75px) 1fr">
         {credits.map((credit) => (
           <CreditClient key={credit.id} clientCredit={credit} />
         ))}

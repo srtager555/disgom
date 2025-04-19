@@ -167,14 +167,14 @@ export const BGlass = styled.div`
 `;
 
 export const GridContainer = styled(StyledDiv)<{
-  grisTemplateColumns?: string;
-  customWidth?: string;
+  $gridTemplateColumns?: string;
+  $customWidth?: string;
 }>`
   display: grid;
   grid-template-columns: ${(props) =>
-    props.grisTemplateColumns || "repeat(auto-fill, minmax(30px, 60px))"};
+    props.$gridTemplateColumns || "repeat(auto-fill, minmax(30px, 60px))"};
   grid-auto-flow: column;
-  grid-auto-columns: ${(props) => props.customWidth || "80px"};
+  grid-auto-columns: ${(props) => props.$customWidth || "80px"};
 
   /* overflow: hidden; */
   white-space: nowrap;

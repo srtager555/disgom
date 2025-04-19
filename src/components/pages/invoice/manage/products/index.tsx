@@ -57,16 +57,6 @@ export function Products({ selectedSeller, setProductsResults }: props) {
               setProductsResults={setProductsResults}
             />
           );
-          return (
-            <P
-              key={i}
-              product={product}
-              hasInventory={false}
-              setProductsResults={setProductsResults}
-              hideWithoutStock={hideProductWithoutStock}
-              previusOutputsToEdit={[]}
-            />
-          );
         })}
       </Container>
     </Container>

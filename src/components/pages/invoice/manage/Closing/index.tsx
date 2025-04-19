@@ -1,12 +1,11 @@
 import { Container } from "@/styles/index.styles";
 import styled from "styled-components";
-import { Column, Input } from "..";
-import { totals_sold } from "./manager";
-import { bill } from "./Bills";
-import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
+import { Column, Input } from "../../Product";
+// import { bill } from "./Bills";
+import { useEffect, useMemo, useState } from "react";
 import { numberParser } from "@/tools/numberPaser";
-import { invoiceType } from "@/tools/invoices/createInvoice";
-import { DocumentSnapshot } from "firebase/firestore";
+import { TotalResults } from "@/hooks/useProductResults";
+import { useInvoice } from "@/contexts/InvoiceContext";
 
 const GridCon = styled(Container)`
   display: grid;
@@ -17,25 +16,19 @@ const GridCon = styled(Container)`
 `;
 
 type props = {
-  totals: totals_sold | undefined;
+  totals: TotalResults | undefined;
   credits: number;
-  bills: Record<string, bill>;
-  setMoney: Dispatch<SetStateAction<{ cash: number; deposit: number }>>;
-  invoice: DocumentSnapshot<invoiceType>;
 };
 
-export function Close({ totals, credits, bills, setMoney, invoice }: props) {
+export function Close({ totals, credits }: props) {
+  const { invoice } = useInvoice();
   const [cash, setCash] = useState(0);
   const [deposit, setDeposit] = useState(0);
-  const billsTotal = useMemo(
-    () => Object.values(bills).reduce((before, now) => before + now.amount, 0),
-    [bills]
-  );
   const [editCash, setEditCash] = useState(false);
   const [editDeposit, setEditDeposit] = useState(false);
 
   const money = useMemo(() => {
-    const data = invoice.data();
+    const data = invoice?.data();
     return data?.money;
   }, [invoice]);
 
@@ -58,22 +51,23 @@ export function Close({ totals, credits, bills, setMoney, invoice }: props) {
       <h2 style={{ textAlign: "center" }}>Liquidación</h2>
       <GridCon>
         <Column gridColumn="">Ventas</Column>
-        <Column gridColumn="">{numberParser(totals.total_sale)}</Column>
+        <Column gridColumn="">{numberParser(totals.totalSold)}</Column>
         <Column gridColumn="">Ganancias</Column>
         <Column gridColumn="">
-          {numberParser(totals.total_profit + totals.total_seller_proft)}
+          {numberParser(totals.totalProfit + totals.totalSellerProfit)}
         </Column>
         <Column gridColumn="">Diff. de Credito</Column>
         <Column gridColumn="">{numberParser(credits)}</Column>
         <Column gridColumn="">Vendedor</Column>
-        <Column gridColumn="">{numberParser(totals.total_seller_proft)}</Column>
+        <Column gridColumn="">{numberParser(totals.totalSellerProfit)}</Column>
         <Column gridColumn="">Gastos</Column>
-        <Column gridColumn="">-{numberParser(billsTotal)}</Column>
+        {/* <Column gridColumn="">-{numberParser(billsTotal)}</Column> */}
+        <Column gridColumn="">-0</Column>
         <Column gridColumn="">Empresa</Column>
-        <Column gridColumn="">{numberParser(totals.total_profit)}</Column>
+        <Column gridColumn="">{numberParser(totals.totalProfit)}</Column>
         <Column gridColumn="">Liquidación</Column>
         <Column gridColumn="">
-          {numberParser(totals.total_sale + credits - billsTotal)}
+          {numberParser(totals.totalSold + credits - 0)}
         </Column>
         <Column gridColumn="1 / 2">Depositos</Column>
         <Column gridColumn="">
@@ -106,26 +100,23 @@ export function Close({ totals, credits, bills, setMoney, invoice }: props) {
           />
         </Column>
         <Column gridColumn="1 / 2">
-          {deposit + cash - (totals.total_sale + credits - billsTotal) < 0
+          {deposit + cash - (totals.totalSold + credits - 0) < 0
             ? "Faltan"
-            : deposit + cash - (totals.total_sale + credits - billsTotal) === 0
+            : deposit + cash - (totals.totalSold + credits - 0) === 0
             ? "¡Perfecto!"
             : "Sobran"}
         </Column>
         <Column gridColumn="">
           <p
             style={
-              deposit + cash - (totals.total_sale + credits - billsTotal) < 0
+              deposit + cash - (totals.totalSold + credits - 0) < 0
                 ? { color: "red", fontWeight: "bold" }
-                : deposit + cash - (totals.total_sale + credits - billsTotal) >
-                  0
+                : deposit + cash - (totals.totalSold + credits - 0) > 0
                 ? { fontStyle: "italic" }
                 : { color: "green", fontWeight: "bold" }
             }
           >
-            {numberParser(
-              deposit + cash - (totals.total_sale + credits - billsTotal)
-            )}
+            {numberParser(deposit + cash - (totals.totalSold + credits - 0))}
           </p>
         </Column>
       </GridCon>

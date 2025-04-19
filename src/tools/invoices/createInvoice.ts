@@ -18,9 +18,9 @@ import {
 import { SellersDoc } from "../sellers/create";
 import { client } from "../sellers/createClient";
 import { outputType } from "../products/addOutputs";
-import { bill } from "@/components/pages/invoice/Product/closing/Bills";
 import { inventory } from "../sellers/invetory/create";
 import { credit } from "../sellers/credits/create";
+import { rawMoneyType } from "@/components/pages/invoice/manage/Closing/Money";
 
 export type invoiceType = {
   created_at?: Timestamp;
@@ -35,24 +35,12 @@ export type invoiceType = {
   outputs_sold: Record<string, Array<DocumentReference<outputType>>>;
   // inventory_ref: null;
   last_inventory_ref: DocumentReference<inventory> | null;
-  total_sold: {
-    normal: number;
-    withInventory: number;
-  };
-  total_cost: {
-    normal: number;
-    withInventory: number;
-  };
-  total_proft: {
-    normal: number;
-    withInventory: number;
-  };
+  total_sold: number;
+  total_cost: number;
+  total_proft: number;
   route: number | null;
-  bills: Array<bill> | null;
-  money: {
-    deposit: number;
-    cash: number;
-  } | null;
+  bills: number;
+  money: rawMoneyType;
   credit: {
     paid: boolean;
     paid_at: Timestamp | null;
@@ -90,23 +78,14 @@ export async function createInvoice(data: Pick<invoiceType, "seller_ref">) {
     products_outputs: {},
     devolution: null,
     outputs_sold: {},
-    total_sold: {
-      normal: 0,
-      withInventory: 0,
-    },
-    total_cost: {
-      normal: 0,
-      withInventory: 0,
-    },
-    total_proft: {
-      normal: 0,
-      withInventory: 0,
-    },
+    total_sold: 0,
+    total_cost: 0,
+    total_proft: 0,
     route: null,
-    bills: null,
-    money: null,
+    bills: 0,
+    money: {},
     credit: null,
-    newCredits: [],
+    newCredits: {},
     disabled: false,
     last_inventory_ref: last_inventory?.ref || null,
   });

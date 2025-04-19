@@ -8,6 +8,7 @@ import { QueryDocumentSnapshot } from "firebase/firestore";
 import { CreditClient } from "./CreditClient";
 import { CreditForm } from "./CreditForm";
 import { CreditHeader } from "./CreditHeader";
+import { Route } from "./Route";
 
 export function Credit() {
   const { invoice } = useInvoice();
@@ -31,21 +32,25 @@ export function Credit() {
 
   return (
     <Container styles={{ width: "48%", marginRight: "2%" }}>
+      <h2>Creditos</h2>
       <FlexContainer
         styles={{ justifyContent: "space-between", marginBottom: "20px" }}
       >
-        <h2>Creditos</h2>
+        <Route />
         <Button onClick={() => setShowForm(!showForm)}>
           {showForm ? "Ocultar" : "Agregar nuevo"}
         </Button>
       </FlexContainer>
       {showForm && <CreditForm setShowForm={setShowForm} />}
       <CreditHeader />
-      <GridContainer $gridTemplateColumns="repeat(4, 75px) 1fr">
-        {credits.map((credit) => (
-          <CreditClient key={credit.id} clientCredit={credit} />
-        ))}
-      </GridContainer>
+      {credits.map((credit) => (
+        <GridContainer
+          key={credit.id}
+          $gridTemplateColumns="repeat(4, 75px) 1fr"
+        >
+          <CreditClient clientCredit={credit} />
+        </GridContainer>
+      ))}
     </Container>
   );
 }

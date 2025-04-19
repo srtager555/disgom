@@ -128,8 +128,7 @@ export const Column = styled(ColumnBase)<{
   $textAlign?: string;
 }>`
   ${(props) =>
-    !props.$removeBorder &&
-    `border-right: solid 1px ${globalCSSVars["--detail"]};`}
+    !props.$removeBorder && `outline: solid 1px ${globalCSSVars["--detail"]};`}
 
   @media print {
     padding-right: 10px;

@@ -1,24 +1,30 @@
 import { Products } from "@/components/pages/invoice/manage/products";
 import { SelectSeller } from "@/components/pages/invoice/manage/SelectSeller";
-import { bill, Bills } from "@/components/pages/invoice/Product/closing/Bills";
-import { Close } from "@/components/pages/invoice/Product/closing/Close";
+// import { bill, Bills } from "@/components/pages/invoice/Product/closing/Bills";
+import { Close } from "@/components/pages/invoice/manage/Closing";
 // import { Credit } from "@/components/pages/invoice/Product/closing/closed/Credit";
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { SelectClient } from "@/components/pages/invoice/SelectClient";
 import useQueryParams from "@/hooks/getQueryParams";
 import { useInvoice, InvoiceProvider } from "@/contexts/InvoiceContext";
 import { Container, FlexContainer } from "@/styles/index.styles";
-import { createInvoice } from "@/tools/invoices/createInvoice";
+import { createInvoice, invoiceType } from "@/tools/invoices/createInvoice";
 import { updateInvoice } from "@/tools/invoices/updateInvoice";
 import { SellersDoc } from "@/tools/sellers/create";
-import { QueryDocumentSnapshot } from "firebase/firestore";
+import {
+  PartialWithFieldValue,
+  QueryDocumentSnapshot,
+  updateDoc,
+} from "firebase/firestore";
 import { useRouter } from "next/router";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import styled from "styled-components";
 import { useProductResults } from "@/hooks/useProductResults";
 import { InvoiceTotals } from "@/components/pages/invoice/manage/InvoiceTotals";
 import { isEqual } from "lodash";
 import { Credit } from "@/components/pages/invoice/manage/credit";
+
+export type rawCreditResult = Record<string, number>;
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -41,12 +47,13 @@ function InvoiceManager() {
     Record<string, productResult>
   >({});
   const prevProductsResultsRef = useRef<Record<string, productResult>>({});
-  const [creditResult, setCreditResult] = useState(0);
-  const [bills, setBills] = useState<Record<string, bill>>({});
-  const [money, setMoney] = useState({
-    cash: 0,
-    deposit: 0,
-  });
+  const [rawCreditResult, setRawCreditResult] = useState<rawCreditResult>({});
+  const creditResult = useMemo(() => {
+    return Object.values(rawCreditResult).reduce(
+      (before, now) => before + now,
+      0
+    );
+  }, [rawCreditResult]);
 
   const { totalResults, calculateResults } = useProductResults();
 
@@ -81,12 +88,23 @@ function InvoiceManager() {
   }, [id, selectedSeller]);
 
   useEffect(() => {
-    if (!isEqual(prevProductsResultsRef.current, productsResults)) {
+    async function processResults() {
+      if (isEqual(prevProductsResultsRef.current, productsResults) || !invoice)
+        return;
       const results = calculateResults(productsResults);
-      // console.log("Resultados totales:", results);
       prevProductsResultsRef.current = productsResults;
+
+      // update the results in the invoice ZakoZakoZakoZakoZakoZakoZakoZakoZakoZakoZakoZako
+
+      await updateDoc(invoice.ref, {
+        total_sold: results.totalSold,
+        total_profit: results.totalProfit,
+        total_cost: results.totalCost,
+      } as unknown as PartialWithFieldValue<invoiceType>);
     }
-  }, [productsResults, calculateResults]);
+
+    processResults();
+  }, [productsResults, calculateResults, invoice]);
 
   return (
     <MainContainer>
@@ -113,44 +131,12 @@ function InvoiceManager() {
         hasInventory={selectedSeller?.data()?.hasInventory}
       />
 
-      <FlexContainer
-        styles={{ justifyContent: "space-between", width: "100%" }}
-      >
-        <Credit />
-        <Bills bills={bills} setBills={setBills} />
-      </FlexContainer>
+      <Credit
+        setRawCreditResult={setRawCreditResult}
+        creditResult={creditResult}
+      />
 
-      {/* <FlexContainer
-        styles={{
-          width: "100%",
-          flexDirection: "column",
-          justifyContent: "flex-start",
-          marginBottom: "50px",
-        }}
-      >
-        <Container styles={{ marginBottom: "50px" }}>
-          {invoice?.data() && (
-            <>
-              <Credit
-                setCreditTotal={setCreditResult}
-                invoiceData={invoice.data()}
-                seller_ref={
-                  selectedSeller?.ref as DocumentReference<SellersDoc>
-                }
-              />
-            </>
-          )}
-        </Container>
-      </FlexContainer> */}
-      {invoice && (
-        <Close
-          totals={undefined}
-          credits={0}
-          bills={bills}
-          setMoney={setMoney}
-          invoice={invoice}
-        />
-      )}
+      <Close totals={totalResults} credits={creditResult} />
     </MainContainer>
   );
 }

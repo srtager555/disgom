@@ -12,6 +12,7 @@ import { CreditHeader } from "./CreditHeader";
 export function Credit() {
   const { invoice } = useInvoice();
   const [showForm, setShowForm] = useState(false);
+  const [lastRoute, setLastRoute] = useState(0);
   const [credits, setCredits] = useState<QueryDocumentSnapshot<clientCredit>[]>(
     []
   );
@@ -20,6 +21,8 @@ export function Credit() {
     const route = invoice?.data()?.route;
     const seller_ref = invoice?.data()?.seller_ref;
     if (!route || !seller_ref) return;
+    if (route === lastRoute) return;
+    setLastRoute(route);
 
     const cancelSubcription = getCredits(setCredits, route, seller_ref);
 
@@ -36,7 +39,7 @@ export function Credit() {
           {showForm ? "Ocultar" : "Agregar nuevo"}
         </Button>
       </FlexContainer>
-      {showForm && <CreditForm />}
+      {showForm && <CreditForm setShowForm={setShowForm} />}
       <CreditHeader />
       <GridContainer grisTemplateColumns="repeat(4, 75px) 1fr">
         {credits.map((credit) => (

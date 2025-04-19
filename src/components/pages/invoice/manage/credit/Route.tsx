@@ -1,6 +1,5 @@
 import { Select } from "@/components/Inputs/select";
 import { useInvoice } from "@/contexts/InvoiceContext";
-import { FlexContainer } from "@/styles/index.styles";
 import { updateDoc } from "firebase/firestore";
 import { useMemo } from "react";
 
@@ -9,7 +8,7 @@ export function Route() {
   const routes = useMemo(() => {
     const router = invoice?.data()?.route;
     const r = [
-      { name: "Seleccionar", value: "0", disabled: true },
+      { name: "Seleccionar ruta", value: "0", disabled: true },
       { name: "Ruta 1", value: "1" },
       { name: "Ruta 2", value: "2" },
       { name: "Ruta 3", value: "3" },
@@ -40,18 +39,5 @@ export function Route() {
     });
   };
 
-  return (
-    <FlexContainer
-      styles={{
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <h2>
-        ¿Que <b>Ruta</b> toca hoy?
-      </h2>
-      <Select name="route" options={routes} onChange={handlerUpdateRoute} />
-    </FlexContainer>
-  );
+  return <Select name="route" options={routes} onChange={handlerUpdateRoute} />;
 }

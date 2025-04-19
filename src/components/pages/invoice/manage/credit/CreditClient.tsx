@@ -6,107 +6,197 @@ import {
   clientCredit,
 } from "@/tools/sellers/credits/create";
 import { getClientCredits } from "@/tools/sellers/credits/get";
-import { DocumentSnapshot, getDoc } from "firebase/firestore";
-import { useState, useEffect } from "react";
+import {
+  DocumentSnapshot,
+  DocumentReference,
+  getDoc,
+} from "firebase/firestore";
+import { useState, useEffect, useCallback } from "react";
 import { Column, Input } from "../../Product";
+import { debounce } from "lodash";
+import { updateCredits } from "@/tools/sellers/credits/update";
 
-export const CreditClient = ({
-  clientCredit,
-}: {
+type SavedCreditsMap = Record<string, DocumentReference<credit>>;
+
+interface CreditClientProps {
   clientCredit: DocumentSnapshot<clientCredit>;
-}) => {
+}
+
+export const CreditClient = ({ clientCredit }: CreditClientProps) => {
   const [currentCredit, setCurrentCredit] = useState<
     DocumentSnapshot<credit> | undefined
   >(undefined);
-  const [clientLastCredit, setClientLastCredit] =
-    useState<DocumentSnapshot<credit>>();
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState<number | string>(0);
   const [diff, setDiff] = useState(0);
   const { invoice } = useInvoice();
 
-  // effect to create the new credit
+  // Efecto para obtener o crear el crédito inicial para este cliente en esta factura
   useEffect(() => {
-    const getCredit = async () => {
-      const lastCredit = await getClientCredits(clientCredit.ref);
-      setClientLastCredit(lastCredit);
-
-      if (!invoice) return;
-      // logic to search if the new creadit already created
-      const newCreditsArray = invoice.data().newCredits || [];
-      const isThere = newCreditsArray.find(
-        (ref) => ref.parent.parent?.id === clientCredit.id
-      );
-
-      if (isThere) {
-        const current = await getDoc(isThere);
-        setCurrentCredit(current);
+    const getOrCreateCredit = async () => {
+      if (!invoice || !invoice.exists()) {
+        console.warn("Factura no disponible o no existe.");
+        setCurrentCredit(undefined); // Asegura limpiar estado si la factura desaparece
+        setAmount(0);
+        return;
       }
 
-      const newCurrentRef = await createCredit({
-        amount,
-        client_ref: clientCredit.ref,
-        last_amount: lastCredit?.data().amount || null,
-        last_credit: lastCredit?.ref || null,
-        next_credit: null,
-        invoice_ref: invoice.ref,
-        seller_ref: invoice.data().seller_ref,
-      });
+      // 2. Obtener el mapa de créditos desde la factura actual
+      const newCreditsMap =
+        (invoice.data()?.newCredits as SavedCreditsMap | undefined) ?? {};
+      const creditInfoForClient = newCreditsMap[clientCredit.id];
 
-      const newCurrent = await getDoc(newCurrentRef);
+      let existingCreditSnapshot: DocumentSnapshot<credit> | undefined =
+        undefined;
 
-      setCurrentCredit(newCurrent);
+      // 3. Intentar obtener el Snapshot si la info existe en newCredits
+      if (creditInfoForClient) {
+        try {
+          const creditDoc = await getDoc(creditInfoForClient);
+          if (creditDoc.exists()) {
+            console.log("se obtuvo el credit correctamente");
+            existingCreditSnapshot = creditDoc;
+          } else {
+            console.warn(
+              `Referencia de crédito en newCredits para ${clientCredit.id} apunta a un documento inexistente. Se creará uno nuevo.`
+            );
+            // Tratar como si no existiera para proceder a la creación
+          }
+        } catch (error) {
+          console.error(
+            `Error al obtener documento de crédito desde referencia para ${clientCredit.id}:`,
+            error
+          );
+          // Considerar si se debe intentar crear uno nuevo o mostrar error
+        }
+      }
+
+      // 4. Si se encontró y obtuvo el snapshot desde invoice.data().newCredits
+      if (existingCreditSnapshot) {
+        setCurrentCredit(existingCreditSnapshot);
+        setAmount(existingCreditSnapshot.data()?.amount ?? 0);
+        console.log(
+          `Usando crédito actual de la facturapara cliente ${clientCredit.id}`
+        );
+      } else {
+        // 5. Si NO está en `invoice.data().newCredits` (o la referencia era inválida), crearlo.
+        console.log(
+          `Crédito NO encontrado en invoice.data().newCredits para cliente ${clientCredit.id}, creando nuevo...`
+        );
+
+        try {
+          const lastCredit = await getClientCredits(clientCredit.ref);
+
+          const newCurrentRef = await createCredit({
+            amount: 0, // Iniciar en 0 para la nueva factura
+            client_ref: clientCredit.ref,
+            last_amount: lastCredit?.data()?.amount ?? null,
+            last_credit: lastCredit?.ref ?? null,
+            next_credit: null,
+            invoice_ref: invoice.ref,
+            seller_ref: invoice.data().seller_ref, // Asegúrate que seller_ref exista
+          });
+
+          if (lastCredit)
+            await updateCredits(lastCredit.ref, {
+              next_credit: lastCredit,
+            });
+
+          const newCurrent = await getDoc(newCurrentRef);
+
+          if (newCurrent.exists()) {
+            setCurrentCredit(newCurrent as DocumentSnapshot<credit>);
+            setAmount(0);
+
+            console.log(`Nuevo crédito creado para cliente ${clientCredit.id}`);
+          } else {
+            console.error(
+              "Error: No se pudo obtener el documento del crédito recién creado."
+            );
+            setCurrentCredit(undefined); // Limpiar estado en caso de error
+            setAmount(0);
+          }
+        } catch (error) {
+          console.error("Error al crear el crédito:", error);
+          setCurrentCredit(undefined); // Limpiar estado en caso de error
+          setAmount(0);
+        }
+      }
     };
-    getCredit();
-  }, [clientCredit]);
 
+    getOrCreateCredit();
+    // Dependencias: invoice y clientCredit.id/ref
+  }, [invoice]);
+
+  // Efecto para calcular la diferencia (sin cambios)
   useEffect(() => {
-    const last = clientLastCredit?.data()?.amount || 0;
+    const lastAmount = currentCredit?.data()?.last_amount ?? 0;
+    const currentAmount = Number(amount) || 0;
 
-    setDiff(last - amount);
-  }, [clientLastCredit, amount]);
+    setDiff(lastAmount - currentAmount);
+  }, [currentCredit, amount]);
 
-  // effect to save the new credits
-  // useEffect(() => {
-  //   const credits = invoice?.data().newCredits
-  //   if (!credits) return;
+  // --- Lógica para guardar el crédito con Debounce (sin cambios) ---
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSaveCredit = useCallback(
+    debounce(async (newAmount: number) => {
+      if (!invoice || !currentCredit || !currentCredit.exists()) {
+        console.log("Guardado omitido: Faltan datos (invoice, currentCredit)");
+        return;
+      }
 
-  //   const creditsIDs = credits.map(el => el.parent.parent?.id)
-  //   const currentCredit = creditsIDs.find((el) => )
-  // }, [])
+      const currentAmountInDb = currentCredit.data()?.amount ?? 0;
 
-  // effect to save the new credit
+      if (newAmount === currentAmountInDb) {
+        console.log(
+          `Guardado omitido para ${clientCredit.id}: Monto (${newAmount}) no ha cambiado.`
+        );
+        return;
+      }
+
+      console.log(`Guardando crédito para ${clientCredit.id}: ${newAmount}`);
+      try {
+        await updateCredits(currentCredit.ref, { amount: newAmount });
+        console.log(
+          `Crédito actualizado correctamente para ${clientCredit.id}`
+        );
+      } catch (error) {
+        console.error(
+          `Error al actualizar el crédito para ${clientCredit.id}:`,
+          error
+        );
+      }
+    }, 1000),
+    [invoice, currentCredit, clientCredit.id]
+  );
+
+  // Efecto que llama a la función debounced
   useEffect(() => {
-    const saveCredit = async () => {
-      if (!invoice || !clientLastCredit) return;
-      const last_amount = clientLastCredit?.data()?.amount || 0;
-      const last_ref = clientLastCredit?.ref;
-      const invo_ref = invoice.ref;
-      const seller_ref = invoice.data().seller_ref;
+    if (currentCredit !== undefined) {
+      const numericAmount = Number(amount);
+      if (!isNaN(numericAmount)) {
+        debouncedSaveCredit(numericAmount);
+      }
+    }
+  }, [amount, currentCredit, debouncedSaveCredit]);
 
-      await createCredit({
-        amount,
-        client_ref: clientCredit.ref,
-        last_amount: last_amount,
-        last_credit: last_ref,
-        next_credit: null,
-        invoice_ref: invo_ref,
-        seller_ref: seller_ref,
-      });
-    };
+  // Handler para el input
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAmount(e.target.value);
+  };
 
-    saveCredit();
-  }, [amount]);
-
+  // Renderizado
   return (
     <>
-      <Column gridColumn="1 / 3">{clientCredit.data()?.name}</Column>
-      <Column>{numberParser(clientLastCredit?.data()?.amount || 0)}</Column>
+      <Column gridColumn="1 / 3">
+        {clientCredit.data()?.name ?? "Nombre no disponible"}
+      </Column>
+      <Column>{numberParser(currentCredit?.data()?.last_amount ?? 0)}</Column>
       <Column>
         <Input
           type="number"
           value={amount}
           name="amount"
-          onChange={(e) => setAmount(Number(e.target.value))}
+          onChange={handleAmountChange}
         />
       </Column>
       <Column>{numberParser(diff)}</Column>

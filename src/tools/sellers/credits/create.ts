@@ -1,6 +1,5 @@
 import {
   addDoc,
-  arrayUnion,
   collection,
   CollectionReference,
   DocumentReference,
@@ -74,7 +73,7 @@ export async function createCredit(
   });
 
   await updateDoc(props.invoice_ref, {
-    newCredit: arrayUnion(newCredit),
+    [`newCredits.${props.client_ref.id}`]: newCredit,
   });
 
   return newCredit;

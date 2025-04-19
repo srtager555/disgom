@@ -57,7 +57,7 @@ export type invoiceType = {
     paid: boolean;
     paid_at: Timestamp | null;
   } | null;
-  newCredits: Array<DocumentReference<credit>>;
+  newCredits: Record<string, DocumentReference<credit>>;
   disabled: boolean;
 };
 

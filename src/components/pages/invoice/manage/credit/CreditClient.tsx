@@ -11,18 +11,29 @@ import {
   DocumentReference,
   getDoc,
 } from "firebase/firestore";
-import { useState, useEffect, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { Column, Input } from "../../Product";
 import { debounce } from "lodash";
 import { updateCredits } from "@/tools/sellers/credits/update";
+import { rawCreditResult } from "@/pages/invoices/manage";
 
 type SavedCreditsMap = Record<string, DocumentReference<credit>>;
 
 interface CreditClientProps {
   clientCredit: DocumentSnapshot<clientCredit>;
+  setRawCreditResult: Dispatch<SetStateAction<rawCreditResult>>;
 }
 
-export const CreditClient = ({ clientCredit }: CreditClientProps) => {
+export const CreditClient = ({
+  clientCredit,
+  setRawCreditResult,
+}: CreditClientProps) => {
   const [currentCredit, setCurrentCredit] = useState<
     DocumentSnapshot<credit> | undefined
   >(undefined);
@@ -131,8 +142,10 @@ export const CreditClient = ({ clientCredit }: CreditClientProps) => {
   useEffect(() => {
     const lastAmount = currentCredit?.data()?.last_amount ?? 0;
     const currentAmount = Number(amount) || 0;
+    const diff = lastAmount - currentAmount;
 
-    setDiff(lastAmount - currentAmount);
+    setDiff(diff);
+    setRawCreditResult((prev) => ({ ...prev, [clientCredit.id]: diff }));
   }, [currentCredit, amount]);
 
   // --- Lógica para guardar el crédito con Debounce (sin cambios) ---

@@ -42,7 +42,7 @@ import {
   totals_sold,
 } from "@/components/pages/invoice/Product/closing/manager";
 import { bill, Bills } from "@/components/pages/invoice/Product/closing/Bills";
-import { Close } from "@/components/pages/invoice/Product/closing/Close";
+import { Close } from "@/components/pages/invoice/manage/Closing";
 import { Button } from "@/styles/Form.styles";
 import { closeInvoice } from "@/tools/invoices/closeInvoice";
 import { createInventory } from "@/tools/sellers/invetory/create";

@@ -54,7 +54,7 @@ const ColumnGrid = styled(Container)<{
 }>`
   grid-column: ${(props) => props.$gridColumn};
   width: 100%;
-  height: 100%;
+  height: calc(100% - 1px);
   ${(props) => {
     if (props.$removeBorder) return;
 
@@ -92,6 +92,7 @@ const ColumnGrid = styled(Container)<{
     left: 0px;
     transform: translateY(-50%);
     height: 100%;
+    width: 100%;
     padding: 0 5px;
     background-color: inherit;
     opacity: 0;

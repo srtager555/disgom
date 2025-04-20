@@ -23,6 +23,7 @@ import { useProductResults } from "@/hooks/useProductResults";
 import { InvoiceTotals } from "@/components/pages/invoice/manage/InvoiceTotals";
 import { isEqual } from "lodash";
 import { Credit } from "@/components/pages/invoice/manage/credit";
+import { ClientCredit } from "@/components/pages/invoice/manage/ClientCredit";
 
 export type rawCreditResult = Record<string, number>;
 
@@ -121,24 +122,34 @@ function InvoiceManager() {
         )}
       </Container>
 
-      <Products
-        selectedSeller={selectedSeller}
-        setProductsResults={setProductsResults}
-      />
-
-      <InvoiceTotals
-        totalResults={totalResults}
-        hasInventory={selectedSeller?.data()?.hasInventory}
-      />
-
-      {selectedSeller?.data()?.hasInventory && (
+      {!selectedSeller?.data()?.hasInventory && !invoice?.data().client_ref ? (
+        <Container>
+          <p>Selecione un cliente para continuar</p>
+        </Container>
+      ) : (
         <>
-          <Credit
-            setRawCreditResult={setRawCreditResult}
-            creditResult={creditResult}
+          <Products
+            selectedSeller={selectedSeller}
+            setProductsResults={setProductsResults}
           />
+          <InvoiceTotals
+            totalResults={totalResults}
+            hasInventory={selectedSeller?.data()?.hasInventory}
+          />
+          {selectedSeller?.data()?.hasInventory ? (
+            <>
+              <Credit
+                setRawCreditResult={setRawCreditResult}
+                creditResult={creditResult}
+              />
 
-          <Close totals={totalResults} credits={creditResult} />
+              <Close totals={totalResults} credits={creditResult} />
+            </>
+          ) : (
+            <>
+              <ClientCredit />
+            </>
+          )}
         </>
       )}
     </MainContainer>

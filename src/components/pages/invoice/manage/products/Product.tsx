@@ -21,6 +21,7 @@ import { Devolution } from "./Devolution";
 import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 import { getInventoryByProduct } from "@/tools/invoices/getInventoryByProduct";
 import { productResult } from "@/components/pages/invoice/ProductList";
+import { numberParser } from "@/tools/numberPaser";
 
 const GrabButton = styled.button`
   display: inline-block;
@@ -174,7 +175,9 @@ export function Product({
       <Column>
         <GrabButton>-</GrabButton>
       </Column>
-      <Column>{currentStock}</Column>
+      <Column title={numberParser(currentStock)}>
+        {numberParser(currentStock)}
+      </Column>
       <Column gridColumn="3 / 6">{rtDocData?.name}</Column>
 
       {/* ここから下は、src/components/pages/invoice/manage/products/Product.tsx のコード */}

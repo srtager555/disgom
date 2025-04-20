@@ -3,8 +3,14 @@ import { Button } from "@/styles/Form.styles";
 import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import { clientCredit } from "@/tools/sellers/credits/create";
 import { useInvoice } from "@/contexts/InvoiceContext";
-import { getCredits } from "@/tools/sellers/credits/get";
-import { QueryDocumentSnapshot } from "firebase/firestore";
+import {
+  CollectionReference,
+  onSnapshot,
+  query,
+  QueryDocumentSnapshot,
+  where,
+  collection,
+} from "firebase/firestore";
 import { CreditClient } from "./CreditClient";
 import { CreditForm } from "./CreditForm";
 import { CreditHeader } from "./CreditHeader";
@@ -12,6 +18,7 @@ import { Route } from "./Route";
 import { Column } from "../../Product";
 import { numberParser } from "@/tools/numberPaser";
 import { rawCreditResult } from "@/pages/invoices/manage";
+import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 
 interface props {
   setRawCreditResult: Dispatch<SetStateAction<rawCreditResult>>;
@@ -21,7 +28,6 @@ interface props {
 export function Credit({ setRawCreditResult, creditResult }: props) {
   const { invoice } = useInvoice();
   const [showForm, setShowForm] = useState(false);
-  const [lastRoute, setLastRoute] = useState(0);
   const [credits, setCredits] = useState<QueryDocumentSnapshot<clientCredit>[]>(
     []
   );
@@ -29,13 +35,22 @@ export function Credit({ setRawCreditResult, creditResult }: props) {
   useEffect(() => {
     const route = invoice?.data()?.route;
     const seller_ref = invoice?.data()?.seller_ref;
+
     if (!route || !seller_ref) return;
-    if (route === lastRoute) return;
-    setLastRoute(route);
+    let unsubcribe = () => {};
 
-    const cancelSubcription = getCredits(setCredits, route, seller_ref);
+    const creditColl = collection(
+      seller_ref,
+      SellersCollection.credits
+    ) as CollectionReference<clientCredit>;
 
-    return () => cancelSubcription();
+    const q = query(creditColl, where("route", "==", route));
+
+    unsubcribe = onSnapshot(q, (snap) => {
+      setCredits(snap.docs);
+    });
+
+    return () => unsubcribe();
   }, [invoice]);
 
   return (

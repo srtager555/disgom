@@ -7,6 +7,7 @@ import { Bills } from "./Bills";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { updateDoc } from "firebase/firestore";
 import { Missing } from "./Missing";
+import { MissingList } from "./MissingList";
 
 type props = {
   totals: TotalResults;
@@ -100,6 +101,7 @@ export function Data({ totals, credits, moneyAmount }: props) {
         </GridContainer>
       </Container>
       <Missing isPaid={checkAsPaid} setIsPaid={setCheckAsPaid} diff={diff} />
+      <MissingList />
     </Container>
   );
 }

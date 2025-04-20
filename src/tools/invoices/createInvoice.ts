@@ -41,9 +41,15 @@ export type invoiceType = {
   route: number | null;
   bills: number;
   money: rawMoneyType;
+  diff: {
+    amount: number;
+    paid: boolean;
+    paid_at: Timestamp | null;
+  };
   credit: {
     paid: boolean;
     paid_at: Timestamp | null;
+    due_date: Timestamp;
   } | null;
   newCredits: Record<string, DocumentReference<credit>>;
   disabled: boolean;
@@ -84,6 +90,11 @@ export async function createInvoice(data: Pick<invoiceType, "seller_ref">) {
     route: null,
     bills: 0,
     money: {},
+    diff: {
+      amount: 0,
+      paid: false,
+      paid_at: null,
+    },
     credit: null,
     newCredits: {},
     disabled: false,

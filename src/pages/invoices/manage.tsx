@@ -24,6 +24,7 @@ import { InvoiceTotals } from "@/components/pages/invoice/manage/InvoiceTotals";
 import { isEqual } from "lodash";
 import { Credit } from "@/components/pages/invoice/manage/credit";
 import { ClientCredit } from "@/components/pages/invoice/manage/ClientCredit";
+import { Preliminar } from "@/components/pages/invoice/manage/Preliminar";
 
 export type rawCreditResult = Record<string, number>;
 
@@ -99,7 +100,7 @@ function InvoiceManager() {
 
       await updateDoc(invoice.ref, {
         total_sold: results.totalSold,
-        total_profit: results.totalProfit,
+        total_proft: results.totalProfit,
         total_cost: results.totalCost,
       } as unknown as PartialWithFieldValue<invoiceType>);
     }
@@ -148,6 +149,7 @@ function InvoiceManager() {
           ) : (
             <>
               <ClientCredit />
+              <Preliminar />
             </>
           )}
         </>

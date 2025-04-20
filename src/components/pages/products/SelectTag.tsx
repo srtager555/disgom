@@ -10,6 +10,8 @@ type props = {
 export function SelectTag({ setTagSelected }: props) {
   const tags = useGetTags();
 
+  if (!tags) return null;
+
   return (
     <FlexContainer styles={{ marginRight: "20px", alignItems: "center" }}>
       <span style={{ marginRight: "10px", display: "inline-block" }}>

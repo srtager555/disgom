@@ -13,7 +13,6 @@ import {
 import { SellersDoc } from "../create";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { clientCredit, credit } from "./create";
-import { Dispatch, SetStateAction } from "react";
 
 /**
  * Realtime credits
@@ -23,7 +22,6 @@ import { Dispatch, SetStateAction } from "react";
  * @returns the function to cancel the subcription
  */
 export function getCredits(
-  setter: Dispatch<SetStateAction<Array<QueryDocumentSnapshot<clientCredit>>>>,
   route: number,
   seller_ref: DocumentReference<SellersDoc>,
   all: boolean = false
@@ -34,12 +32,13 @@ export function getCredits(
   ) as CollectionReference<clientCredit>;
 
   const q = query(creditColl, where("route", "==", route));
+  let theData: QueryDocumentSnapshot<clientCredit>[] = [];
 
-  const subcription = onSnapshot(all ? creditColl : q, (snap) => {
-    setter(snap.docs);
+  const unsubcription = onSnapshot(all ? creditColl : q, (snap) => {
+    theData = snap.docs;
   });
 
-  return subcription;
+  return { unsubcription, theData };
 }
 
 export async function getClientCredits(

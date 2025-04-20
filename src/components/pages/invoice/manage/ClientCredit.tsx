@@ -51,7 +51,7 @@ export function ClientCredit() {
   };
 
   return (
-    <Container>
+    <Container styles={{ width: "100%" }}>
       <label>
         <input type="checkbox" checked={isCash} onChange={handleCashChange} />{" "}
         ¿Esta factura es al contado?

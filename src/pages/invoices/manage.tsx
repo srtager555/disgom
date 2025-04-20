@@ -15,11 +15,11 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/router";
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react"; // Import useCallback
 import styled from "styled-components";
 import { useProductResults } from "@/hooks/useProductResults";
 import { InvoiceTotals } from "@/components/pages/invoice/manage/InvoiceTotals";
-import { isEqual } from "lodash";
+import { isEqual, debounce } from "lodash"; // Import debounce
 import { Credit } from "@/components/pages/invoice/manage/credit";
 import { ClientCredit } from "@/components/pages/invoice/manage/ClientCredit";
 import { Preliminar } from "@/components/pages/invoice/manage/Preliminar";
@@ -87,24 +87,46 @@ function InvoiceManager() {
     updateSeller();
   }, [id, selectedSeller]);
 
-  useEffect(() => {
-    async function processResults() {
-      if (isEqual(prevProductsResultsRef.current, productsResults) || !invoice)
+  // Debounced function to process results and update the invoice
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedProcessResults = useCallback(
+    debounce(async (currentProductsResults: Record<string, productResult>) => {
+      if (!invoice) return; // Check for invoice inside the debounced function as well
+
+      // Compare with the *latest* previous results stored in the ref
+      if (isEqual(prevProductsResultsRef.current, currentProductsResults)) {
+        console.log("Skipping update, results haven't changed.");
         return;
-      const results = calculateResults(productsResults);
-      prevProductsResultsRef.current = productsResults;
+      }
 
-      // update the results in the invoice ZakoZakoZakoZakoZakoZakoZakoZakoZakoZakoZakoZako
+      console.log("Processing results and updating invoice...");
+      const results = calculateResults(currentProductsResults);
+      prevProductsResultsRef.current = currentProductsResults; // Update ref *after* calculation
 
-      await updateDoc(invoice.ref, {
-        total_sold: results.totalSold,
-        total_proft: results.totalProfit,
-        total_cost: results.totalCost,
-      } as unknown as PartialWithFieldValue<invoiceType>);
-    }
+      try {
+        await updateDoc(invoice.ref, {
+          total_sold: results.totalSold,
+          total_proft: results.totalProfit, // Typo: should be total_profit? Check invoiceType
+          total_cost: results.totalCost,
+        } as unknown as PartialWithFieldValue<invoiceType>); // Consider using a more specific type assertion if possible
+        console.log("Invoice updated successfully.");
+      } catch (error) {
+        console.error("Error updating invoice:", error);
+      }
+    }, 1000), // Debounce time in milliseconds (e.g., 1000ms = 1 second)
+    [invoice, calculateResults] // Dependencies for useCallback
+  );
 
-    processResults();
-  }, [productsResults, calculateResults, invoice]);
+  // Effect to trigger the debounced processing when productsResults change
+  useEffect(() => {
+    // Call the debounced function with the current productsResults
+    debouncedProcessResults(productsResults);
+
+    // Cleanup function for the debounce timer
+    return () => {
+      debouncedProcessResults.cancel(); // Cancel any pending execution on unmount or dependency change
+    };
+  }, [productsResults, debouncedProcessResults]); // Depend on productsResults and the debounced function itself
 
   return (
     <MainContainer>

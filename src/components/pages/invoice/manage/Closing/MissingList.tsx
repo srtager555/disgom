@@ -19,7 +19,7 @@ import { numberParser } from "@/tools/numberPaser";
 import { Button } from "@/styles/Form.styles";
 import { debounce } from "lodash";
 
-const gridTemplateColumns = "100px 70px";
+const gridTemplateColumns = "100px 98px";
 
 export function MissingList() {
   const [docs, setDocs] = useState<QueryDocumentSnapshot<invoiceType>[]>([]);

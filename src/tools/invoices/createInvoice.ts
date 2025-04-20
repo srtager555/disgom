@@ -53,6 +53,7 @@ export type invoiceType = {
   } | null;
   newCredits: Record<string, DocumentReference<credit>>;
   disabled: boolean;
+  delete_at: Timestamp | null;
 };
 
 export async function createInvoice(data: Pick<invoiceType, "seller_ref">) {
@@ -98,6 +99,7 @@ export async function createInvoice(data: Pick<invoiceType, "seller_ref">) {
     credit: null,
     newCredits: {},
     disabled: false,
+    delete_at: null,
     last_inventory_ref: last_inventory?.ref || null,
   });
 }

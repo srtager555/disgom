@@ -117,6 +117,14 @@ export const CreditClient = ({
 
     setDiff(diff);
     setRawCreditResult((prev) => ({ ...prev, [clientCredit.id]: diff }));
+
+    return () => {
+      setRawCreditResult((prev) => {
+        const newObj = { ...prev };
+        delete newObj[clientCredit.id];
+        return newObj;
+      });
+    };
   }, [currentCredit, amount]);
 
   // --- Lógica para guardar el crédito con Debounce (sin cambios) ---

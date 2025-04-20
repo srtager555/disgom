@@ -6,7 +6,6 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { Descriptions, productResult } from "../../ProductList";
 import { SellersDoc } from "@/tools/sellers/create";
 import { QueryDocumentSnapshot } from "firebase/firestore";
-import { Product as P } from "../../Product";
 import { MemoProduct } from "./Product";
 import { Button } from "@/styles/Form.styles";
 import { useGetAllInventory } from "@/hooks/invoice/getAllInventory";

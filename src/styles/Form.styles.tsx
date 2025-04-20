@@ -103,7 +103,7 @@ export const Button = styled.button<{
     height: 100%;
     width: 0%;
     transition: 200ms width ease;
-    background-color: #ff000080;
+    background-color: #00000080;
   }
 
   ${(props) => {

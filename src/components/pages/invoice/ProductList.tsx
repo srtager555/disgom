@@ -66,11 +66,11 @@ export const ProductContainer = styled.div<{
     !props.$hide ? (props.$header ? "10px" : "5px") : 0} 0; */
   visibility: ${(props) => (props.$hide ? "hidden" : "visible")};
   grid-template-columns: ${(props) => {
-    if (props.$closing) return "15px 50px repeat(17, 75px)";
+    if (props.$closing) return "15px 50px repeat(17, 80px)";
     if (props.$hasInventory) {
-      return "15px 50px repeat(12, 75px)";
+      return "15px 50px repeat(12, 80px)";
     } else {
-      return "15px 50px repeat(12, 75px)";
+      return "15px 50px repeat(12, 80px)";
     }
   }};
 

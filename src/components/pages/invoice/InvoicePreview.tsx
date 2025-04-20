@@ -89,7 +89,7 @@ export function InvoicePreview({ doc, inSeller }: props) {
         <p>{sellerData?.name}</p>
       )}
       <Container styles={{ height: "100%" }}>
-        {numberParser(data.total_sold.withInventory)}
+        {numberParser(data.total_sold)}
         {client ? (
           <ButtonBro
             $primary
@@ -103,14 +103,10 @@ export function InvoicePreview({ doc, inSeller }: props) {
           <ButtonBro
             $primary
             onClick={() => {
-              if (!data.inventory_ref) {
-                router.push("/invoices/manage?id=" + doc.id);
-              } else {
-                router.push("/invoices/manage?id=" + doc.id);
-              }
+              router.push("/invoices/manage?id=" + doc.id);
             }}
           >
-            {!data.inventory_ref ? "Inspeccionar" : "Más"}
+            Ver más
           </ButtonBro>
         )}
       </Container>

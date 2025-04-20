@@ -1,8 +1,6 @@
 import { Products } from "@/components/pages/invoice/manage/products";
 import { SelectSeller } from "@/components/pages/invoice/manage/SelectSeller";
-// import { bill, Bills } from "@/components/pages/invoice/Product/closing/Bills";
 import { Close } from "@/components/pages/invoice/manage/Closing";
-// import { Credit } from "@/components/pages/invoice/Product/closing/closed/Credit";
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { SelectClient } from "@/components/pages/invoice/SelectClient";
 import useQueryParams from "@/hooks/getQueryParams";

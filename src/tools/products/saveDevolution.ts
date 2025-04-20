@@ -54,7 +54,7 @@ export async function saveDevolution(
   // check if a human make the changes
   if (!humanAmountChanged.current) {
     console.log("Human change not detected, saving cancelated");
-    return;
+    return false;
   }
   console.log("Human change detected, saving devolution");
 
@@ -65,7 +65,10 @@ export async function saveDevolution(
       devoDebounce,
       currentDevolution
     );
-    return;
+
+    humanAmountChanged.current = false;
+
+    return false;
   }
 
   humanAmountChanged.current = false;
@@ -106,5 +109,6 @@ export async function saveDevolution(
     devolution: inventoryRef,
   });
 
+  return true;
   console.log("devo saved");
 }

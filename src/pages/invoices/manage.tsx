@@ -131,12 +131,16 @@ function InvoiceManager() {
         hasInventory={selectedSeller?.data()?.hasInventory}
       />
 
-      <Credit
-        setRawCreditResult={setRawCreditResult}
-        creditResult={creditResult}
-      />
+      {selectedSeller?.data()?.hasInventory && (
+        <>
+          <Credit
+            setRawCreditResult={setRawCreditResult}
+            creditResult={creditResult}
+          />
 
-      <Close totals={totalResults} credits={creditResult} />
+          <Close totals={totalResults} credits={creditResult} />
+        </>
+      )}
     </MainContainer>
   );
 }

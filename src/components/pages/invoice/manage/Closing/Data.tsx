@@ -2,10 +2,8 @@ import { Container, GridContainer } from "@/styles/index.styles";
 import { Column } from "../../Product";
 import { TotalResults } from "@/hooks/useProductResults";
 import { numberParser } from "@/tools/numberPaser";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Bills } from "./Bills";
-import { useInvoice } from "@/contexts/InvoiceContext";
-import { updateDoc } from "firebase/firestore";
 import { Missing } from "./Missing";
 import { MissingList } from "./MissingList";
 
@@ -16,9 +14,7 @@ type props = {
 };
 
 export function Data({ totals, credits, moneyAmount }: props) {
-  const { invoice } = useInvoice();
   const [billsAmount, setBillsAmount] = useState(0);
-  const [checkAsPaid, setCheckAsPaid] = useState(false);
   const diff = useMemo(
     () => moneyAmount - (totals.totalSold + credits - billsAmount),
     [moneyAmount, totals, credits, billsAmount]
@@ -32,27 +28,6 @@ export function Data({ totals, credits, moneyAmount }: props) {
     [totals.totalProfit, totals.totalSellerProfit]
   );
   const gridTemplateColumns = "repeat(4, 100px)";
-
-  // effect to save the diff
-  useEffect(() => {
-    async function saveDiff() {
-      if (!invoice) return;
-      if (diff > 0) setCheckAsPaid(true);
-      if (invoice.data().diff.amount === diff) return;
-
-      const diffToSave = {
-        amount: diff,
-        paid: diff > 0,
-        paid_at: diff > 0 ? new Date() : null,
-      };
-
-      await updateDoc(invoice.ref, {
-        diff: diffToSave,
-      });
-    }
-
-    saveDiff();
-  }, [diff, invoice]);
 
   return (
     <Container>
@@ -100,7 +75,7 @@ export function Data({ totals, credits, moneyAmount }: props) {
           <Column />
         </GridContainer>
       </Container>
-      <Missing isPaid={checkAsPaid} setIsPaid={setCheckAsPaid} diff={diff} />
+      <Missing diff={diff} />
       <MissingList />
     </Container>
   );

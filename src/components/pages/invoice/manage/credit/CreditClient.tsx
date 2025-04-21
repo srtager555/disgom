@@ -53,7 +53,9 @@ export const CreditClient = ({
 
       // 2. Obtener el mapa de créditos desde la factura actual
       const newCreditsMap =
-        (invoice.data()?.newCredits as SavedCreditsMap | undefined) ?? {};
+        (invoice.data()?.newCredits[invoice.data()?.route ?? 0] as
+          | SavedCreditsMap
+          | undefined) ?? {};
       const creditInfoForClient = newCreditsMap[clientCredit.id];
 
       let existingCreditSnapshot: DocumentSnapshot<credit> | undefined =
@@ -84,6 +86,7 @@ export const CreditClient = ({
         const lastCredit = await getClientCredits(clientCredit.ref);
 
         const newCurrentRef = await createCredit({
+          route: invoice.data().route ?? 0,
           amount: 0, // Iniciar en 0 para la nueva factura
           client_ref: clientCredit.ref,
           last_amount: lastCredit?.data()?.amount ?? null,

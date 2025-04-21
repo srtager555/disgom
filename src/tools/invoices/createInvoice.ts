@@ -51,7 +51,7 @@ export type invoiceType = {
     paid_at: Timestamp | null;
     due_date: Timestamp;
   } | null;
-  newCredits: Record<string, DocumentReference<credit>>;
+  newCredits: Record<string, Record<string, DocumentReference<credit>>>;
   disabled: boolean;
   delete_at: Timestamp | null;
 };

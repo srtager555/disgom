@@ -19,6 +19,7 @@ export type clientCredit = {
 
 export type credit = {
   created_at: Timestamp;
+  route: number;
   amount: number;
   client_ref: DocumentReference<clientCredit>;
   last_amount: number | null;
@@ -49,6 +50,7 @@ export async function createClientCredit(
   });
 
   return await createCredit({
+    route,
     client_ref: client,
     amount,
     last_amount: 0,
@@ -73,7 +75,7 @@ export async function createCredit(
   });
 
   await updateDoc(props.invoice_ref, {
-    [`newCredits.${props.client_ref.id}`]: newCredit,
+    [`newCredits.${props.route}.${props.client_ref.id}`]: newCredit,
   });
 
   return newCredit;

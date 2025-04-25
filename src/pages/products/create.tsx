@@ -55,12 +55,13 @@ const Page: NextPageWithLayout = () => {
   async function handlerCreateProduct(e: FormEvent) {
     if (!productFormRef) return;
     e.preventDefault();
-    const { productName, units, productStep, product_parent } =
+    const { productName, units, productStep, product_parent, followed } =
       e.target as EventTarget & {
         productName: HTMLInputElement;
         units?: HTMLInputElement & { value: productUnits };
         productStep?: HTMLInputElement;
         product_parent: HTMLInputElement;
+        followed: HTMLInputElement;
       };
 
     const tagsParsed = tagsAdded.map((el) => el.name);
@@ -72,6 +73,7 @@ const Page: NextPageWithLayout = () => {
       stepRaw: productStep?.value,
       tags: tagsParsed,
       product_parent: !productVariant ? null : product_parent.value,
+      followed: followed.checked,
     });
 
     productFormRef.current?.reset();
@@ -136,6 +138,18 @@ const Page: NextPageWithLayout = () => {
             >
               Nombre del producto
             </InputText>
+            <Container styles={{ marginBottom: "10px" }}>
+              <label>
+                <input
+                  type="checkbox"
+                  name="followed"
+                  checked={selectedProductData?.followed || false}
+                  style={{ marginRight: "10px", display: "inline-block" }}
+                />
+                ¿Se debe hacer un seguimiento de las ventas semanales de este
+                producto?
+              </label>
+            </Container>
             <Container styles={{ marginBottom: "10px" }}>
               <label>
                 <input

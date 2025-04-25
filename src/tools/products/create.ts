@@ -22,6 +22,7 @@ export type productDoc = {
   step: string;
   disabled: boolean;
   position: number | null;
+  followed: boolean;
 };
 
 type props = {
@@ -31,6 +32,7 @@ type props = {
   units?: productUnits | null;
   tags?: Array<string> | null;
   stepRaw?: string | null;
+  followed: boolean;
 };
 
 /**

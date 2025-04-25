@@ -25,6 +25,7 @@ export type outputType = {
   entry_ref: DocumentReference<entryDoc>;
   invoice_ref: DocumentReference<invoiceType>;
   product_ref: DocumentReference<productDoc>;
+  followed: boolean;
   disabled: boolean;
 };
 
@@ -156,6 +157,7 @@ export async function addOutputs(
       invoice_ref: invoice.ref,
       product_ref: product_doc.ref,
       disabled: false,
+      followed: product_doc.data()?.followed || false,
     };
   };
 

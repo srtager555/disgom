@@ -10,7 +10,6 @@ import {
   DocumentSnapshot,
   getDoc,
   QueryDocumentSnapshot,
-  QuerySnapshot,
 } from "firebase/firestore";
 import {
   ChangeEvent,
@@ -95,7 +94,7 @@ export function Credit({
       value: "6",
     },
   ];
-  const [credits, setCredits] = useState<QuerySnapshot<clientCredit>>();
+  const [credits, setCredits] = useState<QueryDocumentSnapshot<clientCredit>>();
   const [route, setRoute] = useState<number | undefined>(undefined);
   const [newCredits, setNewCredits] = useState<Record<string, newCredits>>({});
   const [allDiffs, setAllDiffs] = useState<allDiffs>({});
@@ -156,7 +155,7 @@ export function Credit({
 
       const credits = await getCredits(route, seller_ref);
 
-      setCredits(credits);
+      setCredits(credits.theData);
       setRefresh(false);
     }
 
@@ -278,17 +277,15 @@ export function Credit({
             ) : (
               <Container styles={{ marginBottom: "10px" }}>
                 <h4>Creditos anteriores</h4>
-                {credits?.docs.map((_, i) => {
-                  const creditToEdit = invoice
-                    ?.data()
-                    ?.newCredits?.find((el) => {
-                      return el.parent.parent?.id === _.id;
-                    });
+                {credits?.docs.map((client, i) => {
+                  const route = invoice?.data()?.route ?? 0;
+                  const newCredits = invoice?.data()?.newCredits[route] ?? {};
+                  const creditToEdit = newCredits[client.id];
 
                   return (
                     <ClientCredit
                       creditToEditRef={creditToEdit}
-                      client={_}
+                      client={client}
                       setAllDiffs={setAllDiffs}
                       key={i}
                     />

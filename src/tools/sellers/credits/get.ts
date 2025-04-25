@@ -8,6 +8,7 @@ import {
   orderBy,
   query,
   QueryDocumentSnapshot,
+  QuerySnapshot,
   where,
 } from "firebase/firestore";
 import { SellersDoc } from "../create";
@@ -32,10 +33,10 @@ export function getCredits(
   ) as CollectionReference<clientCredit>;
 
   const q = query(creditColl, where("route", "==", route));
-  let theData: QueryDocumentSnapshot<clientCredit>[] = [];
+  let theData: QuerySnapshot<clientCredit> = undefined;
 
   const unsubcription = onSnapshot(all ? creditColl : q, (snap) => {
-    theData = snap.docs;
+    theData = snap;
   });
 
   return { unsubcription, theData };

@@ -9,8 +9,8 @@ interface DateRange {
  *
  * @returns Un objeto con las propiedades 'start' y 'end' (Date objects).
  */
-function getCurrentWeekRange(): DateRange {
-  const now = new Date();
+export function getCurrentWeekRange(date: Date = new Date()): DateRange {
+  const now = new Date(date);
   const currentDay = now.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
 
   // Calculamos cuántos días hay que restar para llegar al Lunes
@@ -35,8 +35,8 @@ function getCurrentWeekRange(): DateRange {
  *
  * @returns Un objeto con las propiedades 'start' y 'end' (Date objects).
  */
-function getCurrentMonthRange(): DateRange {
-  const now = new Date();
+export function getCurrentMonthRange(date: Date = new Date()): DateRange {
+  const now = new Date(date);
   const year = now.getFullYear();
   const month = now.getMonth(); // 0 = Enero, 1 = Febrero, ..., 11 = Diciembre
 

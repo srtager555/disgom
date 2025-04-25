@@ -1,4 +1,4 @@
-import { Container, GridContainer } from "@/styles/index.styles";
+import { Container, FlexContainer, GridContainer } from "@/styles/index.styles";
 import { Column } from "../../Product";
 import { TotalResults } from "@/hooks/useProductResults";
 import { numberParser } from "@/tools/numberPaser";
@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Bills } from "./Bills";
 import { Missing } from "./Missing";
 import { MissingList } from "./MissingList";
+import { ProductsFollowed } from "./ProductsFollowed";
 
 type props = {
   totals: TotalResults;
@@ -76,7 +77,10 @@ export function Data({ totals, credits, moneyAmount }: props) {
         </GridContainer>
       </Container>
       <Missing diff={diff} />
-      <MissingList />
+      <FlexContainer styles={{ justifyContent: "space-between" }}>
+        <MissingList />
+        <ProductsFollowed />
+      </FlexContainer>
     </Container>
   );
 }

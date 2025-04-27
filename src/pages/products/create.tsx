@@ -37,6 +37,7 @@ const Page: NextPageWithLayout = () => {
   const units = getUnits();
   const products = useGetProducts();
   const [productVariant, setProductVariant] = useState(false);
+  const [followed, setFollowed] = useState(false);
   const [parentID, setParentID] = useState<string>("");
 
   function handlerDisableProduct(e: FormEvent) {
@@ -79,6 +80,8 @@ const Page: NextPageWithLayout = () => {
     productFormRef.current?.reset();
     setTagsAdded([]);
     setProductVariant(false);
+    setFollowed(false);
+    setParentID("");
     if (setSelectedProduct) setSelectedProduct(undefined);
   }
 
@@ -92,11 +95,14 @@ const Page: NextPageWithLayout = () => {
         setTagsAdded([]);
         productFormRef.current?.reset();
         setProductVariant(false);
+        setFollowed(false);
+        setParentID("");
         return;
       }
 
       const data = selectedProduct.data();
       setSelectedProductData(data);
+      setFollowed(data?.followed || false);
       setProductVariant(data.product_parent ? true : false);
       setParentID(data.product_parent?.id || "");
       // logic to get the tags
@@ -135,6 +141,7 @@ const Page: NextPageWithLayout = () => {
               name="productName"
               required
               defaultValue={selectedProductData?.name}
+              style={{ width: "300px" }}
             >
               Nombre del producto
             </InputText>
@@ -143,7 +150,8 @@ const Page: NextPageWithLayout = () => {
                 <input
                   type="checkbox"
                   name="followed"
-                  checked={selectedProductData?.followed || false}
+                  checked={followed}
+                  onChange={(e) => setFollowed(e.target.checked)}
                   style={{ marginRight: "10px", display: "inline-block" }}
                 />
                 ¿Se debe hacer un seguimiento de las ventas semanales de este

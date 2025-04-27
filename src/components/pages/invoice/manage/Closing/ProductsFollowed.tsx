@@ -16,6 +16,7 @@ import { outputType } from "@/tools/products/addOutputs";
 import { numberParser } from "@/tools/numberPaser";
 import { getCurrentWeekRange } from "@/tools/time/current";
 import { useInvoice } from "@/contexts/InvoiceContext";
+import { Days } from "./Data";
 
 const GridSizes = "100px 75px";
 
@@ -114,8 +115,8 @@ function ProductFolledTotalAmount({
 
   return (
     <GridContainer $gridTemplateColumns={GridSizes}>
-      <Column>
-        {invoice.data().created_at?.toDate().toLocaleDateString()}
+      <Column title={invoice.data().created_at?.toDate().toLocaleDateString()}>
+        {Days[invoice.data().created_at?.toDate().getDay() ?? 0]}
       </Column>
       <Column>{numberParser(invoiceCommission)}</Column>
     </GridContainer>

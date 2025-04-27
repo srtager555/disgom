@@ -8,6 +8,16 @@ import { Missing } from "./Missing";
 import { MissingList } from "./MissingList";
 import { ProductsFollowed } from "./ProductsFollowed";
 
+export const Days = [
+  "Domingo",
+  "Lunes",
+  "Martes",
+  "Miercoles",
+  "Jueves",
+  "Viernes",
+  "Sabado",
+];
+
 type props = {
   totals: TotalResults;
   credits: number;

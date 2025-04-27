@@ -18,6 +18,7 @@ import { useInvoice } from "@/contexts/InvoiceContext";
 import { numberParser } from "@/tools/numberPaser";
 import { Button } from "@/styles/Form.styles";
 import { debounce } from "lodash";
+import { Days } from "./Data";
 
 const gridTemplateColumns = "100px 98px";
 
@@ -81,7 +82,7 @@ export function MissingList() {
     <Container styles={{ width: "200px" }}>
       <Container>
         <GridContainer $gridTemplateColumns={gridTemplateColumns}>
-          <Column gridColumn="1 / 3">Faltantes</Column>
+          <Column gridColumn="1 / 3">Faltantes de la semana</Column>
         </GridContainer>
         {docs.length === 0 ? (
           <GridContainer $gridTemplateColumns={gridTemplateColumns}>
@@ -93,14 +94,16 @@ export function MissingList() {
               key={doc.id}
               $gridTemplateColumns={gridTemplateColumns}
             >
-              <Column>
+              <Column
+                title={doc.data().created_at?.toDate().toLocaleDateString()}
+              >
                 {doc
                   .data()
                   .created_at?.isEqual(
                     invoice.data().created_at as unknown as Timestamp
                   )
                   ? "Esta factura"
-                  : doc.data().created_at?.toDate().toLocaleDateString()}
+                  : Days[doc.data().created_at?.toDate().getDay() ?? 0]}
               </Column>
               <Column>{numberParser(doc.data().diff.amount)}</Column>
             </GridContainer>

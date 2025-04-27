@@ -48,6 +48,7 @@ export async function createProduct({
   units = null,
   tags = null,
   stepRaw = null,
+  followed,
 }: props) {
   const db = Firestore();
   const productColl = collection(db, ProductsCollection.root);
@@ -66,6 +67,7 @@ export async function createProduct({
       units,
       tags,
       step: parseStep(Number(stepRaw)),
+      followed,
     });
   }
 
@@ -81,22 +83,40 @@ export async function createProduct({
     exclude: false,
     step: parseStep(Number(stepRaw)),
     position: null,
+    followed: false, // Added default value for followed
   });
 }
 
 export function unparseStep(numero: string): number {
-  // Validar el formato de entrada
+  // Manejar el caso explícito "0" si significa 0 decimales (step "1")
+  // Aunque parseStep(0) devuelve "1", mantenemos esto por si "0" es un input válido en otro contexto.
   if (numero === "0") {
     return 0;
   }
-  // Contar la cantidad de ceros después del punto y antes del '1'
-  return numero.split("1")[0].length - 2; // Restamos 2 para excluir "0."
+
+  // Encontrar el índice del punto decimal
+  const decimalIndex = numero.indexOf(".");
+
+  // Si no hay punto decimal (ej: "1"), el número de decimales es 0
+  if (decimalIndex === -1) {
+    return 0;
+  }
+
+  // Obtener la subcadena después del punto decimal
+  const decimalPart = numero.substring(decimalIndex + 1);
+
+  // El número de decimales es la longitud de la parte decimal
+  return decimalPart.length;
 }
 
 function parseStep(largo: number): string {
+  // Si el largo es 0 o negativo, el step es 1 (sin decimales)
   if (largo < 1) {
     return "1";
   }
   // Generar una cadena con el formato '0.0...1' basado en el largo.
+  // largo = 1 -> "0.1"
+  // largo = 2 -> "0.01"
+  // largo = 3 -> "0.001"
   return "0." + "0".repeat(largo - 1) + "1";
 }

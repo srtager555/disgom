@@ -23,6 +23,7 @@ import { isEqual, debounce } from "lodash"; // Import debounce
 import { Credit } from "@/components/pages/invoice/manage/credit";
 import { ClientCredit } from "@/components/pages/invoice/manage/ClientCredit";
 import { Preliminar } from "@/components/pages/invoice/manage/Preliminar";
+import { Button } from "@/styles/Form.styles";
 
 export type rawCreditResult = Record<string, number>;
 
@@ -172,6 +173,21 @@ function InvoiceManager() {
               <Preliminar />
             </>
           )}
+          <FlexContainer styles={{ gap: "10px", marginTop: "60px" }}>
+            <Button onClick={() => window.print()}>Imprimir</Button>
+            <Button $primary onClick={() => router.push("/invoices")}>
+              Terminado
+            </Button>
+          </FlexContainer>
+          <Container styles={{ marginTop: "20px" }}>
+            <p>
+              Eleminar una factura es una acción <b>INRREVERSIBLE</b>, tenga
+              precaución
+            </p>
+            <Button $warn $hold>
+              Eleminar factura
+            </Button>
+          </Container>
         </>
       )}
     </MainContainer>

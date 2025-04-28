@@ -3,6 +3,7 @@ import styled, { css } from "styled-components";
 import { globalCSSVars } from "./colors";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { Container, FlexContainer } from "./index.styles";
 
 const LinkBase = styled(Link)<{ $active: boolean }>`
   position: relative;
@@ -55,14 +56,13 @@ export function CustomLink({ children, ...props }: props) {
 }
 
 export const Nav = styled.nav`
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-auto-rows: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   padding: 10px 0;
   background: ${globalCSSVars["--background"]};
-  border: 2px ${globalCSSVars["--foreground"]} solid;
-  border-radius: 15px;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -76,15 +76,16 @@ export const NavAnchor = styled(Link)<{ $active?: boolean }>`
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100%;
-  height: 100%;
+  gap: 5px;
+  padding: 10px;
   transition: all 200ms ease;
+  background-color: ${globalCSSVars["--background"]};
+
   ${(props) =>
     props.$active &&
     css`
       background-color: ${globalCSSVars["--foreground-hover"]};
     `}
-
   & > * {
     transition: all 200ms ease;
     ${(props) =>
@@ -111,8 +112,6 @@ export const NavContainer = styled.div<{
   $deployNav: boolean;
   $removeMaxWith: boolean;
 }>`
-  display: grid;
-  grid-template-columns: ${({ $deployNav }) => ($deployNav ? "200px" : "60px")} 1fr 60px;
   max-width: ${({ $removeMaxWith }) => ($removeMaxWith ? "100%" : "1100px")};
   width: 100%;
   margin: 0 auto;
@@ -129,4 +128,68 @@ export const NavContainer = styled.div<{
 
 export const AnchorNavigators = styled(CustomLink)`
   margin-right: 15px;
+`;
+
+export const AnchorContainer = styled(Container)`
+  &:hover > .list {
+    opacity: 1;
+    pointer-events: all;
+  }
+`;
+
+export const Anchor = styled.a`
+  position: relative;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 5px;
+  padding: 10px;
+  background-color: ${globalCSSVars["--background"]};
+  border-bottom: 1px solid ${globalCSSVars["--detail"]};
+`;
+
+export const AnchorList = styled(FlexContainer)`
+  flex-direction: column;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  background-color: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: 200ms all;
+  z-index: 1;
+
+  &.child {
+    top: 0;
+    left: 100%;
+  }
+`;
+
+export const AnchorPlus = styled.span`
+  position: relative;
+  display: inline-block;
+  min-width: 15px;
+  height: 15px;
+
+  &:before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 2px;
+    background-color: ${globalCSSVars["--foreground"]};
+  }
+  &:after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 100%;
+    background-color: ${globalCSSVars["--foreground"]};
+  }
 `;

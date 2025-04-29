@@ -2,7 +2,6 @@
 import {
   AnchorList,
   Nav,
-  // NavAnchor, // Parece no usarse
   NavContainer,
   AnchorPlus,
   Anchor,
@@ -10,171 +9,221 @@ import {
 } from "@/styles/Nav.module";
 import { Icon, iconType } from "../Icons";
 import { Container } from "@/styles/index.styles";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react"; // Import useMemo
 import { useRouter } from "next/router";
 import {
   collection,
   CollectionReference,
-  // DocumentSnapshot, // Parece no usarse
   onSnapshot,
-  // orderBy, // Parece no usarse
   query,
   QueryDocumentSnapshot,
   where,
-  // Firestore, // Import Firestore type if not already implicitly available
 } from "firebase/firestore";
-import { Firestore as initializeFirestore } from "@/tools/firestore"; // Renombrar para evitar conflicto
-import {
-  // InvoiceCollection,
-  SellersCollection,
-} from "@/tools/firestore/CollectionTyping";
+import { Firestore as initializeFirestore } from "@/tools/firestore";
+import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { SellersDoc } from "@/tools/sellers/create";
-// Importa el hook y el tipo NavElementData si no está ya exportado/importado
-import { useInvoiceStatusRealtime } from "@/hooks/useInvoiceStatusRealtime"; // Ajusta la ruta
+import { useInvoiceStatusRealtime } from "@/hooks/useInvoiceStatusRealtime";
 
-// Exporta este tipo si lo usas en el hook
+// Interfaz actualizada para NavElementData (sin cambios aquí)
 export interface NavElementData {
   href: string;
   name: string;
   icon?: iconType;
 }
 
+// Interfaz NavElement actualizada con children como Record
 interface NavElement extends NavElementData {
-  children?: NavElement[];
+  // 👇 Children ahora es un Record o undefined
+  children?: Record<string, NavElement>;
 }
 
 // Define el tipo 'children' si no está definido globalmente
 type children = React.ReactNode;
 
+// --- Helper function para convertir array a Record ---
+// (Puedes moverla a un archivo de utilidades si prefieres)
+const arrayToNavElementRecord = (
+  arr: NavElementData[],
+  keyPrefix: string = "item" // Prefijo para las claves generadas
+): Record<string, NavElement> => {
+  const record: Record<string, NavElement> = {};
+  arr.forEach((item, index) => {
+    // Usar un prefijo y el índice como clave. Considera usar item.href o un id si es más estable/único.
+    const key = `${keyPrefix}-${item.href || index}`; // Usar href si existe, sino índice
+    record[key] = { ...item }; // Copia las propiedades de NavElementData
+  });
+  return record;
+};
+// --- Fin Helper function ---
+
 export function NavLayout({ children }: { children: children }) {
+  // Estado inicial actualizado para usar Record en children
   const [url, setUrl] = useState<Record<string, NavElement>>({
     home: { href: "/feed", name: "Inicio", icon: "home" },
-    seller: { href: "/sellers", icon: "seller", name: "Vendedores" },
+    seller: {
+      href: "/sellers",
+      icon: "seller",
+      name: "Vendedores",
+      children: {}, // Inicialmente vacío, se llenará desde Firestore
+    },
     products: {
       href: "/products",
       icon: "product",
       name: "Inventarios",
-      children: [
-        { href: "/products/list", name: "Inventario" },
-        { href: "/products/list", name: "Guardo general" },
-        { href: "/products/list", name: "Guardo individual" },
-      ],
+      children: {
+        // 👇 Claves descriptivas para cada hijo
+        inventoryList: { href: "/products/list", name: "Inventario" },
+        generalStorage: { href: "/products/list", name: "Guardo general" },
+        individualStorage: {
+          href: "/products/list",
+          name: "Guardo individual",
+        },
+      },
     },
     invoice: {
       href: "/invoices",
       icon: "invoice",
       name: "Facturación",
-      children: [
-        { name: "Lista de facturas", href: "/invoices" },
-        { name: "Crear factura a", href: "/invoices/manage", children: [] }, // Inicialmente vacío
-        { name: "Liquidar a", href: "/invoices/manage", children: [] }, // Inicialmente vacío
-        {
+      children: {
+        // 👇 Claves descriptivas para cada hijo
+        list: { name: "Lista de facturas", href: "/invoices" },
+        create: {
+          name: "Crear factura a",
+          href: "/invoices/manage",
+          children: {},
+        }, // Inicialmente vacío
+        liquidate: {
+          name: "Liquidar a",
+          href: "/invoices/manage",
+          children: {},
+        }, // Inicialmente vacío
+        various: {
           name: "Varios",
           href: "/invoices/manage",
-          children: [
-            { name: "Donaciones", href: "/invoices/manage" },
-            { name: "Producto en mal estado", href: "/invoices/manage" },
-          ],
+          children: {
+            donations: { name: "Donaciones", href: "/invoices/manage" },
+            damagedProduct: {
+              name: "Producto en mal estado",
+              href: "/invoices/manage",
+            },
+          },
         },
-      ],
+      },
     },
   });
   const [removeMaxWith, setRemoveMaxWith] = useState(false);
+  // El estado de sellers sigue siendo un array de snapshots
   const [sellers, setSellers] = useState<
     Array<QueryDocumentSnapshot<SellersDoc>>
   >([]);
   const { asPath } = useRouter();
-  const db = initializeFirestore(); // Inicializa Firestore una vez
+  const db = initializeFirestore();
 
-  // Efecto para cargar vendedores
+  // Efecto para cargar vendedores y actualizar el submenú 'seller'
   useEffect(() => {
     const coll = collection(
       db,
       SellersCollection.root
     ) as CollectionReference<SellersDoc>;
-    const q = query(
-      coll,
-      where("disabled", "==", false) /* orderBy("name") // Opcional: ordenar */
-    );
+    const q = query(coll, where("disabled", "==", false));
 
     const unsubscribe = onSnapshot(q, (snap) => {
       const fetchedSellers = snap.docs;
-      setSellers(fetchedSellers);
+      setSellers(fetchedSellers); // Actualiza el estado de sellers (si aún lo necesitas)
 
-      // Actualiza la sección de vendedores directamente aquí
+      // Crea el Record para los children de 'seller'
+      const sellerChildrenRecord: Record<string, NavElement> = {};
+      fetchedSellers.forEach((el) => {
+        const sellerData = el.data();
+        const sellerId = el.id;
+        // Usa el ID del vendedor como clave para el Record
+        sellerChildrenRecord[sellerId] = {
+          name: sellerData?.name ?? `Vendedor ${sellerId}`,
+          href: `/sellers?id=${sellerId}`,
+        };
+      });
+
+      // Actualiza la URL con el nuevo Record de vendedores
       setUrl((currentUrl) => ({
         ...currentUrl,
         seller: {
           ...currentUrl.seller,
-          children: fetchedSellers.map((el) => ({
-            name: el.data()?.name ?? `Vendedor ${el.id}`, // Maneja posible data undefined
-            href: `/sellers?id=${el.id}`,
-          })),
+          children: sellerChildrenRecord, // Asigna el Record creado
         },
       }));
     });
 
-    return unsubscribe; // Limpia el listener de vendedores
-  }, [db]); // Depende de la instancia de db
+    return unsubscribe;
+  }, [db]); // Dependencia: db
 
-  // *** USA EL HOOK PERSONALIZADO ***
+  // Hook para obtener datos de facturas en tiempo real
   const { createInvoiceList, liquidateInvoiceList, isLoading, error } =
     useInvoiceStatusRealtime(db, sellers);
 
-  // Efecto para actualizar los submenús de facturación usando los datos del hook
+  // Memoiza la conversión de arrays a Records para evitar recálculos innecesarios
+  const createInvoiceRecord = useMemo(
+    () => arrayToNavElementRecord(createInvoiceList, "create"),
+    [createInvoiceList]
+  );
+  const liquidateInvoiceRecord = useMemo(
+    () => arrayToNavElementRecord(liquidateInvoiceList, "liquidate"),
+    [liquidateInvoiceList]
+  );
+
+  // Efecto para actualizar los submenús de facturación ('create' y 'liquidate')
   useEffect(() => {
-    // Opcional: manejar isLoading o error en la UI si es necesario
-    if (isLoading) return; // Espera a que el hook termine de cargar
+    if (isLoading) return; // Espera si está cargando
     if (error) {
       console.error("Error from useInvoiceStatusRealtime:", error);
-      // Podrías querer limpiar las listas o mostrar un error en la UI
+      // Considera limpiar los submenús o mostrar un error
       // setUrl(...)
       return;
     }
 
     setUrl((currentUrl) => {
-      // Encuentra los índices de forma segura
-      const invoiceChildren = currentUrl.invoice.children ?? [];
-      const createIndex = invoiceChildren.findIndex(
-        (child) => child.name === "Crear factura a"
-      );
-      const liquidateIndex = invoiceChildren.findIndex(
-        (child) => child.name === "Liquidar a"
-      );
+      // Accede a los hijos de invoice usando las claves definidas
+      const currentInvoiceChildren = currentUrl.invoice.children ?? {};
+      const createChild = currentInvoiceChildren["create"];
+      const liquidateChild = currentInvoiceChildren["liquidate"];
 
-      // Si no se encuentran los elementos, no hagas nada (o loggea un error)
-      if (createIndex === -1 || liquidateIndex === -1) {
-        console.error("Could not find invoice submenus to update.");
+      // Verifica si los elementos existen antes de intentar actualizarlos
+      if (!createChild || !liquidateChild) {
+        console.warn(
+          "Invoice submenus ('create' or 'liquidate') not found in state. Skipping update."
+        );
+        return currentUrl; // No se encontraron los elementos, no actualiza
+      }
+
+      // Compara los records actuales con los nuevos (usando JSON.stringify es simple pero puede ser ineficiente)
+      // Una comparación profunda sería más robusta si la estructura es compleja.
+      const createChanged =
+        JSON.stringify(createChild.children) !==
+        JSON.stringify(createInvoiceRecord);
+      const liquidateChanged =
+        JSON.stringify(liquidateChild.children) !==
+        JSON.stringify(liquidateInvoiceRecord);
+
+      // Si no hay cambios, retorna el estado actual para evitar re-renderizados
+      if (!createChanged && !liquidateChanged) {
         return currentUrl;
       }
 
-      // Clonar para evitar mutación directa
-      const newInvoiceChildren = [...invoiceChildren];
+      console.log("Updating invoice submenus ('create' and 'liquidate')...");
 
-      // Comprobar si realmente hay cambios antes de actualizar el estado
-      const createChanged =
-        JSON.stringify(newInvoiceChildren[createIndex].children) !==
-        JSON.stringify(createInvoiceList);
-      const liquidateChanged =
-        JSON.stringify(newInvoiceChildren[liquidateIndex].children) !==
-        JSON.stringify(liquidateInvoiceList);
+      // Crea una nueva copia del objeto children de invoice para la inmutabilidad
+      const newInvoiceChildren = { ...currentInvoiceChildren };
 
-      if (!createChanged && !liquidateChanged) {
-        return currentUrl; // No hay cambios, evita re-render innecesario
-      }
-
-      console.log("Updating invoice submenus...");
-
-      // Actualizar los children
-      newInvoiceChildren[createIndex] = {
-        ...newInvoiceChildren[createIndex],
-        children: createInvoiceList,
+      // Actualiza los children de 'create' y 'liquidate' con los nuevos Records
+      newInvoiceChildren["create"] = {
+        ...createChild,
+        children: createInvoiceRecord,
       };
-      newInvoiceChildren[liquidateIndex] = {
-        ...newInvoiceChildren[liquidateIndex],
-        children: liquidateInvoiceList,
+      newInvoiceChildren["liquidate"] = {
+        ...liquidateChild,
+        children: liquidateInvoiceRecord,
       };
 
+      // Retorna el nuevo estado de la URL
       return {
         ...currentUrl,
         invoice: {
@@ -183,23 +232,22 @@ export function NavLayout({ children }: { children: children }) {
         },
       };
     });
-  }, [createInvoiceList, liquidateInvoiceList, isLoading, error]); // Depende de los resultados del hook
+    // Dependencias: los Records memoizados, isLoading y error
+  }, [createInvoiceRecord, liquidateInvoiceRecord, isLoading, error]);
 
   // Efecto para removeMaxWith (sin cambios)
   useEffect(() => {
-    if (asPath.match("invoices")) {
-      setRemoveMaxWith(true);
-    } else {
-      setRemoveMaxWith(false);
-    }
+    setRemoveMaxWith(asPath.includes("/invoices")); // Simplificado
   }, [asPath]);
 
   return (
     <NavContainer $deployNav={false} $removeMaxWith={removeMaxWith}>
       <Container>
         <Nav>
-          {Object.values(url).map((el, i) => (
-            <Anchors key={i} {...el} child={false} />
+          {/* Itera sobre los valores del objeto url */}
+          {Object.values(url).map((el) => (
+            // Usa una clave única, por ejemplo el href o name
+            <Anchors key={el.href || el.name} {...el} child={false} />
           ))}
         </Nav>
       </Container>
@@ -208,32 +256,34 @@ export function NavLayout({ children }: { children: children }) {
   );
 }
 
+// Props para el componente Anchors (sin cambios)
 type anchorProps = NavElement & {
-  // Combina los props
   child: boolean;
 };
 
-// Componente Anchors (sin cambios significativos, solo limpieza de console.log)
+// Componente Anchors actualizado para manejar children como Record
 const Anchors = ({ href, name, icon, children, child }: anchorProps) => {
-  // console.log(children); // Quitar o usar condicionalmente para depurar
+  // Verifica si hay hijos usando Object.keys y su longitud
+  const hasChildren = children && Object.keys(children).length > 0;
 
   return (
     <AnchorContainer>
-      {/* Si hay hijos, el Anchor principal no debería tener href funcional */}
       <Anchor
-        href={!children ? href : undefined}
-        onClick={children ? (e) => e.preventDefault() : undefined}
+        href={!hasChildren ? href : undefined} // El enlace principal no es navegable si tiene hijos
+        onClick={hasChildren ? (e) => e.preventDefault() : undefined} // Previene navegación si hay hijos
       >
         {icon && <Icon iconType={icon} />}
         {name}
-        {children && children.length > 0 && <AnchorPlus />}{" "}
-        {/* Mostrar solo si hay hijos */}
+        {/* Muestra el icono '+' solo si hay hijos */}
+        {hasChildren && <AnchorPlus />}
       </Anchor>
       {/* Renderiza la lista solo si hay hijos */}
-      {children && children.length > 0 && (
+      {hasChildren && (
         <AnchorList className={child ? "list child" : "list"}>
-          {children.map((el, i) => (
-            <Anchors key={i} {...el} child />
+          {/* Itera sobre los *valores* del Record children */}
+          {Object.values(children).map((el) => (
+            // Usa una clave única, por ejemplo el href o name
+            <Anchors key={el.href || el.name} {...el} child />
           ))}
         </AnchorList>
       )}

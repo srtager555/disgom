@@ -5,13 +5,13 @@ import {
   where,
   onSnapshot,
   Timestamp,
-  Firestore,
   QueryDocumentSnapshot,
   DocumentReference, // Import DocumentReference
 } from "firebase/firestore";
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { SellersDoc } from "@/tools/sellers/create";
 import { NavElementData } from "@/components/layouts/nav.layout"; // Asegúrate que la ruta sea correcta
+import { Firestore } from "@/tools/firestore";
 
 interface InvoiceStatus {
   createInvoiceList: NavElementData[];
@@ -20,7 +20,6 @@ interface InvoiceStatus {
   error: Error | null;
 }
 
-// --- Inicio: Soluciones para el cambio de día ---
 // Función auxiliar para obtener la fecha actual en formato YYYY-MM-DD
 const getCurrentDateString = () => {
   const now = new Date();
@@ -29,10 +28,8 @@ const getCurrentDateString = () => {
     "0"
   )}-${String(now.getDate()).padStart(2, "0")}`;
 };
-// --- Fin: Soluciones para el cambio de día ---
 
 export function useInvoiceStatusRealtime(
-  db: Firestore,
   sellers: Array<QueryDocumentSnapshot<SellersDoc>>
 ): InvoiceStatus {
   const [status, setStatus] = useState<InvoiceStatus>({
@@ -41,49 +38,9 @@ export function useInvoiceStatusRealtime(
     isLoading: true,
     error: null,
   });
-
-  // --- Solución Cambio Día 3: Estado para la fecha actual ---
   const [currentDateStr, setCurrentDateStr] = useState(getCurrentDateString());
-  // --- Fin Solución Cambio Día 3 ---
 
   useEffect(() => {
-    // --- Solución Cambio Día 1: Interval Check (dentro del efecto) ---
-    /*
-    const intervalId = setInterval(() => {
-        const todayStr = getCurrentDateString();
-        // Si la fecha almacenada en el estado es diferente a la actual, actualiza el estado.
-        // Esto hará que el useEffect se vuelva a ejecutar porque currentDateStr es una dependencia.
-        setCurrentDateStr(prevDateStr => {
-            if (prevDateStr !== todayStr) {
-                console.log("Day changed, forcing effect re-run.");
-                return todayStr;
-            }
-            return prevDateStr;
-        });
-    // Revisa cada 5 minutos (ajusta según necesidad)
-    }, 5 * 60 * 1000);
-    */
-    // --- Fin Solución Cambio Día 1 ---
-
-    // --- Solución Cambio Día 2: Focus/Visibility Check ---
-    /*
-    const handleVisibilityChange = () => {
-        if (document.visibilityState === 'visible') {
-            console.log("Tab became visible, checking date...");
-            const todayStr = getCurrentDateString();
-             setCurrentDateStr(prevDateStr => {
-                if (prevDateStr !== todayStr) {
-                    console.log("Day changed while tab hidden, forcing effect re-run.");
-                    return todayStr;
-                }
-                return prevDateStr;
-            });
-        }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    */
-    // --- Fin Solución Cambio Día 2 ---
-
     if (sellers.length === 0) {
       setStatus({
         createInvoiceList: [],
@@ -91,9 +48,6 @@ export function useInvoiceStatusRealtime(
         isLoading: false,
         error: null,
       });
-      // Limpiar timers/listeners si se usan las otras soluciones
-      // clearInterval(intervalId); // Para Solución 1
-      // document.removeEventListener('visibilitychange', handleVisibilityChange); // Para Solución 2
       return;
     }
 
@@ -101,10 +55,9 @@ export function useInvoiceStatusRealtime(
     if (sellers.length > 30) {
       console.warn("Hook: Listening only to the first 30 sellers...");
     }
-    // Asegúrate que seller.ref existe y es del tipo correcto
     const sellerRefsToQuery: DocumentReference[] = sellersToQuery
       .map((doc) => doc.ref)
-      .filter((ref): ref is DocumentReference<SellersDoc> => ref !== undefined); // Filtra posibles undefined y asegura tipo
+      .filter((ref): ref is DocumentReference<SellersDoc> => ref !== undefined);
 
     if (sellerRefsToQuery.length === 0) {
       setStatus({
@@ -113,14 +66,10 @@ export function useInvoiceStatusRealtime(
         isLoading: false,
         error: null,
       });
-      // Limpiar timers/listeners
-      // clearInterval(intervalId); // Para Solución 1
-      // document.removeEventListener('visibilitychange', handleVisibilityChange); // Para Solución 2
       return;
     }
 
-    // Calcula las fechas basándose en la fecha actual del estado (o la real si no usas estado de fecha)
-    const baseDate = new Date(currentDateStr + "T00:00:00"); // Usa la fecha del estado para consistencia
+    const baseDate = new Date(currentDateStr + "T00:00:00");
     const startOfDay = new Date(
       baseDate.getFullYear(),
       baseDate.getMonth(),
@@ -141,8 +90,9 @@ export function useInvoiceStatusRealtime(
     const startOfDayTimestamp = Timestamp.fromDate(startOfDay);
     const endOfDayTimestamp = Timestamp.fromDate(endOfDay);
 
-    console.log(`Setting up listener for date: ${currentDateStr}`); // Log para ver qué día escucha
+    console.log(`Setting up listener for date: ${currentDateStr}`);
 
+    const db = Firestore();
     const invoiceColl = collection(db, InvoiceCollection.root);
     const q = query(
       invoiceColl,
@@ -155,33 +105,46 @@ export function useInvoiceStatusRealtime(
 
     const unsubscribe = onSnapshot(
       q,
+      // --- Inicio: Implementación de la Solución 3 ---
       (querySnapshot) => {
         console.log(`Snapshot received for ${currentDateStr}`);
-        const sellersWithInvoiceToday = new Set<string>();
+        // 1. Crear mapa de Seller ID a Invoice ID
+        const sellerInvoiceMap = new Map<string, string>();
         querySnapshot.forEach((doc) => {
           const invoiceData = doc.data();
-          if (invoiceData.seller_ref && invoiceData.seller_ref.id) {
-            sellersWithInvoiceToday.add(invoiceData.seller_ref.id);
+          // Asegúrate que seller_ref y su id existen, y que doc.id (invoiceId) también existe
+          if (invoiceData?.seller_ref?.id && doc.id) {
+            sellerInvoiceMap.set(invoiceData.seller_ref.id, doc.id);
           }
         });
 
         const createList: NavElementData[] = [];
         const liquidateList: NavElementData[] = [];
+
+        // 2. Iterar sobre los vendedores a consultar
         sellersToQuery.forEach((sellerDoc) => {
+          const sellerId = sellerDoc.id;
           const sellerData = sellerDoc.data();
-          // Asegúrate que sellerData existe antes de acceder a 'name'
-          const sellerName = sellerData?.name ?? `Vendedor ${sellerDoc.id}`;
-          const sellerNavItem = {
+          const sellerName = sellerData?.name ?? `Vendedor ${sellerId}`;
+          const invoiceId = sellerInvoiceMap.get(sellerId); // Obtener ID de factura si existe
+
+          // 3. Construir el objeto NavElementData con el href correcto
+          const sellerNavItem: NavElementData = {
             name: sellerName,
-            href: `/invoices/manage?sellerId=${sellerDoc.id}`,
+            href: invoiceId // ¿Existe ID de factura para este vendedor?
+              ? `/invoices/manage?id=${invoiceId}` // Sí: usa el ID de la factura
+              : `/invoices/manage?sellerId=${sellerId}`, // No: usa el ID del vendedor
           };
-          if (sellersWithInvoiceToday.has(sellerDoc.id)) {
-            liquidateList.push(sellerNavItem);
+
+          // 4. Añadir el elemento a la lista correspondiente basado en si había invoiceId
+          if (invoiceId) {
+            liquidateList.push(sellerNavItem); // Vendedor con factura -> Liquidar
           } else {
-            createList.push(sellerNavItem);
+            createList.push(sellerNavItem); // Vendedor sin factura -> Crear
           }
         });
 
+        // 5. Actualizar el estado
         setStatus({
           createInvoiceList: createList,
           liquidateInvoiceList: liquidateList,
@@ -189,6 +152,7 @@ export function useInvoiceStatusRealtime(
           error: null,
         });
       },
+      // --- Fin: Implementación de la Solución 3 ---
       (err) => {
         console.error(
           `Error in useInvoiceStatusRealtime listener for ${currentDateStr}:`,
@@ -198,36 +162,26 @@ export function useInvoiceStatusRealtime(
       }
     );
 
-    // Limpieza del efecto
     return () => {
       console.log(`Unsubscribing listener for ${currentDateStr}`);
       unsubscribe();
-      // Limpiar timers/listeners si se usan las otras soluciones
-      // clearInterval(intervalId); // Para Solución 1
-      // document.removeEventListener('visibilitychange', handleVisibilityChange); // Para Solución 2
     };
+  }, [sellers, currentDateStr]);
 
-    // Dependencias: db, sellers y la fecha actual (para Solución 3)
-  }, [db, sellers, currentDateStr]); // <--- currentDateStr añadido aquí para Solución 3
-
-  // --- Solución Cambio Día 3: Intervalo para actualizar la fecha ---
   useEffect(() => {
     const intervalId = setInterval(() => {
       const todayStr = getCurrentDateString();
-      // Actualiza el estado SOLO si la fecha realmente cambió
       setCurrentDateStr((prevDateStr) => {
         if (prevDateStr !== todayStr) {
           console.log("Day changed, updating date state.");
           return todayStr;
         }
-        return prevDateStr; // No hay cambio, no actualiza estado, no re-ejecuta el efecto principal
+        return prevDateStr;
       });
-      // Revisa cada minuto (más frecuente que en Solución 1 porque solo actualiza si hay cambio)
     }, 1 * 60 * 1000);
 
-    return () => clearInterval(intervalId); // Limpia el intervalo al desmontar el hook
-  }, []); // Este efecto solo se ejecuta una vez al montar el hook
-  // --- Fin Solución Cambio Día 3 ---
+    return () => clearInterval(intervalId);
+  }, []);
 
   return status;
 }

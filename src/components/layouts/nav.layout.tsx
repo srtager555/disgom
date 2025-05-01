@@ -56,6 +56,13 @@ const arrayToNavElementRecord = (
 };
 // --- Fin Helper function ---
 
+export const filterSellerHasInventory = (
+  arr: Array<QueryDocumentSnapshot<SellersDoc>>,
+  condition: boolean
+) => {
+  return arr.filter((el) => el.data().hasInventory === condition);
+};
+
 export function NavLayout({ children }: { children: children }) {
   // Estado inicial actualizado para usar Record en children
   const [url, setUrl] = useState<Record<string, NavElement>>({
@@ -64,23 +71,54 @@ export function NavLayout({ children }: { children: children }) {
       href: "/sellers",
       icon: "seller",
       name: "Vendedores",
-      children: {}, // Inicialmente vacío, se llenará desde Firestore
+      children: {
+        create: {
+          href: "/sellers/create",
+          name: "Crear vendedor",
+        },
+      }, // Inicialmente vacío, se llenará desde Firestore
     },
     products: {
       href: "/products",
       icon: "product",
       name: "Inventarios",
       children: {
-        // 👇 Claves descriptivas para cada hijo
-        inventoryList: { href: "/products/invetory", name: "Inventario" },
+        inventoryList: {
+          href: "/products/invetory",
+          name: "Inventario",
+          children: {
+            inventory: {
+              href: "/products/invetory",
+              name: "Inventario actual",
+            },
+            addStock: {
+              href: "/products/invetory/add",
+              name: "Entradas y salidas",
+            },
+          },
+        },
         generalStorage: {
-          href: "/products/sellers_inventory",
+          href: "/products/inventory/sellers",
           name: "Guardo general",
         },
         individualStorage: {
-          href: "/products/sellers_inventory",
+          href: "/products/inventory/sellers",
           name: "Guardo individual",
           children: {},
+        },
+        products: {
+          href: "/products/",
+          name: "Lista de productos",
+          children: {
+            addOrEdit: {
+              href: "/products/create",
+              name: "Añadir o editar",
+            },
+            detailed: {
+              href: "/products/detailed",
+              name: "Información detallada",
+            },
+          },
         },
       },
     },
@@ -148,12 +186,16 @@ export function NavLayout({ children }: { children: children }) {
 
     const unsubscribe = onSnapshot(q, (snap) => {
       const fetchedSellers = snap.docs;
+      const sellersSorted = [
+        ...filterSellerHasInventory(fetchedSellers, false),
+        ...filterSellerHasInventory(fetchedSellers, true),
+      ];
       setSellers(fetchedSellers); // Actualiza el estado de sellers (si aún lo necesitas)
 
       // Crea el Record para los children de 'seller'
       const sellerChildrenRecord: Record<string, NavElement> = {};
       const sellerInvotoriesRecord: Record<string, NavElement> = {};
-      fetchedSellers.forEach((el) => {
+      sellersSorted.forEach((el) => {
         const sellerData = el.data();
         const sellerId = el.id;
         // Usa el ID del vendedor como clave para el Record
@@ -163,7 +205,7 @@ export function NavLayout({ children }: { children: children }) {
         };
         sellerInvotoriesRecord[sellerId] = {
           name: sellerData?.name ?? `Vendedor ${sellerId}`,
-          href: `/sellers_inventory?id=${sellerId}`,
+          href: `/products/inventory/sellers?id=${sellerId}`,
         };
       });
 
@@ -172,7 +214,14 @@ export function NavLayout({ children }: { children: children }) {
         ...currentUrl,
         seller: {
           ...currentUrl.seller,
-          children: sellerChildrenRecord, // Asigna el Record creado
+          children: {
+            ...currentUrl.seller.children,
+            sellersList: {
+              href: "sellers/list/",
+              name: "Lista de vendedores",
+              children: sellerChildrenRecord,
+            },
+          },
         },
         products: {
           ...currentUrl.products,

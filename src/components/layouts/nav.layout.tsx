@@ -19,7 +19,7 @@ import {
   QueryDocumentSnapshot,
   where,
 } from "firebase/firestore";
-import { Firestore as initializeFirestore } from "@/tools/firestore";
+import { Firestore } from "@/tools/firestore";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { SellersDoc } from "@/tools/sellers/create";
 import { useInvoiceStatusRealtime } from "@/hooks/useInvoiceStatusRealtime";
@@ -72,11 +72,15 @@ export function NavLayout({ children }: { children: children }) {
       name: "Inventarios",
       children: {
         // 👇 Claves descriptivas para cada hijo
-        inventoryList: { href: "/products/list", name: "Inventario" },
-        generalStorage: { href: "/products/list", name: "Guardo general" },
+        inventoryList: { href: "/products/invetory", name: "Inventario" },
+        generalStorage: {
+          href: "/products/sellers_inventory",
+          name: "Guardo general",
+        },
         individualStorage: {
-          href: "/products/list",
+          href: "/products/sellers_inventory",
           name: "Guardo individual",
+          children: {},
         },
       },
     },
@@ -101,26 +105,41 @@ export function NavLayout({ children }: { children: children }) {
           name: "Varios",
           href: "/invoices/manage",
           children: {
-            donations: { name: "Donaciones", href: "/invoices/manage" },
+            donations: {
+              name: "Donaciones",
+              href: "/invoices/manage?donation=true",
+            },
             damagedProduct: {
               name: "Producto en mal estado",
-              href: "/invoices/manage",
+              href: "/invoices/manage?damaged=true",
             },
           },
         },
       },
     },
   });
+  const { asPath } = useRouter();
   const [removeMaxWith, setRemoveMaxWith] = useState(false);
-  // El estado de sellers sigue siendo un array de snapshots
   const [sellers, setSellers] = useState<
     Array<QueryDocumentSnapshot<SellersDoc>>
   >([]);
-  const { asPath } = useRouter();
-  const db = initializeFirestore();
+  // Hook para obtener datos de facturas en tiempo real
+  const { createInvoiceList, liquidateInvoiceList, isLoading, error } =
+    useInvoiceStatusRealtime(sellers);
+
+  // Memoiza la conversión de arrays a Records para evitar recálculos innecesarios
+  const createInvoiceRecord = useMemo(
+    () => arrayToNavElementRecord(createInvoiceList, "create"),
+    [createInvoiceList]
+  );
+  const liquidateInvoiceRecord = useMemo(
+    () => arrayToNavElementRecord(liquidateInvoiceList, "liquidate"),
+    [liquidateInvoiceList]
+  );
 
   // Efecto para cargar vendedores y actualizar el submenú 'seller'
   useEffect(() => {
+    const db = Firestore();
     const coll = collection(
       db,
       SellersCollection.root
@@ -133,6 +152,7 @@ export function NavLayout({ children }: { children: children }) {
 
       // Crea el Record para los children de 'seller'
       const sellerChildrenRecord: Record<string, NavElement> = {};
+      const sellerInvotoriesRecord: Record<string, NavElement> = {};
       fetchedSellers.forEach((el) => {
         const sellerData = el.data();
         const sellerId = el.id;
@@ -140,6 +160,10 @@ export function NavLayout({ children }: { children: children }) {
         sellerChildrenRecord[sellerId] = {
           name: sellerData?.name ?? `Vendedor ${sellerId}`,
           href: `/sellers?id=${sellerId}`,
+        };
+        sellerInvotoriesRecord[sellerId] = {
+          name: sellerData?.name ?? `Vendedor ${sellerId}`,
+          href: `/sellers_inventory?id=${sellerId}`,
         };
       });
 
@@ -150,33 +174,28 @@ export function NavLayout({ children }: { children: children }) {
           ...currentUrl.seller,
           children: sellerChildrenRecord, // Asigna el Record creado
         },
+        products: {
+          ...currentUrl.products,
+          children: {
+            ...currentUrl.products.children,
+            individualStorage: {
+              ...((currentUrl.products.children ?? {}).individualStorage ?? {}),
+              children: sellerInvotoriesRecord,
+            },
+          },
+        },
       }));
     });
 
     return unsubscribe;
-  }, [db]); // Dependencia: db
-
-  // Hook para obtener datos de facturas en tiempo real
-  const { createInvoiceList, liquidateInvoiceList, isLoading, error } =
-    useInvoiceStatusRealtime(db, sellers);
-
-  // Memoiza la conversión de arrays a Records para evitar recálculos innecesarios
-  const createInvoiceRecord = useMemo(
-    () => arrayToNavElementRecord(createInvoiceList, "create"),
-    [createInvoiceList]
-  );
-  const liquidateInvoiceRecord = useMemo(
-    () => arrayToNavElementRecord(liquidateInvoiceList, "liquidate"),
-    [liquidateInvoiceList]
-  );
+  }, []);
 
   // Efecto para actualizar los submenús de facturación ('create' y 'liquidate')
   useEffect(() => {
     if (isLoading) return; // Espera si está cargando
     if (error) {
       console.error("Error from useInvoiceStatusRealtime:", error);
-      // Considera limpiar los submenús o mostrar un error
-      // setUrl(...)
+
       return;
     }
 
@@ -244,9 +263,7 @@ export function NavLayout({ children }: { children: children }) {
     <NavContainer $deployNav={false} $removeMaxWith={removeMaxWith}>
       <Container>
         <Nav>
-          {/* Itera sobre los valores del objeto url */}
           {Object.values(url).map((el) => (
-            // Usa una clave única, por ejemplo el href o name
             <Anchors key={el.href || el.name} {...el} child={false} />
           ))}
         </Nav>
@@ -256,12 +273,10 @@ export function NavLayout({ children }: { children: children }) {
   );
 }
 
-// Props para el componente Anchors (sin cambios)
 type anchorProps = NavElement & {
   child: boolean;
 };
 
-// Componente Anchors actualizado para manejar children como Record
 const Anchors = ({ href, name, icon, children, child }: anchorProps) => {
   // Verifica si hay hijos usando Object.keys y su longitud
   const hasChildren = children && Object.keys(children).length > 0;
@@ -274,15 +289,12 @@ const Anchors = ({ href, name, icon, children, child }: anchorProps) => {
       >
         {icon && <Icon iconType={icon} />}
         {name}
-        {/* Muestra el icono '+' solo si hay hijos */}
         {hasChildren && <AnchorPlus />}
       </Anchor>
-      {/* Renderiza la lista solo si hay hijos */}
+
       {hasChildren && (
         <AnchorList className={child ? "list child" : "list"}>
-          {/* Itera sobre los *valores* del Record children */}
           {Object.values(children).map((el) => (
-            // Usa una clave única, por ejemplo el href o name
             <Anchors key={el.href || el.name} {...el} child />
           ))}
         </AnchorList>

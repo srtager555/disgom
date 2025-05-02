@@ -10,6 +10,10 @@ import { createInvoice, invoiceType } from "@/tools/invoices/createInvoice";
 import { updateInvoice } from "@/tools/invoices/updateInvoice";
 import { SellersDoc } from "@/tools/sellers/create";
 import {
+  collection,
+  CollectionReference,
+  doc,
+  DocumentReference,
   PartialWithFieldValue,
   QueryDocumentSnapshot,
   updateDoc,
@@ -24,6 +28,8 @@ import { Credit } from "@/components/pages/invoice/manage/credit";
 import { ClientCredit } from "@/components/pages/invoice/manage/ClientCredit";
 import { Preliminar } from "@/components/pages/invoice/manage/Preliminar";
 import { Button } from "@/styles/Form.styles";
+import { Firestore } from "@/tools/firestore";
+import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 
 export type rawCreditResult = Record<string, number>;
 
@@ -37,7 +43,7 @@ const MainContainer = styled(FlexContainer)`
 `;
 
 function InvoiceManager() {
-  const { id } = useQueryParams();
+  const { id, sellerId } = useQueryParams();
   const router = useRouter();
   const { invoice } = useInvoice();
   const [selectedSeller, setSelectedSeller] = useState<
@@ -58,22 +64,41 @@ function InvoiceManager() {
 
   const { totalResults, calculateResults } = useProductResults();
 
-  // this effect is to create an invoice when the select the seller
+  // this effect is to create an invoice when select the seller
   useEffect(() => {
     async function createInvo() {
-      console.log(id, selectedSeller?.data().name);
-      if (id || !selectedSeller) return;
+      console.log(sellerId, id, selectedSeller?.data().name);
 
-      const invoiceCreated = await createInvoice({
-        seller_ref: selectedSeller.ref,
-      });
+      let invoiceCreated: DocumentReference<invoiceType>;
+      if (!sellerId) {
+        if (id || !selectedSeller) return;
+
+        invoiceCreated = await createInvoice({
+          seller_ref: selectedSeller.ref,
+        });
+      } else {
+        // if the seller is setted by a query
+        const db = Firestore();
+        const sellerColl = collection(
+          db,
+          SellersCollection.root
+        ) as CollectionReference<SellersDoc>;
+        const sellerRef = doc(
+          sellerColl,
+          sellerId
+        ) as DocumentReference<SellersDoc>;
+
+        invoiceCreated = await createInvoice({
+          seller_ref: sellerRef,
+        });
+      }
 
       router.push(`/invoices/manage?id=${invoiceCreated.id}`);
     }
 
     createInvo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, selectedSeller]);
+  }, [id, sellerId, selectedSeller]);
 
   // this effect is to update the seller when its changed
   useEffect(() => {

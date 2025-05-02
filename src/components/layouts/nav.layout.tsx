@@ -312,8 +312,8 @@ export function NavLayout({ children }: { children: children }) {
     <NavContainer $deployNav={false} $removeMaxWith={removeMaxWith}>
       <Container>
         <Nav>
-          {Object.values(url).map((el) => (
-            <Anchors key={el.href || el.name} {...el} child={false} />
+          {Object.values(url).map((el, i) => (
+            <Anchors key={i} {...el} child={false} />
           ))}
         </Nav>
       </Container>
@@ -343,8 +343,8 @@ const Anchors = ({ href, name, icon, children, child }: anchorProps) => {
 
       {hasChildren && (
         <AnchorList className={child ? "list child" : "list"}>
-          {Object.values(children).map((el) => (
-            <Anchors key={el.href || el.name} {...el} child />
+          {Object.values(children).map((el, i) => (
+            <Anchors key={i} {...el} child />
           ))}
         </AnchorList>
       )}

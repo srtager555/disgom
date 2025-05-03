@@ -166,14 +166,16 @@ function InvoiceManager() {
         currentSeller={selectedSeller}
         setSelectedSeller={setSelectedSeller}
       />
-      {selectedSeller && (
+      {selectedSeller && invoice?.data().invoice_type === "normal" && (
         <SelectClient
           sellerData={selectedSeller?.data()}
           sellerDoc={selectedSeller}
         />
       )}
 
-      {!selectedSeller?.data()?.hasInventory && !invoice?.data().client_ref ? (
+      {!selectedSeller?.data()?.hasInventory &&
+      !invoice?.data().client_ref &&
+      invoice?.data().invoice_type === "normal" ? (
         <Container>
           <p>Selecione un cliente para continuar</p>
         </Container>
@@ -197,10 +199,12 @@ function InvoiceManager() {
               <Close totals={totalResults} credits={creditResult} />
             </>
           ) : (
-            <>
-              <ClientCredit />
-              <Preliminar />
-            </>
+            invoice?.data().invoice_type === "normal" && (
+              <>
+                <ClientCredit />
+                <Preliminar />
+              </>
+            )
           )}
           <FlexContainer styles={{ gap: "10px", marginTop: "60px" }}>
             <Button onClick={() => window.print()}>Imprimir</Button>

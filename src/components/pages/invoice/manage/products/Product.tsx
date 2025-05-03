@@ -125,8 +125,6 @@ export function Product({
   }, [doc.ref]);
 
   useEffect(() => {
-    if (!remainStock.length) return;
-
     const results = remainStock.reduce<productResult>(
       (acc, stock) => {
         const amount = stock.amount;
@@ -161,6 +159,8 @@ export function Product({
       [doc.id]: results,
     }));
   }, [remainStock, doc.id, setProductsResults]);
+
+  useEffect(() => console.log("root remaingStock", remainStock), [remainStock]);
 
   if (hideProductWithoutStock && currentStock === 0) return <></>;
 

@@ -145,11 +145,11 @@ export function NavLayout({ children }: { children: children }) {
           children: {
             donations: {
               name: "Donaciones",
-              href: "/invoices/manage?donation=true",
+              href: "/invoices/manage?invoice_type=donation",
             },
             damagedProduct: {
               name: "Producto en mal estado",
-              href: "/invoices/manage?damaged=true",
+              href: "/invoices/manage?invoice_type=damaged",
             },
           },
         },

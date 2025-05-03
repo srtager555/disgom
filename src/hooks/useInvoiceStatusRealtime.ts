@@ -51,9 +51,16 @@ export function useInvoiceStatusRealtime(
       return;
     }
 
-    const sellersToQuery = sellers.slice(0, 30);
-    if (sellers.length > 30) {
-      console.warn("Hook: Listening only to the first 30 sellers...");
+    const sellersWithInventory = sellers.filter((sellerDoc) => {
+      const sellerData = sellerDoc.data();
+      return sellerData?.hasInventory;
+    });
+
+    const sellersToQuery = sellersWithInventory.slice(0, 30);
+    if (sellersWithInventory.length > 30) {
+      console.warn(
+        "Hook: Listening only to the first 30 sellers with inventory..."
+      );
     }
     const sellerRefsToQuery: DocumentReference[] = sellersToQuery
       .map((doc) => doc.ref)

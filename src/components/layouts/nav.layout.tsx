@@ -182,7 +182,11 @@ export function NavLayout({ children }: { children: children }) {
       db,
       SellersCollection.root
     ) as CollectionReference<SellersDoc>;
-    const q = query(coll, where("disabled", "==", false));
+    const q = query(
+      coll,
+      where("disabled", "==", false),
+      where("exclude", "==", false)
+    );
 
     const unsubscribe = onSnapshot(q, (snap) => {
       const fetchedSellers = snap.docs;
@@ -203,6 +207,8 @@ export function NavLayout({ children }: { children: children }) {
           name: sellerData?.name ?? `Vendedor ${sellerId}`,
           href: `/sellers?id=${sellerId}`,
         };
+
+        if (!sellerData?.hasInventory) return;
         sellerInvotoriesRecord[sellerId] = {
           name: sellerData?.name ?? `Vendedor ${sellerId}`,
           href: `/products/inventory/sellers?id=${sellerId}`,

@@ -65,27 +65,31 @@ export function InvoicePreview({ doc, inSeller }: props) {
 
   // effect to get the client
   useEffect(() => {
-    async function getSeller() {
+    async function getClient() {
       if (!data.client_ref) return;
       const c = await getDoc(data.client_ref);
       setClient(c);
     }
 
-    getSeller();
+    getClient();
   }, [data.client_ref]);
 
   // Determine what to display based on invoice type and context
   const primaryDisplay = useMemo(() => {
-    switch (data.invoice_type) {
-      case "donation":
-        return "Donación"; // Spanish for donation
-      case "damaged":
-        return "Dañado"; // Spanish for damaged
-      default:
-        // For 'normal' or any other type, show the seller name
-        return sellerData?.name;
+    if (!client) {
+      switch (data.invoice_type) {
+        case "donation":
+          return "Donación"; // Spanish for donation
+        case "damaged":
+          return "Dañado"; // Spanish for damaged
+        default:
+          // For 'normal' or any other type, show the seller name
+          return sellerData?.name;
+      }
+    } else {
+      return client?.data()?.name;
     }
-  }, [data.invoice_type, sellerData?.name]);
+  }, [data.invoice_type, sellerData?.name, client]);
 
   return (
     <InvoiceComponent>

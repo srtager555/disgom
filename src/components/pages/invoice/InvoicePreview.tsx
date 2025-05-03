@@ -74,19 +74,32 @@ export function InvoicePreview({ doc, inSeller }: props) {
     getSeller();
   }, [data.client_ref]);
 
+  // Determine what to display based on invoice type and context
+  const primaryDisplay = useMemo(() => {
+    switch (data.invoice_type) {
+      case "donation":
+        return "Donación"; // Spanish for donation
+      case "damaged":
+        return "Dañado"; // Spanish for damaged
+      default:
+        // For 'normal' or any other type, show the seller name
+        return sellerData?.name;
+    }
+  }, [data.invoice_type, sellerData?.name]);
+
   return (
     <InvoiceComponent>
       {client ? (
         <Container>
           <small>
-            {sellerData?.name} - {data.credit?.paid ? "pagado" : "en credito"}
+            {primaryDisplay} - {data.credit?.paid ? "pagado" : "en credito"}
           </small>
           <p>{client.data()?.name}</p>
         </Container>
       ) : inSeller ? (
         <p>{data.created_at?.toDate().toLocaleDateString()}</p>
       ) : (
-        <p>{sellerData?.name}</p>
+        <p>{primaryDisplay}</p> // Use the determined display value
       )}
       <Container styles={{ height: "100%" }}>
         {numberParser(data.total_sold)}

@@ -173,9 +173,13 @@ function InvoiceManager() {
         />
       )}
 
-      {!selectedSeller?.data()?.hasInventory &&
-      !invoice?.data().client_ref &&
-      invoice?.data().invoice_type === "normal" ? (
+      {!selectedSeller ? (
+        <Container>
+          <p>Selecione un Vendedor para continuar</p>
+        </Container>
+      ) : !selectedSeller.data().hasInventory &&
+        !invoice?.data().client_ref &&
+        invoice?.data().invoice_type === "normal" ? (
         <Container>
           <p>Selecione un cliente para continuar</p>
         </Container>

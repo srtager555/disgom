@@ -73,9 +73,12 @@ function InvoiceManager() {
       if (!sellerId) {
         if (id || !selectedSeller) return;
 
-        invoiceCreated = await createInvoice({
+        const result = await createInvoice({
           seller_ref: selectedSeller.ref,
         });
+
+        if (!result) return;
+        invoiceCreated = result;
       } else {
         // if the seller is setted by a query
         const db = Firestore();
@@ -88,9 +91,12 @@ function InvoiceManager() {
           sellerId
         ) as DocumentReference<SellersDoc>;
 
-        invoiceCreated = await createInvoice({
+        const result = await createInvoice({
           seller_ref: sellerRef,
         });
+
+        if (!result) return;
+        invoiceCreated = result;
       }
 
       router.push(`/invoices/manage?id=${invoiceCreated.id}`);
@@ -156,18 +162,16 @@ function InvoiceManager() {
 
   return (
     <MainContainer>
-      <Container styles={{ marginBottom: "20px" }}>
-        <SelectSeller
-          currentSeller={selectedSeller}
-          setSelectedSeller={setSelectedSeller}
+      <SelectSeller
+        currentSeller={selectedSeller}
+        setSelectedSeller={setSelectedSeller}
+      />
+      {selectedSeller && (
+        <SelectClient
+          sellerData={selectedSeller?.data()}
+          sellerDoc={selectedSeller}
         />
-        {selectedSeller && (
-          <SelectClient
-            sellerData={selectedSeller?.data()}
-            sellerDoc={selectedSeller}
-          />
-        )}
-      </Container>
+      )}
 
       {!selectedSeller?.data()?.hasInventory && !invoice?.data().client_ref ? (
         <Container>

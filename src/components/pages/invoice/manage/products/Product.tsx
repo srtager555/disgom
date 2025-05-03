@@ -22,6 +22,7 @@ import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 import { getInventoryByProduct } from "@/tools/invoices/getInventoryByProduct";
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { numberParser } from "@/tools/numberPaser";
+import { useInvoice } from "@/contexts/InvoiceContext";
 
 const GrabButton = styled.button`
   display: inline-block;
@@ -79,6 +80,7 @@ export function Product({
   allInventory,
   setProductsResults,
 }: props) {
+  const { invoice } = useInvoice();
   const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
   const [isFolded, setIsFolded] = useState(true);
   const [rtDoc, setRtDoc] = useState<DocumentSnapshot<productDoc>>(doc);
@@ -127,11 +129,13 @@ export function Product({
   useEffect(() => {
     const results = remainStock.reduce<productResult>(
       (acc, stock) => {
+        const multiplicator =
+          invoice?.data().invoice_type === "normal" ? 1 : -1;
         const amount = stock.amount;
-        const cost = stock.purchase_price * amount;
-        const sold = stock.sale_price * amount;
+        const cost = stock.purchase_price * amount * multiplicator;
+        const sold = stock.sale_price * amount * multiplicator;
         const profit = sold - cost;
-        const seller_profit = stock.commission * amount;
+        const seller_profit = stock.commission * amount * multiplicator;
         const seller_sold = sold + seller_profit;
 
         return {
@@ -158,7 +162,7 @@ export function Product({
       ...prev,
       [doc.id]: results,
     }));
-  }, [remainStock, doc.id, setProductsResults]);
+  }, [remainStock, doc.id, setProductsResults, invoice]);
 
   useEffect(() => console.log("root remaingStock", remainStock), [remainStock]);
 

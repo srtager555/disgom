@@ -43,7 +43,10 @@ export function ProductsFollowed() {
     const q = query(
       coll,
       where("created_at", ">", time.start),
-      where("created_at", "<", time.end)
+      where("created_at", "<", time.end),
+      where("seller_ref", "==", invoice?.data().seller_ref),
+      where("invoice_type", "==", "normal"),
+      where("disabled", "==", false)
     );
 
     const unsubcribe = onSnapshot(q, (snap) => {

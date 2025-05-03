@@ -21,11 +21,13 @@ import { outputType } from "../products/addOutputs";
 import { inventory } from "../sellers/invetory/create";
 import { credit } from "../sellers/credits/create";
 import { rawMoneyType } from "@/components/pages/invoice/manage/Closing/Money";
+import { createAnormalInvoice } from "./createAnormalInvoice";
 
 export type invoiceType = {
   created_at?: Timestamp;
   seller_ref: DocumentReference<SellersDoc>;
   client_ref: DocumentReference<client> | null;
+  invoice_type: "normal" | "donation" | "damaged";
   products_outputs: Record<string, Array<DocumentReference<outputType>>>;
   devolution: DocumentReference<inventory> | null;
   // devolution: {
@@ -35,6 +37,8 @@ export type invoiceType = {
   outputs_sold: Record<string, Array<DocumentReference<outputType>>>;
   // inventory_ref: null;
   last_inventory_ref: DocumentReference<inventory> | null;
+  next_invoice_ref: DocumentReference<invoiceType> | null;
+  prev_invoice_ref: DocumentReference<invoiceType> | null;
   total_sold: number;
   total_cost: number;
   total_proft: number;
@@ -56,27 +60,38 @@ export type invoiceType = {
   delete_at: Timestamp | null;
 };
 
-export async function createInvoice(data: Pick<invoiceType, "seller_ref">) {
-  const { seller_ref } = data;
+export async function createInvoice(
+  data: Partial<Pick<invoiceType, "seller_ref" | "invoice_type">>,
+  fromAnormalInvoiceProcess?: boolean
+): Promise<DocumentReference<invoiceType> | undefined> {
+  const { seller_ref, invoice_type = "normal" } = data;
   const db = Firestore();
   const coll = collection(
     db,
     InvoiceCollection.root
   ) as CollectionReference<invoiceType>;
-
-  const sellerDoc = await getDoc(seller_ref);
   let last_inventory = null;
 
-  if (sellerDoc.data()?.hasInventory) {
-    const coll = collection(
-      sellerDoc.ref,
-      SellersCollection.inventories.root
-    ) as CollectionReference<inventory>;
-    const q = query(coll, orderBy("created_at", "desc"), limit(1));
-    const inventories = await getDocs(q);
+  if (!fromAnormalInvoiceProcess) {
+    if (invoice_type !== "normal" && invoice_type !== undefined) {
+      return createAnormalInvoice(invoice_type);
+    } else if (seller_ref) {
+      const sellerDoc = await getDoc(seller_ref);
 
-    last_inventory = inventories.docs[0];
+      if (sellerDoc.data()?.hasInventory) {
+        const coll = collection(
+          sellerDoc.ref,
+          SellersCollection.inventories.root
+        ) as CollectionReference<inventory>;
+        const q = query(coll, orderBy("created_at", "desc"), limit(1));
+        const inventories = await getDocs(q);
+
+        last_inventory = inventories.docs[0];
+      }
+    }
   }
+
+  if (!seller_ref) return;
 
   return await addDoc(coll, {
     created_at: Timestamp.fromDate(new Date()),
@@ -101,5 +116,8 @@ export async function createInvoice(data: Pick<invoiceType, "seller_ref">) {
     disabled: false,
     delete_at: null,
     last_inventory_ref: last_inventory?.ref || null,
+    next_invoice_ref: null,
+    prev_invoice_ref: null,
+    invoice_type,
   });
 }

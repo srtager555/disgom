@@ -88,7 +88,7 @@ export function NavLayout({ children }: { children: children }) {
           name: "Inventario",
           children: {
             inventory: {
-              href: "/products/invetory",
+              href: "/products/inventory",
               name: "Inventario actual",
             },
             addStock: {

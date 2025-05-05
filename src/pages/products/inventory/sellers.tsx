@@ -259,6 +259,10 @@ const ProductInventory = ({
   // const productId = product.id;
   const productName = product.data().name;
   const productRef = product.ref; // Referencia completa al documento del producto
+  const currentInv = useMemo(() => {
+    const stock = product.data().stock;
+    return stock.reduce((acc, item) => acc + item.amount, 0);
+  }, [product]);
 
   // Función para calcular el stock de un vendedor para ESTE producto (memoizada)
   const getStockForSeller = useMemo(
@@ -305,8 +309,9 @@ const ProductInventory = ({
 
   return (
     <GridContainer $gridTemplateColumns={gridTemplate}>
-      {/* Columna 'Inv' - Placeholder o dato real si lo tienes */}
-      <Column>{/* ¿Qué valor va aquí? Podría ser totalStock? */}</Column>
+      <Column title={numberParser(currentInv)}>
+        {numberParser(currentInv)}
+      </Column>
       <Column gridColumn="span 2">{productName}</Column>
       {/* Iterar sobre los vendedores activos */}
       {sellers.map((seller) => (

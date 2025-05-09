@@ -128,6 +128,32 @@ export type outputType = {
 //   });
 // }
 
+export const outputParser = (
+  invoice: DocumentSnapshot<invoiceType>,
+  product_doc: DocumentSnapshot<productDoc>,
+  rawOutput: rawOutput
+): outputType => {
+  const purchase_value = rawOutput.amount * rawOutput.purchase_price;
+  const sale_value = rawOutput.amount * rawOutput.sale_price;
+  const commission_value = rawOutput.amount * rawOutput.commission;
+
+  return {
+    created_at: Timestamp.fromDate(new Date()),
+    amount: rawOutput.amount,
+    purchase_price: rawOutput.purchase_price,
+    purchase_value,
+    sale_price: rawOutput.sale_price,
+    sale_value,
+    commission: rawOutput.commission,
+    commission_value,
+    entry_ref: rawOutput.entry_ref,
+    invoice_ref: invoice.ref,
+    product_ref: product_doc.ref,
+    disabled: false,
+    followed: product_doc.data()?.followed || false,
+  };
+};
+
 export async function addOutputs(
   invoice: DocumentSnapshot<invoiceType>,
   product_doc: DocumentSnapshot<productDoc>,
@@ -139,28 +165,6 @@ export async function addOutputs(
   ) as CollectionReference<outputType>,
   returnOutputs: boolean = false
 ) {
-  const outputParser = (rawOutput: rawOutput): outputType => {
-    const purchase_value = rawOutput.amount * rawOutput.purchase_price;
-    const sale_value = rawOutput.amount * rawOutput.sale_price;
-    const commission_value = rawOutput.amount * rawOutput.commission;
-
-    return {
-      created_at: Timestamp.fromDate(new Date()),
-      amount: rawOutput.amount,
-      purchase_price: rawOutput.purchase_price,
-      purchase_value,
-      sale_price: rawOutput.sale_price,
-      sale_value,
-      commission: rawOutput.commission,
-      commission_value,
-      entry_ref: rawOutput.entry_ref,
-      invoice_ref: invoice.ref,
-      product_ref: product_doc.ref,
-      disabled: false,
-      followed: product_doc.data()?.followed || false,
-    };
-  };
-
   // let remainingAmount = rawOutputs.reduce((acc, next) => acc + next.amount, 0);
   const outputs_field = outputsKey + "." + product_doc.ref.id;
   // const currentOutputsField = invoice.data()?.[outputsKey] as unknown as Record<
@@ -211,7 +215,7 @@ export async function addOutputs(
   // }
 
   const outputsReady = rawOutputs.map((el) => {
-    return outputParser(el);
+    return outputParser(invoice, product_doc, el);
   });
 
   console.log("outputs coll patah", outputColl.path);

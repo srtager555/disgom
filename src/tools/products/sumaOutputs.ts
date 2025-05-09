@@ -8,6 +8,7 @@ import {
 import { productDoc } from "./create";
 import { amountListener, rawOutputToStock } from "./ManageSaves";
 import { invoiceType } from "../invoices/createInvoice";
+import { outputParser } from "./addOutputs";
 
 export async function sumaOutputs(
   invoice: DocumentSnapshot<invoiceType>,
@@ -39,7 +40,8 @@ export async function sumaOutputs(
   const outputsRef = collection(productDoc.ref, "output");
   const newOutputs = await Promise.all(
     outputsToCreate.map(async (output) => {
-      return await addDoc(outputsRef, output);
+      const outputParsed = outputParser(invoice, productDoc, output);
+      return await addDoc(outputsRef, outputParsed);
     })
   );
 

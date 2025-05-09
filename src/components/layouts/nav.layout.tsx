@@ -345,7 +345,7 @@ const Anchors = ({ href, name, icon, children, child }: anchorProps) => {
   return (
     <AnchorContainer>
       <Anchor
-        href={!hasChildren ? href : undefined} // El enlace principal no es navegable si tiene hijos
+        href={!hasChildren ? href : ""} // El enlace principal no es navegable si tiene hijos
         onClick={hasChildren ? (e) => e.preventDefault() : undefined} // Previene navegación si hay hijos
       >
         {icon && <Icon iconType={icon} />}

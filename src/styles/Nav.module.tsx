@@ -137,7 +137,7 @@ export const AnchorContainer = styled(Container)`
   }
 `;
 
-export const Anchor = styled.a`
+export const Anchor = styled(Link)`
   position: relative;
   display: flex;
   justify-content: flex-start;

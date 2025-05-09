@@ -1,8 +1,5 @@
-import {
-  ProductContext,
-  ProductsLayout,
-} from "@/components/layouts/Products.layout";
-import { useContext, ReactElement, useEffect } from "react";
+import { ProductContext } from "@/components/layouts/Products.layout";
+import { useContext, useEffect } from "react";
 import { NextPageWithLayout } from "../../_app";
 import { Container, FlexContainer, GridContainer } from "@/styles/index.styles";
 import { Column } from "@/components/pages/invoice/Product";
@@ -116,9 +113,5 @@ const Description = () => (
     <Column $textAlign="center">Valor</Column>
   </GridContainer>
 );
-
-Page.getLayout = function getLayout(Page: ReactElement) {
-  return <ProductsLayout>{Page}</ProductsLayout>;
-};
 
 export default Page;

@@ -316,7 +316,13 @@ export function NavLayout({ children }: { children: children }) {
 
   return (
     <NavContainer $deployNav={false} $removeMaxWith={removeMaxWith}>
-      <Container>
+      <Container
+        styles={{
+          position: "sticky",
+          left: "0",
+          zIndex: "10",
+        }}
+      >
         <Nav>
           {Object.values(url).map((el, i) => (
             <Anchors key={i} {...el} child={false} />

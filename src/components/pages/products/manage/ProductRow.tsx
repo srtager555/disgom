@@ -5,6 +5,7 @@ import { productDoc } from "@/tools/products/create";
 import {
   collection,
   CollectionReference,
+  DocumentData,
   onSnapshot,
   orderBy,
   query,
@@ -28,13 +29,13 @@ const FlexStartStyles = {
 function HelperGetEntriesOrOutputs(
   product: QueryDocumentSnapshot<productDoc>,
   path: "entry" | "output",
-  onSnapshotCallback: (snapshot: QuerySnapshot<outputType | entryDoc>) => void
+  onSnapshotCallback: (snapshot: QuerySnapshot<DocumentData>) => void
 ) {
   const range = getCurrentWeekRange();
   const weekRange = [
     where("created_at", ">=", range.start),
     where("created_at", "<=", range.end),
-    where("disabled", "==", false),
+    where("disabled", "==", false), // Assuming 'disabled' field exists
   ];
   const coll1 = collection(
     product.ref,
@@ -45,9 +46,13 @@ function HelperGetEntriesOrOutputs(
     "output"
   ) as CollectionReference<outputType>;
 
-  let q;
+  let q; // Query<DocumentData>
 
-  if (path === "entry") q = query(coll1, ...weekRange);
+  // The query function itself will determine the type based on the collection reference,
+  // but onSnapshot callback generally receives QuerySnapshot<DocumentData>
+  if (path === "entry")
+    q = query(coll1, ...weekRange, orderBy("created_at", "desc"));
+  // Added orderBy for consistency if needed
   else q = query(coll2, ...weekRange, orderBy("created_at", "desc"));
 
   return onSnapshot(q, onSnapshotCallback);
@@ -73,23 +78,29 @@ export function ProductRow({ product }: props) {
       SetStateAction<Record<string, Array<QueryDocumentSnapshot<T>>>>
     >
   ) {
-    // 3. El callback ahora recibe un snapshot del tipo T
-    return (snapshot: QuerySnapshot<T>) => {
-      // 4. Castear los documentos al tipo genérico T
+    // 3. El callback ahora recibe un snapshot de DocumentData
+    return (snapshot: QuerySnapshot<DocumentData>) => {
+      // 4. Castear los documentos al tipo genérico T según sea necesario
       const typedDocs = snapshot.docs as QueryDocumentSnapshot<T>[];
       // 5. El objeto agrupado también usará el tipo genérico T
       const groupedData: Record<string, Array<QueryDocumentSnapshot<T>>> = {};
 
       typedDocs.forEach((doc) => {
-        const timestamp = doc.data().created_at; // created_at debe existir en ambos tipos
-        // Formatea la fecha como 'YYYY-MM-DD' para usarla como clave
-        const dateString = timestamp.toDate().toISOString().split("T")[0];
+        const data = doc.data() as T; // Cast to specific type T to access its fields
+        const timestamp = data.created_at; // created_at debe existir en ambos tipos (entryDoc, outputType)
+
+        // Formatea la fecha como 'YYYY-MM-DD' usando la fecha local
+        const localDate = timestamp.toDate();
+        console.log(localDate.getDate());
+        const year = localDate.getFullYear();
+        const month = (localDate.getMonth() + 1).toString().padStart(2, "0"); // JS months are 0-indexed
+        const day = localDate.getDate().toString().padStart(2, "0");
+        const dateString = `${year}-${month}-${day}`;
 
         if (!groupedData[dateString]) {
           groupedData[dateString] = [];
         }
         groupedData[dateString].push(doc);
-
         // Opcional: Ordenar las entradas dentro de cada día si es necesario
         // (la query ya ordena, pero esto asegura el orden dentro del grupo)
         groupedData[dateString].sort(
@@ -108,8 +119,6 @@ export function ProductRow({ product }: props) {
     const unsubscribe = HelperGetEntriesOrOutputs(
       product,
       "entry",
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
       handlerSnapshot(setEntries)
     );
 
@@ -121,9 +130,6 @@ export function ProductRow({ product }: props) {
     const unsubscribe = HelperGetEntriesOrOutputs(
       product,
       "output", // Corregido de "entry" a "output"
-
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
       handlerSnapshot(setOutputs)
     );
 
@@ -131,7 +137,7 @@ export function ProductRow({ product }: props) {
   }, [product]);
 
   useEffect(() => {
-    console.log(entries, outputs);
+    // console.log("Entries:", entries, "Outputs:", outputs); // Kept for debugging if needed
   }, [entries, outputs]);
 
   return (
@@ -143,13 +149,20 @@ export function ProductRow({ product }: props) {
       </Column>
       {weekNumber.map((dayIndex) => {
         const entriesForDay =
-          Object.entries(entries).find(
-            (el) => new Date(el[0]).getDay() === dayIndex
-          )?.[1] ?? [];
+          Object.entries(entries).find((el) => {
+            // el[0] is a local date string "YYYY-MM-DD"
+            const [year, month, day] = el[0].split("-").map(Number);
+            // Create a local date object. Month is 0-indexed for Date constructor.
+            const localDateForKey = new Date(year, month - 1, day);
+            return localDateForKey.getDay() === dayIndex;
+          })?.[1] ?? [];
+
         const outputsForDay =
-          Object.entries(outputs).find(
-            (el) => new Date(el[0]).getDay() === dayIndex
-          )?.[1] ?? [];
+          Object.entries(outputs).find((el) => {
+            const [year, month, day] = el[0].split("-").map(Number);
+            const localDateForKey = new Date(year, month - 1, day);
+            return localDateForKey.getDay() === dayIndex;
+          })?.[1] ?? [];
 
         const outputsReduced = outputsForDay.reduce(
           (acc, next) => acc + next.data().amount,

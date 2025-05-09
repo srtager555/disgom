@@ -1,11 +1,15 @@
 import { Column } from "@/components/pages/invoice/Product";
+import { ProductRow } from "@/components/pages/products/inventory/by-seller/ProductRow";
 import useQueryParams from "@/hooks/getQueryParams";
 import { useGetProducts } from "@/hooks/products/getProducts";
 import { Container, FlexContainer, GridContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
-import { SellersCollection } from "@/tools/firestore/CollectionTyping";
+import {
+  InvoiceCollection,
+  SellersCollection,
+} from "@/tools/firestore/CollectionTyping";
+import { invoiceType } from "@/tools/invoices/createInvoice";
 import { numberParser } from "@/tools/numberPaser";
-import { productDoc } from "@/tools/products/create";
 import { SellersDoc } from "@/tools/sellers/create";
 import {
   collection,
@@ -19,16 +23,16 @@ import {
   limit,
   orderBy,
   query,
-  QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { isEqual } from "lodash";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 // Define grid template for product rows
 const gridTemplate = "250px 80px 80px 90px"; // PRODUCTO | CANTIDAD | PRECIO | VALOR
 
 // Type for inventory product items
-type SellerInventoryProduct = {
+export type SellerInventoryProduct = {
   product_ref: DocumentReference<DocumentData>;
   amount: number;
 };
@@ -44,6 +48,7 @@ export default function Page() {
     SellerInventoryProduct[]
   >([]);
   const [loadingInventory, setLoadingInventory] = useState(true);
+  const [invoiceID, setInvoiceID] = useState<string>();
 
   // Effect to fetch seller details
   useEffect(() => {
@@ -87,27 +92,31 @@ export default function Page() {
       setLoadingInventory(true);
       try {
         const db = Firestore();
-        // 1. Reference to the seller's 'inventories' subcollection
-        const inventoriesColRef = collection(
-          db,
-          SellersCollection.root,
-          sellerId,
-          SellersCollection.inventories.root
-        );
+        // 1. Coll to the invoices
+        const InvoiceColl = collection(db, InvoiceCollection.root);
         // 2. Query for the latest inventory document
-        const latestInventoryQuery = query(
-          inventoriesColRef,
+        const latestInvoiceQuery = query(
+          InvoiceColl,
           orderBy("created_at", "desc"),
           limit(1)
-        );
-        const inventorySnapshot = await getDocs(latestInventoryQuery);
+        ) as CollectionReference<invoiceType>;
+        const invoiceSnapshot = await getDocs(latestInvoiceQuery);
 
-        if (!inventorySnapshot.empty) {
-          const latestInventoryDoc = inventorySnapshot.docs[0];
+        if (!invoiceSnapshot.empty) {
+          const latestInvoice = invoiceSnapshot.docs[0];
+          setInvoiceID(latestInvoice.id);
+
+          // Get the devolution reference from this invoice
+          const devoRef = latestInvoice.data().devolution;
+          if (!devoRef) {
+            setInventoryProducts([]);
+            return;
+          }
+
           // 3. Reference to the 'products' subcollection of the latest inventory
           const productsColRef = collection(
             db,
-            latestInventoryDoc.ref.path,
+            devoRef.path,
             SellersCollection.inventories.products
           );
           // 4. Fetch all product documents from that subcollection
@@ -123,6 +132,7 @@ export default function Page() {
         } else {
           // No inventory found for this seller
           setInventoryProducts([]);
+          setInvoiceID(undefined);
         }
       } catch (error) {
         console.error(
@@ -130,12 +140,17 @@ export default function Page() {
           error
         );
         setInventoryProducts([]); // Set empty on error
+        setInvoiceID(undefined);
       } finally {
         setLoadingInventory(false);
       }
     };
 
     fetchInventory();
+
+    return () => {
+      setInvoiceID(undefined);
+    };
   }, [sellerId, seller]); // Re-run if sellerId or seller object changes
 
   // Calculate total value for this seller's inventory
@@ -165,11 +180,29 @@ export default function Page() {
 
   return (
     <FlexContainer
-      styles={{ justifyContent: "center", flexDirection: "column" }}
+      styles={{
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "column",
+      }}
     >
-      <h1 style={{ textAlign: "center" }}>
-        Inventario de: {seller.data()?.name ?? "Vendedor Desconocido"}
-      </h1>
+      <Container styles={{ marginBottom: "30px" }}>
+        <h1 style={{ textAlign: "center" }}>
+          Inventario de {seller.data()?.name ?? "Vendedor Desconocido"}
+        </h1>
+        {!invoiceID ? (
+          <p>No se encontró un inventario valido</p>
+        ) : (
+          <p>
+            <Link
+              href={`/invoices/manage?id=${invoiceID}`}
+              className="show-style"
+            >
+              Click aquí para ir a la factura referenciada
+            </Link>
+          </p>
+        )}
+      </Container>
       <Container styles={{ maxWidth: "600px", alignSelf: "center" }}>
         <Descriptions />
         {!products ? (
@@ -211,65 +244,6 @@ const Descriptions = () => {
       <Column $textAlign="center">CANT.</Column>
       <Column $textAlign="center">PRECIO</Column>
       <Column $textAlign="center">VALOR</Column>
-    </GridContainer>
-  );
-};
-
-// Props for the ProductRow component
-type ProductRowProps = {
-  product: QueryDocumentSnapshot<productDoc>;
-  inventoryProducts: SellerInventoryProduct[];
-  loadingInventory: boolean;
-};
-
-// Component to render a single product row
-const ProductRow = ({
-  product,
-  inventoryProducts,
-  loadingInventory,
-}: ProductRowProps) => {
-  const productRef = product.ref;
-  const productName = product.data().name;
-
-  // Find the quantity of this product in the seller's inventory
-  const { quantity, price, value } = useMemo(() => {
-    const inventoryItem = inventoryProducts.find((item) =>
-      isEqual(item.product_ref, productRef)
-    );
-    const currentQuantity = inventoryItem?.amount ?? 0;
-    // Ensure you have a reliable way to get the price. Using the first stock item's sale_price as an example.
-    const currentPrice = product.data().stock?.[0]?.sale_price ?? 0;
-    const currentValue = currentQuantity * currentPrice;
-
-    return {
-      quantity: currentQuantity,
-      price: currentPrice,
-      value: currentValue,
-    };
-  }, [inventoryProducts, productRef, product]); // Recalculate if inventory or product ref changes
-
-  // Don't render row if product is not in the specific seller inventory (optional, depends on desired view)
-  // if (!loadingInventory && quantity === 0) {
-  //   return null;
-  // }
-
-  return (
-    <GridContainer $gridTemplateColumns={gridTemplate}>
-      <Column title={productName}>{productName}</Column>
-      <Column $textAlign="center">
-        {loadingInventory ? (
-          "..."
-        ) : (
-          <span style={quantity === 0 ? { opacity: 0.5 } : {}}>{quantity}</span>
-        )}
-      </Column>
-      <Column $textAlign="center">
-        {/* Show price even if quantity is 0 */}
-        {loadingInventory ? "..." : numberParser(price)}
-      </Column>
-      <Column $textAlign="center">
-        {loadingInventory ? "..." : numberParser(value)}
-      </Column>
     </GridContainer>
   );
 };

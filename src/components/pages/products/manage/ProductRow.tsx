@@ -6,6 +6,8 @@ import {
   collection,
   CollectionReference,
   DocumentData,
+  getDocs,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -13,10 +15,18 @@ import {
   QuerySnapshot,
   where,
 } from "firebase/firestore";
-import { useState, Dispatch, SetStateAction, useEffect } from "react";
+import {
+  useState,
+  Dispatch,
+  SetStateAction,
+  useEffect,
+  useMemo,
+  memo,
+} from "react";
 import { Column } from "../../invoice/Product";
 import { InputToEntries } from "./InputToEntries";
 import { getCurrentWeekRange } from "@/tools/time/current";
+import { isEqual } from "lodash";
 
 const grid = "225px repeat(8, 150px)";
 const FlexStartStyles = {
@@ -67,9 +77,20 @@ type props = {
 
 export function ProductRow({ product }: props) {
   const productName = product.data().name;
+  const [disable, setDisable] = useState(false);
   const [entries, setEntries] = useState<entryObject>({});
   const [outputs, setOutputs] = useState<outputObject>({});
   const weekNumber = [0, 1, 2, 3, 4, 5, 6];
+  const entriesAmountReduced = useMemo(() => {
+    return Object.values(entries).reduce((acc, next) => {
+      return acc + next.reduce((acc, next) => acc + next.data().amount, 0);
+    }, 0);
+  }, [entries]);
+  const outputsAmountReduced = useMemo(() => {
+    return Object.values(outputs).reduce((acc, next) => {
+      return acc + next.reduce((acc, next) => acc + next.data().amount, 0);
+    }, 0);
+  }, [outputs]);
 
   // 1. Hacer la función genérica con un tipo T que puede ser entryDoc o outputType
   function handlerSnapshot<T extends entryDoc | outputType>(
@@ -136,49 +157,116 @@ export function ProductRow({ product }: props) {
     return unsubscribe;
   }, [product]);
 
+  // effect to know if the product has entries
+  useEffect(() => {
+    async function getTheLastEntry() {
+      const coll = collection(
+        product.ref,
+        "entry"
+      ) as CollectionReference<entryDoc>;
+
+      const q = query(
+        coll,
+        where("disabled", "==", false),
+        orderBy("created_at", "desc"),
+        limit(1)
+      );
+      const docs = await getDocs(q);
+
+      if (docs.size > 0) setDisable(false);
+      else setDisable(true);
+    }
+
+    getTheLastEntry();
+  }, [product]);
+
   useEffect(() => {
     // console.log("Entries:", entries, "Outputs:", outputs); // Kept for debugging if needed
   }, [entries, outputs]);
 
   return (
-    <GridContainer $gridTemplateColumns={grid} $width="1430px">
+    <GridContainer
+      $gridTemplateColumns={grid}
+      $width="1430px"
+      styles={{
+        opacity: disable ? 0.5 : 1,
+        pointerEvents: disable ? "none" : "auto",
+      }}
+    >
       <Column styles={{ position: "sticky", left: "0", zIndex: "1" }}>
         <FlexContainer styles={FlexStartStyles}>
           <span>{productName}</span>
         </FlexContainer>
       </Column>
-      {weekNumber.map((dayIndex) => {
-        const entriesForDay =
-          Object.entries(entries).find((el) => {
-            // el[0] is a local date string "YYYY-MM-DD"
-            const [year, month, day] = el[0].split("-").map(Number);
-            // Create a local date object. Month is 0-indexed for Date constructor.
-            const localDateForKey = new Date(year, month - 1, day);
-            return localDateForKey.getDay() === dayIndex;
-          })?.[1] ?? [];
-
-        const outputsForDay =
-          Object.entries(outputs).find((el) => {
-            const [year, month, day] = el[0].split("-").map(Number);
-            const localDateForKey = new Date(year, month - 1, day);
-            return localDateForKey.getDay() === dayIndex;
-          })?.[1] ?? [];
-
-        const outputsReduced = outputsForDay.reduce(
-          (acc, next) => acc + next.data().amount,
-          0
-        );
-
-        return (
-          <Column key={dayIndex}>
-            <GridContainer $gridTemplateColumns="1fr 1fr" $isChildren>
-              <InputToEntries product={product} entriesForDay={entriesForDay} />
-              <Column>{outputsReduced}</Column>
-            </GridContainer>
-          </Column>
-        );
-      })}
-      <Column></Column>
+      {weekNumber.map((dayIndex) => (
+        <MemoInputPrinter
+          key={dayIndex}
+          dayIndex={dayIndex}
+          product={product}
+          entries={entries}
+          outputs={outputs}
+        />
+      ))}
+      <Column>
+        <GridContainer $gridTemplateColumns="1fr 1fr" $isChildren>
+          <Column>{entriesAmountReduced}</Column>
+          <Column>{outputsAmountReduced}</Column>
+        </GridContainer>
+      </Column>
     </GridContainer>
+  );
+}
+
+const MemoInputPrinter = memo(InputPrinter, (prev, next) => {
+  if (!isEqual(prev.entries, next.entries)) return false;
+  if (!isEqual(prev.outputs, next.outputs)) return false;
+
+  if (prev.product.id !== next.product.id) return false;
+  if (prev.dayIndex !== next.dayIndex) return false;
+
+  return true;
+});
+
+type inputPrinterProps = {
+  entries: entryObject;
+  outputs: outputObject;
+  product: QueryDocumentSnapshot<productDoc>;
+  dayIndex: number;
+};
+
+function InputPrinter({
+  product,
+  entries,
+  outputs,
+  dayIndex,
+}: inputPrinterProps) {
+  const entriesForDay =
+    Object.entries(entries).find((el) => {
+      // el[0] is a local date string "YYYY-MM-DD"
+      const [year, month, day] = el[0].split("-").map(Number);
+      // Create a local date object. Month is 0-indexed for Date constructor.
+      const localDateForKey = new Date(year, month - 1, day);
+      return localDateForKey.getDay() === dayIndex;
+    })?.[1] ?? [];
+
+  const outputsForDay =
+    Object.entries(outputs).find((el) => {
+      const [year, month, day] = el[0].split("-").map(Number);
+      const localDateForKey = new Date(year, month - 1, day);
+      return localDateForKey.getDay() === dayIndex;
+    })?.[1] ?? [];
+
+  const outputsReduced = outputsForDay.reduce(
+    (acc, next) => acc + next.data().amount,
+    0
+  );
+
+  return (
+    <Column key={dayIndex}>
+      <GridContainer $gridTemplateColumns="1fr 1fr" $isChildren>
+        <InputToEntries product={product} entriesForDay={entriesForDay} />
+        <Column>{outputsReduced}</Column>
+      </GridContainer>
+    </Column>
   );
 }

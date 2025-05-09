@@ -84,7 +84,7 @@ export function NavLayout({ children }: { children: children }) {
       name: "Inventarios",
       children: {
         inventoryList: {
-          href: "/products/invetory",
+          href: "/products/inventory",
           name: "Inventario",
           children: {
             inventory: {
@@ -92,7 +92,7 @@ export function NavLayout({ children }: { children: children }) {
               name: "Inventario actual",
             },
             addStock: {
-              href: "/products/invetory/add",
+              href: "/products/inventory/manage",
               name: "Entradas y salidas",
             },
           },
@@ -211,7 +211,7 @@ export function NavLayout({ children }: { children: children }) {
         if (!sellerData?.hasInventory) return;
         sellerInvotoriesRecord[sellerId] = {
           name: sellerData?.name ?? `Vendedor ${sellerId}`,
-          href: `/products/inventory/sellers?id=${sellerId}`,
+          href: `/products/inventory/by-seller?id=${sellerId}`,
         };
       });
 

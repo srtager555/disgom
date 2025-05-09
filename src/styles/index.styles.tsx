@@ -4,6 +4,7 @@ import {
   styled,
   CSSObject,
   DefaultTheme,
+  css,
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-ignore
 } from "styled-components";
@@ -169,27 +170,40 @@ export const BGlass = styled.div`
 export const GridContainer = styled(StyledDiv)<{
   $gridTemplateColumns?: string;
   $customWidth?: string;
+  $isChildren?: boolean;
+  $width?: string;
 }>`
   display: grid;
   grid-template-columns: ${(props) =>
     props.$gridTemplateColumns || "repeat(auto-fill, minmax(30px, 60px))"};
   grid-auto-flow: column;
   grid-auto-columns: ${(props) => props.$customWidth || "80px"};
-
-  /* overflow: hidden; */
   white-space: nowrap;
-  border-bottom: 1px solid ${globalCSSVars["--detail"]};
-  background-color: ${globalCSSVars["--background"]};
 
-  border-left: 1px solid ${globalCSSVars["--detail"]};
-  border-right: 1px solid ${globalCSSVars["--detail"]};
-  border-bottom: 1px solid ${globalCSSVars["--detail"]};
+  ${({ $width }) =>
+    $width &&
+    css`
+      width: ${$width};
+    `}
 
-  &:first-child {
-    border-top: 1px solid ${globalCSSVars["--detail"]};
-  }
+  ${({ $isChildren }) =>
+    !$isChildren
+      ? css`
+          border-bottom: 1px solid ${globalCSSVars["--detail"]};
+          background-color: ${globalCSSVars["--background"]};
+          border-left: 1px solid ${globalCSSVars["--detail"]};
+          border-right: 1px solid ${globalCSSVars["--detail"]};
+          border-bottom: 1px solid ${globalCSSVars["--detail"]};
 
-  &:nth-child(odd) {
-    background-color: ${globalCSSVars["--background-highlight"]};
-  }
+          &:first-child {
+            border-top: 1px solid ${globalCSSVars["--detail"]};
+          }
+
+          &:nth-child(odd) {
+            background-color: ${globalCSSVars["--background-highlight"]};
+          }
+        `
+      : css`
+          background-color: inherit;
+        `}
 `;

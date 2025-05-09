@@ -12,7 +12,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import styled, { css } from "styled-components";
+import styled, { css, CSSProperties } from "styled-components";
 import { ProductContainer, productResult } from "../ProductList";
 import { Cost } from "./Cost";
 import { Button } from "@/styles/Form.styles";
@@ -109,6 +109,7 @@ interface ColumnBaseProps extends React.HtmlHTMLAttributes<HTMLDivElement> {
   printGridColumn?: string;
   title?: string;
   hide?: boolean;
+  styles?: CSSProperties;
 }
 
 function ColumnBase({
@@ -118,6 +119,7 @@ function ColumnBase({
   printGridColumn,
   title,
   hide,
+  styles,
   ...props
 }: ColumnBaseProps) {
   if (hide) return <></>;
@@ -126,7 +128,7 @@ function ColumnBase({
       $title={title}
       $gridColumn={$gridColumn}
       $printGridColumn={printGridColumn}
-      styles={{ width: "100%", height: "100%" }}
+      styles={{ width: "100%", height: "100%", ...styles }}
       {...props}
     >
       <Container className={className}>{children}</Container>

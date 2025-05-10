@@ -1,12 +1,17 @@
-import React, { useEffect, useMemo, useRef, RefObject, useState } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  RefObject,
+  useState,
+  useCallback,
+} from "react";
 import { Column, Input } from "../../Product";
-import { useDebounce } from "@/hooks/debounce";
 import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { entryDoc } from "@/tools/products/addEntry";
 import { outputType } from "@/tools/products/addOutputs";
-import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
-import { isEqual } from "lodash";
+import { isEqual, debounce } from "lodash";
 import { getInvoiceByQuery } from "@/tools/invoices/getInvoiceByQuery";
 import { restaOutputs } from "@/tools/products/restaOutputs";
 import { sumaOutputs } from "@/tools/products/sumaOutputs";
@@ -46,20 +51,17 @@ export type product_outputs = {
   [key: string]: Array<DocumentReference<outputType>>;
 };
 
-export const AddOutput = (
-  props: Omit<props, "serverCurrentAmount" | "outputs">
-) => {
-  const outputs = useGetProductOutputByID(props.productDoc.id);
+export const AddOutput = (props: Omit<props, "serverCurrentAmount">) => {
   const serverCurrentAmount = useMemo(() => {
-    return outputs.reduce((acc, now) => {
+    return props.outputs.reduce((acc, now) => {
       const nowAmount = now.data()?.amount || 0;
       return acc + nowAmount;
     }, 0);
-  }, [outputs]);
+  }, [props.outputs]);
 
   return (
     <MemoAddOutput
-      outputs={outputs}
+      outputs={props.outputs}
       serverCurrentAmount={serverCurrentAmount}
       productDoc={props.productDoc}
       currentStock={props.currentStock}
@@ -82,10 +84,10 @@ export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   return true;
 });
 
-type lastAmountToChange = {
-  amount: number;
-  customPrice: number | undefined;
-};
+// type lastAmountToChange = {
+//   amount: number;
+//   customPrice: number | undefined;
+// };
 
 export function AddOutputBase({
   outputs,
@@ -95,164 +97,228 @@ export function AddOutputBase({
   customPrice,
   someHumanChangesDetected,
 }: props) {
-  const [amount, setAmount] = useState(serverCurrentAmount);
+  const [amount, setAmount] = useState(serverCurrentAmount); // Input field's value
   const [localCurrentAmount, setLocalCurrentAmount] =
-    useState(serverCurrentAmount);
+    useState(serverCurrentAmount); // Last known "saved" or "processed" amount
   const [localCurrentAmountHistory, setLocalCurrentAmountHistory] = useState<
     number[]
-  >([]);
-  const cookedAmount = useDebounce(amount) as number;
-  const lastCustomPrice = useRef(customPrice);
-  const humanAmountChanged = useRef(false);
-  const form_ref = useRef<HTMLFormElement>(null);
-  const [itsSavingNow, setItsSavingNow] = useState(false);
-  const lastDataToChange = useRef<lastAmountToChange | null>(null);
+  >([serverCurrentAmount]);
 
-  // effect to check if the serverCurrentAmount is in the localCurrentAmountHistory
+  const lastCustomPriceRef = useRef(customPrice); // Tracks the last successfully processed customPrice
+  const humanInteractionDetectedRef = useRef(false); // User typed or relevant prop changed
+  const isCurrentlySavingRef = useRef(false); // Prevents re-entrant saves
+
+  // Effect to sync with serverCurrentAmount if it changes externally and is not a recent local save
   useEffect(() => {
     if (!localCurrentAmountHistory.includes(serverCurrentAmount)) {
+      console.log(
+        "AddOutput: serverCurrentAmount changed externally to",
+        serverCurrentAmount,
+        "not in history",
+        localCurrentAmountHistory,
+        ". Syncing."
+      );
       setLocalCurrentAmount(serverCurrentAmount);
+      setAmount(serverCurrentAmount); // Also update input field
+      humanInteractionDetectedRef.current = false; // This was not a local human interaction
     }
-  }, [serverCurrentAmount]);
+  }, [serverCurrentAmount, localCurrentAmountHistory]);
 
-  // effect to refresh the amount when the localCurrentAmount changes
+  // Effect to refresh the input field if localCurrentAmount changes (e.g., after a save)
+  // and the user hasn't made newer changes.
   useEffect(() => {
-    if (amount === localCurrentAmount) return;
+    if (amount !== localCurrentAmount && !humanInteractionDetectedRef.current) {
+      console.log(
+        "AddOutput: localCurrentAmount changed to",
+        localCurrentAmount,
+        ". Syncing input field."
+      );
+      setAmount(localCurrentAmount);
+    }
+  }, [localCurrentAmount, amount]); // Removed humanInteractionDetectedRef from deps to avoid potential loop, logic relies on its current value
 
-    setAmount(localCurrentAmount);
-  }, [localCurrentAmount]);
-
-  // effect to reset the input when changes of product
+  // Effect to reset state when productDoc.id changes
   useEffect(() => {
-    form_ref.current?.reset();
-  }, [productDoc.id]);
+    console.log(
+      "AddOutput: Product changed to",
+      productDoc.id,
+      ". Resetting state."
+    );
+    setAmount(serverCurrentAmount);
+    setLocalCurrentAmount(serverCurrentAmount);
+    setLocalCurrentAmountHistory([serverCurrentAmount]);
+    lastCustomPriceRef.current = customPrice;
+    humanInteractionDetectedRef.current = false;
+    isCurrentlySavingRef.current = false;
+  }, [productDoc.id, serverCurrentAmount, customPrice]);
 
-  // effect to detect custom price changes
-  useEffect(() => {
-    if (customPrice === lastCustomPrice.current) return;
-    humanAmountChanged.current = true;
-  }, [customPrice, lastCustomPrice]);
-
-  // effect to save the changes
-  useEffect(() => {
-    async function manage() {
-      let amountToWork: lastAmountToChange = {
-        amount: cookedAmount,
-        customPrice,
-      };
-
-      // check if has been changed by human and if there is an data in queue
-      if (!humanAmountChanged.current && !lastDataToChange.current) return;
-      setItsSavingNow(true);
-      humanAmountChanged.current = false;
-
-      // if the code is saving now, save the data to the queue
-      if (itsSavingNow) {
-        lastDataToChange.current = {
-          amount: cookedAmount as number,
-          customPrice,
-        };
-        console.log(
-          "the code is saving now, the queue is",
-          lastDataToChange.current
-        );
+  // The core saving logic
+  const saveChangesLogic = useCallback(
+    async (amountToSave: number, priceToSave: number | undefined) => {
+      if (isCurrentlySavingRef.current) {
+        console.log("AddOutput: Save already in progress. Ignoring this call.");
         return;
       }
 
-      // if there is an data in queue, get the data
-      if (lastDataToChange.current) {
-        amountToWork = lastDataToChange.current;
-        lastDataToChange.current = null;
-        console.log("there is a data in queue, getting the data", amountToWork);
-      }
-
-      console.log("******** started to save outputs added");
-      console.log("amount setted", amountToWork.amount);
-
-      // Obtener la factura actual
-      const invoice = await getInvoiceByQuery();
-      if (!invoice) return;
-
-      // Si solo cambia el precio (amount es igual y hay customPrice)
       if (
-        amountToWork.amount === localCurrentAmount &&
-        amountToWork.customPrice !== lastCustomPrice.current
+        amountToSave === localCurrentAmount &&
+        priceToSave === lastCustomPriceRef.current
       ) {
-        console.log("price change detected in add output");
-        lastCustomPrice.current = customPrice;
-        await updatePrice(
-          invoice,
-          productDoc,
-          outputs,
-          amountToWork.amount,
-          amountToWork.customPrice
-        );
-        setItsSavingNow(false);
-
+        console.log("AddOutput: No change in amount or price. Skipping save.");
+        humanInteractionDetectedRef.current = false;
         return;
       }
 
-      // Comprobar si es una resta o suma
-      if (amountToWork.amount < localCurrentAmount) {
-        // Lógica de resta
-        console.log("Iniciando proceso de resta");
-        await restaOutputs(
-          invoice,
-          productDoc,
-          outputs,
-          amountToWork.amount,
-          localCurrentAmount,
-          amountToWork.customPrice
-        );
-      } else if (amountToWork.amount > localCurrentAmount) {
-        // Lógica de suma
-        console.log("Iniciando proceso de suma");
-        await sumaOutputs(
-          invoice,
-          productDoc,
-          amountToWork.amount,
-          localCurrentAmount,
-          amountToWork.customPrice
-        );
+      isCurrentlySavingRef.current = true;
+      console.log("AddOutput: -------- Debounced save triggered --------");
+      console.log(
+        "AddOutput: Amount to save:",
+        amountToSave,
+        "(Local current:",
+        localCurrentAmount,
+        ")"
+      );
+      console.log(
+        "AddOutput: Price to save:",
+        priceToSave,
+        "(Last custom price:",
+        lastCustomPriceRef.current,
+        ")"
+      );
+
+      const invoice = await getInvoiceByQuery();
+      if (!invoice) {
+        console.error("AddOutput: Invoice not found, aborting save.");
+        isCurrentlySavingRef.current = false;
+        return;
       }
 
-      setLocalCurrentAmount(amountToWork.amount);
-      setLocalCurrentAmountHistory([
-        ...localCurrentAmountHistory,
-        amountToWork.amount,
-      ]);
-      if (localCurrentAmountHistory.length > 10) {
-        localCurrentAmountHistory.shift();
+      let success = false;
+      try {
+        if (
+          amountToSave === localCurrentAmount &&
+          priceToSave !== lastCustomPriceRef.current
+        ) {
+          console.log("AddOutput: Price change detected.");
+          await updatePrice(
+            invoice,
+            productDoc,
+            outputs,
+            amountToSave,
+            priceToSave
+          );
+          success = true;
+        } else if (amountToSave < localCurrentAmount) {
+          console.log("AddOutput: Resta (decrease) detected.");
+          await restaOutputs(
+            invoice,
+            productDoc,
+            outputs,
+            amountToSave,
+            localCurrentAmount,
+            priceToSave
+          );
+          success = true;
+        } else if (amountToSave > localCurrentAmount) {
+          console.log("AddOutput: Suma (increase) detected.");
+          await sumaOutputs(
+            invoice,
+            productDoc,
+            amountToSave,
+            localCurrentAmount,
+            priceToSave
+          );
+          success = true;
+        }
+
+        if (success) {
+          console.log("AddOutput: Save operation successful.");
+          setLocalCurrentAmount(amountToSave);
+          setLocalCurrentAmountHistory((prev) =>
+            [...prev, amountToSave].slice(-10)
+          );
+          lastCustomPriceRef.current = priceToSave;
+          humanInteractionDetectedRef.current = false;
+        } else {
+          console.log(
+            "AddOutput: Save operation did not result in a change or was skipped."
+          );
+          if (
+            amountToSave === localCurrentAmount &&
+            priceToSave === lastCustomPriceRef.current
+          ) {
+            humanInteractionDetectedRef.current = false;
+          }
+        }
+      } catch (error) {
+        console.error("AddOutput: Error during save operation:", error);
+      } finally {
+        isCurrentlySavingRef.current = false;
+        console.log("AddOutput: -------- Debounced save finished --------");
       }
-      setItsSavingNow(false);
+    },
+    [outputs, productDoc, localCurrentAmount]
+  );
+
+  const debouncedSaveChanges = useCallback(
+    debounce((currentAmount: number, currentPrice: number | undefined) => {
+      saveChangesLogic(currentAmount, currentPrice);
+    }, 1000),
+    [saveChangesLogic]
+  );
+
+  // Effect to detect if the customPrice prop has changed from what we last processed.
+  useEffect(() => {
+    if (customPrice !== lastCustomPriceRef.current) {
+      console.log(
+        "AddOutput: customPrice prop changed from",
+        lastCustomPriceRef.current,
+        "to",
+        customPrice,
+        ". Marking for potential save."
+      );
+      humanInteractionDetectedRef.current = true;
     }
+  }, [customPrice]);
 
-    manage();
-  }, [
-    outputs,
-    cookedAmount,
-    customPrice,
-    productDoc,
-    localCurrentAmount,
-    humanAmountChanged,
-    lastCustomPrice,
-    itsSavingNow,
-  ]);
+  // Effect to trigger debounced save on amount (from input) or customPrice (from prop) change
+  useEffect(() => {
+    if (humanInteractionDetectedRef.current) {
+      console.log(
+        `AddOutput: Interaction detected. Scheduling save with amount: ${amount}, customPrice: ${customPrice}`
+      );
+      debouncedSaveChanges(amount, customPrice);
+    }
+    return () => {
+      debouncedSaveChanges.cancel();
+    };
+  }, [amount, customPrice, debouncedSaveChanges]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    // Allow empty string for clearing, or valid non-negative numbers
+    if (
+      inputValue === "" ||
+      (!isNaN(Number(inputValue)) && Number(inputValue) >= 0)
+    ) {
+      const numericValue = inputValue === "" ? 0 : Number(inputValue); // Treat empty as 0 for state
+      setAmount(numericValue);
+      humanInteractionDetectedRef.current = true;
+      if (someHumanChangesDetected?.current) {
+        someHumanChangesDetected.current.addOutput = true;
+      }
+    }
+  };
 
   return (
     <Column>
-      <form ref={form_ref} onSubmit={(e) => e.preventDefault()}>
+      <form onSubmit={(e) => e.preventDefault()}>
         <Input
           type="number"
-          value={amount}
+          value={amount} // Controlled component
           min={0}
           max={currentStock + serverCurrentAmount}
-          onChange={(e) => {
-            const value = e.target.value;
-            setAmount(Number(value));
-            humanAmountChanged.current = true;
-            someHumanChangesDetected.current.addOutput = true;
-          }}
+          onChange={handleInputChange}
         />
       </form>
     </Column>

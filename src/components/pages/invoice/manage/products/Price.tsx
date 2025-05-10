@@ -35,7 +35,7 @@ export function Price({
   const [newPrice, setNewPrice] = useState(normalPrice * priceMultiplier);
   const humanAmountChanged = useRef(false);
   const outputs = useGetProductOutputByID(product_id);
-  const debounceNewPrice = useDebounce(newPrice);
+  const debounceNewPrice = useDebounce(newPrice, 1000);
 
   // Effect to update custom price based on debounced input
   useEffect(() => {

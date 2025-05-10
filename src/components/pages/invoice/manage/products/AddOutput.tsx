@@ -17,6 +17,7 @@ import { restaOutputs } from "@/tools/products/restaOutputs";
 import { sumaOutputs } from "@/tools/products/sumaOutputs";
 import { updatePrice } from "@/tools/products/updatePrice";
 import { someHumanChangesDetected } from "./Product";
+import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 
 type props = {
   outputs: DocumentSnapshot<outputType>[];
@@ -26,6 +27,7 @@ type props = {
   productDoc: DocumentSnapshot<productDoc>;
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
   setOverflowWarning: React.Dispatch<React.SetStateAction<boolean>>;
+  defaultCustomPrices: DocumentSnapshot<defaultCustomPrice> | undefined;
 };
 
 export type variations = Array<{
@@ -46,6 +48,7 @@ export type rawOutput = {
   sale_price: number;
   purchase_price: number;
   commission: number;
+  default_custom_price_ref: DocumentReference<defaultCustomPrice> | null;
 };
 
 export type product_outputs = {
@@ -69,6 +72,7 @@ export const AddOutput = (props: Omit<props, "serverCurrentAmount">) => {
       customPrice={props.customPrice}
       someHumanChangesDetected={props.someHumanChangesDetected}
       setOverflowWarning={props.setOverflowWarning}
+      defaultCustomPrices={props.defaultCustomPrices}
     />
   );
 };
@@ -99,6 +103,7 @@ export function AddOutputBase({
   customPrice,
   someHumanChangesDetected,
   setOverflowWarning,
+  defaultCustomPrices,
 }: props) {
   const [amount, setAmount] = useState(serverCurrentAmount); // Input field's value
   const [localCurrentAmount, setLocalCurrentAmount] =
@@ -145,7 +150,8 @@ export function AddOutputBase({
     console.log(
       "AddOutput: Product changed to",
       productDoc.id,
-      ". Resetting state."
+      ". Resetting state.",
+      customPrice
     );
     setAmount(serverCurrentAmount);
     setLocalCurrentAmount(serverCurrentAmount);
@@ -153,7 +159,7 @@ export function AddOutputBase({
     lastCustomPriceRef.current = customPrice;
     humanInteractionDetectedRef.current = false;
     isCurrentlySavingRef.current = false;
-  }, [productDoc.id, serverCurrentAmount, customPrice]);
+  }, [productDoc.id]);
 
   // The core saving logic
   const saveChangesLogic = useCallback(
@@ -216,6 +222,7 @@ export function AddOutputBase({
           await updatePrice(
             invoice,
             productDoc,
+            defaultCustomPrices,
             outputs,
             amountToSave,
             priceToSave
@@ -227,6 +234,7 @@ export function AddOutputBase({
             invoice,
             productDoc,
             outputs,
+            defaultCustomPrices,
             amountToSave,
             localCurrentAmount,
             priceToSave
@@ -239,6 +247,7 @@ export function AddOutputBase({
             productDoc,
             amountToSave,
             localCurrentAmount,
+            defaultCustomPrices,
             priceToSave
           );
           success = true;
@@ -282,6 +291,11 @@ export function AddOutputBase({
 
   // Effect to detect if the customPrice prop has changed from what we last processed.
   useEffect(() => {
+    console.log(
+      "customPrice detected",
+      customPrice,
+      lastCustomPriceRef.current
+    );
     if (customPrice !== lastCustomPriceRef.current) {
       console.log(
         "AddOutput: customPrice prop changed from",

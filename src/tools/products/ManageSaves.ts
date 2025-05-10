@@ -3,6 +3,7 @@ import {
   Timestamp,
   updateDoc,
   DocumentSnapshot,
+  DocumentReference,
 } from "firebase/firestore";
 import { addOutputs, outputType } from "./addOutputs";
 import { productDoc } from "./create";
@@ -11,6 +12,7 @@ import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput"
 import { getInvoiceByQuery } from "../invoices/getInvoiceByQuery";
 import { getProductOutputsByID } from "./getOutputs";
 import { invoiceType } from "../invoices/createInvoice";
+import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 
 export function createStockFromOutputType(output: outputType): stockType {
   return {
@@ -27,6 +29,9 @@ export function createStockFromOutputType(output: outputType): stockType {
 export const amountListener = function (
   n: number,
   stocksRoot: Array<stockType>,
+  defaultCustomPrice:
+    | DocumentSnapshot<defaultCustomPrice>
+    | undefined = undefined,
   productDoc: DocumentSnapshot<productDoc>,
   customPrice?: number
 ): { outputsToCreate: Array<rawOutput>; remainingStocks: Array<rawOutput> } {
@@ -34,6 +39,7 @@ export const amountListener = function (
   const outputsToCreate: Array<rawOutput> = [];
   let remainingStocks: Array<rawOutput> = [];
   const stocks = [...stocksRoot];
+  const priceToUse = customPrice || defaultCustomPrice?.data()?.price;
 
   if (remainingAmount < 0) return { outputsToCreate, remainingStocks };
   if (stocks.length === 0) return { outputsToCreate, remainingStocks };
@@ -48,7 +54,8 @@ export const amountListener = function (
         amount: stock.amount,
         product_ref: productDoc.ref,
         entry_ref: stock.entry_ref,
-        sale_price: customPrice || stock.sale_price,
+        sale_price: priceToUse || stock.sale_price,
+        default_custom_price_ref: defaultCustomPrice?.ref || null,
         purchase_price: stock.purchase_price,
         commission: stock.seller_commission,
       });
@@ -59,7 +66,8 @@ export const amountListener = function (
           amount: remainingAmount,
           product_ref: productDoc.ref,
           entry_ref: stock.entry_ref,
-          sale_price: customPrice || stock.sale_price,
+          sale_price: priceToUse || stock.sale_price,
+          default_custom_price_ref: defaultCustomPrice?.ref || null,
           purchase_price: stock.purchase_price,
           commission: stock.seller_commission,
         });
@@ -72,6 +80,7 @@ export const amountListener = function (
             product_ref: productDoc.ref,
             entry_ref: stock.entry_ref,
             sale_price: stock.sale_price,
+            default_custom_price_ref: null,
             purchase_price: stock.purchase_price,
             commission: stock.seller_commission,
           });
@@ -86,7 +95,7 @@ export const amountListener = function (
         ...remainingStocks,
         ...stocks
           .slice(index + 1)
-          .map(stockToRawOutput)
+          .map((e) => stockToRawOutput(e, defaultCustomPrice?.ref || null))
           .filter((stock) => stock.amount > 0),
       ];
       break;
@@ -96,7 +105,10 @@ export const amountListener = function (
   return { outputsToCreate, remainingStocks };
 };
 
-function stockToRawOutput(stock: stockType): rawOutput {
+function stockToRawOutput(
+  stock: stockType,
+  default_custom_price_ref: DocumentReference<defaultCustomPrice> | null = null
+): rawOutput {
   return {
     amount: stock.amount,
     product_ref: stock.product_ref,
@@ -104,6 +116,7 @@ function stockToRawOutput(stock: stockType): rawOutput {
     sale_price: stock.sale_price,
     purchase_price: stock.purchase_price,
     commission: stock.seller_commission,
+    default_custom_price_ref,
   };
 }
 
@@ -157,6 +170,7 @@ export async function ManageProductOutputsSaves({
   const outputsToCreate = amountListener(
     outputs_amount_added,
     stocks,
+    undefined,
     productDoc,
     customPrice
   );

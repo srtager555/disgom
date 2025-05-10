@@ -10,23 +10,35 @@ import {
 import { Column, Input } from "../../Product";
 import { Container } from "@/styles/index.styles";
 import { useDebounce } from "@/hooks/debounce";
-import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
 import { useInvoice } from "@/contexts/InvoiceContext"; // Import useInvoice
 import { someHumanChangesDetected } from "./Product";
+import { useNewDefaultCustomPricesContext } from "@/hooks/invoice/useNewDefaultCustomPricesContext";
+import { outputType } from "@/tools/products/addOutputs";
+import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
+import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
+import { productDoc } from "@/tools/products/create";
 
 type props = {
-  product_id: string;
+  product_ref: DocumentReference<productDoc>;
+  defaultCustomPrice: defaultCustomPrice | undefined;
+  outputs: DocumentSnapshot<outputType>[];
   normalPrice: number;
   setCustomPrice: Dispatch<SetStateAction<number | undefined>>;
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
 };
 
 export function Price({
-  product_id,
+  product_ref,
+  defaultCustomPrice,
   normalPrice,
+  outputs,
   setCustomPrice,
   someHumanChangesDetected,
 }: props) {
+  const [isDefaultCustomPrice, setIsDefaultCustomPrice] = useState({
+    isThat: false,
+    areTheSame: false,
+  });
   const { invoice } = useInvoice(); // Get invoice context
   const invoiceType = invoice?.data()?.invoice_type;
   const priceMultiplier = invoiceType !== "normal" ? -1 : 1; // Determine multiplier
@@ -34,7 +46,6 @@ export function Price({
   // Initialize state considering the multiplier
   const [newPrice, setNewPrice] = useState(normalPrice * priceMultiplier);
   const humanAmountChanged = useRef(false);
-  const outputs = useGetProductOutputByID(product_id);
   const debounceNewPrice = useDebounce(newPrice, 1000);
 
   // Effect to update custom price based on debounced input
@@ -63,34 +74,64 @@ export function Price({
 
   // Effect to set the initial price based on existing outputs or normal price
   useEffect(() => {
-    if (outputs.length > 0) {
-      const priceFromOutput = outputs[0].data()?.sale_price as number;
-      setNewPrice(priceFromOutput * priceMultiplier); // Apply multiplier
-    } else {
-      setNewPrice(normalPrice * priceMultiplier); // Apply multiplier to default
+    async function manageThePrice() {
+      // use the normal price or the default custom price if exits
+      const priceToUse = defaultCustomPrice?.price || normalPrice;
+
+      // Getting the price from the outputs
+      if (outputs.length > 0) {
+        const output = outputs[0].data();
+        const priceFromOutput = output?.sale_price as number;
+
+        // check if the price a default custom price
+        if (output?.default_custom_price_ref) {
+          setIsDefaultCustomPrice({
+            isThat: true,
+            areTheSame: defaultCustomPrice?.price === priceFromOutput,
+          });
+        } else {
+          setIsDefaultCustomPrice({
+            isThat: false,
+            areTheSame: false,
+          });
+        }
+
+        setNewPrice(priceFromOutput * priceMultiplier); // Apply multiplier
+      } else {
+        setNewPrice(priceToUse * priceMultiplier); // Apply multiplier to default
+      }
     }
-  }, [outputs, normalPrice, priceMultiplier]); // Add dependencies
+
+    manageThePrice();
+  }, [outputs, normalPrice, priceMultiplier, defaultCustomPrice]); // Add dependencies
 
   return (
     <Column>
       <PriceInputMemo
+        product_ref={product_ref}
         newPrice={newPrice}
         normalPrice={normalPrice}
         setNewPrice={setNewPrice}
         humanAmountChanged={humanAmountChanged}
         someHumanChangesDetected={someHumanChangesDetected}
         priceMultiplier={priceMultiplier} // Pass multiplier
+        isDefaultCustomPrice={isDefaultCustomPrice}
       />
     </Column>
   );
 }
 
 type inputProps = {
+  product_ref: DocumentReference<productDoc>;
   newPrice: number;
   normalPrice: number;
   setNewPrice: Dispatch<SetStateAction<number>>;
   humanAmountChanged: RefObject<boolean>;
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
+  isDefaultCustomPrice: {
+    isThat: boolean;
+    areTheSame: boolean;
+  };
   priceMultiplier: number; // Receive multiplier
 };
 
@@ -103,19 +144,39 @@ const PriceInputMemo = memo(PriceInputBase, (prev, next) => {
 });
 
 function PriceInputBase({
+  product_ref,
   newPrice,
   normalPrice,
   setNewPrice,
   humanAmountChanged,
   someHumanChangesDetected,
   priceMultiplier,
+  isDefaultCustomPrice,
 }: inputProps) {
+  const { setNewDefaultCustomPrices } = useNewDefaultCustomPricesContext();
+
   return (
     <>
       <Input
         onChange={(e) => {
-          const value = e.target.value;
-          setNewPrice(Number(value));
+          const value = Number(e.target.value);
+          setNewPrice(value);
+
+          if (normalPrice != value && !isDefaultCustomPrice.areTheSame) {
+            setNewDefaultCustomPrices((prev) => ({
+              ...prev,
+              [product_ref.id]: {
+                price: value,
+                product_ref,
+              },
+            }));
+          } else {
+            setNewDefaultCustomPrices((prev) => {
+              const newPrev = { ...prev };
+              delete newPrev[product_ref.id];
+              return newPrev;
+            });
+          }
           humanAmountChanged.current = true;
           someHumanChangesDetected.current.price = true;
         }}
@@ -133,7 +194,11 @@ function PriceInputBase({
           // Compare current price with potentially negated normal price
           backgroundColor:
             newPrice !== normalPrice * priceMultiplier
-              ? "green"
+              ? isDefaultCustomPrice.isThat
+                ? isDefaultCustomPrice.areTheSame
+                  ? "orange"
+                  : "orangered"
+                : "green"
               : "transparent",
           zIndex: "0",
         }}

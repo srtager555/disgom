@@ -8,11 +8,13 @@ import {
   saveNewOutputs,
 } from "./ManageSaves";
 import { invoiceType } from "@/tools/invoices/createInvoice";
+import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 
 export async function restaOutputs(
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
   outputs: DocumentSnapshot<outputType>[],
+  defaultCustomPrice: DocumentSnapshot<defaultCustomPrice> | undefined,
   amount: number,
   currentAmount: number,
   customPrice?: number
@@ -30,6 +32,7 @@ export async function restaOutputs(
   const { outputsToCreate, remainingStocks } = amountListener(
     difference,
     stocks,
+    defaultCustomPrice,
     productDoc,
     customPrice
   );

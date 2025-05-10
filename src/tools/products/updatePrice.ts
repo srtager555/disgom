@@ -6,10 +6,12 @@ import { disableOutput } from "./disableOutput";
 import { addOutputs } from "./addOutputs";
 import { amountListener } from "./ManageSaves";
 import { invoiceType } from "@/tools/invoices/createInvoice";
+import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 
 export async function updatePrice(
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
+  defaulCustomPrices: DocumentSnapshot<defaultCustomPrice> | undefined,
   outputs: DocumentSnapshot<outputType>[],
   amount: number,
   customPrice?: number
@@ -38,6 +40,7 @@ export async function updatePrice(
   const { outputsToCreate } = amountListener(
     amount,
     stocks,
+    defaulCustomPrices,
     productDoc,
     newPrice
   );

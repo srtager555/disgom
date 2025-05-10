@@ -14,12 +14,16 @@ import { amountListener, rawOutputToStock } from "./ManageSaves";
 import { invoiceType } from "../invoices/createInvoice";
 import { outputParser } from "./addOutputs";
 import { DocumentWithTheOutputs } from "@/hooks/invoice/getProductOutputsByID";
+import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 
 export async function sumaOutputs(
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
   amount: number,
   currentAmount: number,
+  defaulCustomPrices:
+    | DocumentSnapshot<defaultCustomPrice>
+    | undefined = undefined,
   customPrice?: number
 ) {
   // 1. Obtener el stock actual del producto
@@ -32,6 +36,7 @@ export async function sumaOutputs(
   const { outputsToCreate, remainingStocks } = amountListener(
     difference,
     currentStock,
+    defaulCustomPrices,
     productDoc,
     customPrice
   );

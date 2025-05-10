@@ -24,6 +24,8 @@ import { productResult } from "@/components/pages/invoice/ProductList";
 import { numberParser } from "@/tools/numberPaser";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
+import { getDefaultCustomPrice } from "@/tools/sellers/customPrice/getDefaultCustomPrice";
+import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 
 const GrabButton = styled.button`
   display: inline-block;
@@ -83,6 +85,9 @@ export function Product({
 }: props) {
   const outputs = useGetProductOutputByID(doc.id);
   const { invoice } = useInvoice();
+  const [defaultCustomPrice, setDefaultCustomPrice] = useState<
+    DocumentSnapshot<defaultCustomPrice> | undefined
+  >();
   const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
   const [isFolded, setIsFolded] = useState(true);
   const [rtDoc, setRtDoc] = useState<DocumentSnapshot<productDoc>>(doc);
@@ -167,6 +172,23 @@ export function Product({
     }));
   }, [remainStock, doc.id, setProductsResults, invoice]);
 
+  // effect to get the last defaultCustomPrice
+  useEffect(() => {
+    async function getDefaultCutomPriceFunctionBTW() {
+      if (!selectedSeller) return setDefaultCustomPrice(undefined);
+
+      const lastDefaultCustomPrice = await getDefaultCustomPrice(
+        selectedSeller.ref,
+        doc.ref,
+        invoice?.data().client_ref
+      );
+
+      setDefaultCustomPrice(lastDefaultCustomPrice);
+    }
+
+    getDefaultCutomPriceFunctionBTW();
+  }, []);
+
   useEffect(() => console.log("root remaingStock", remainStock), [remainStock]);
 
   if (hideProductWithoutStock && currentStock === 0) return <></>;
@@ -198,6 +220,7 @@ export function Product({
         currentStock={currentStock}
         someHumanChangesDetected={someHumanChangesDetected}
         setOverflowWarning={setStockOverflowWarning}
+        defaultCustomPrices={defaultCustomPrice}
       />
       <Devolution
         productDoc={doc}
@@ -218,8 +241,10 @@ export function Product({
         someHumanChangesDetected={someHumanChangesDetected}
       />
       <Price
-        product_id={doc.id}
+        product_ref={doc.ref}
+        defaultCustomPrice={defaultCustomPrice?.data()}
         normalPrice={rtDocData?.stock[0]?.sale_price || 0}
+        outputs={outputs}
         setCustomPrice={setCustomPrice}
         someHumanChangesDetected={someHumanChangesDetected}
       />

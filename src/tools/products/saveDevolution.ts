@@ -44,6 +44,7 @@ export async function saveDevolution(
   const outputsWorked = amountListener(
     amountToAmountListener,
     stock,
+    undefined,
     productDoc as QueryDocumentSnapshot<productDoc>,
     customPrice
   );

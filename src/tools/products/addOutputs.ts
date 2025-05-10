@@ -13,6 +13,7 @@ import { productDoc } from "./create";
 import { entryDoc } from "./addEntry";
 import { invoiceType } from "../invoices/createInvoice";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
+import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 
 export type outputType = {
   created_at: Timestamp;
@@ -26,6 +27,7 @@ export type outputType = {
   entry_ref: DocumentReference<entryDoc>;
   invoice_ref: DocumentReference<invoiceType>;
   product_ref: DocumentReference<productDoc>;
+  default_custom_price_ref: DocumentReference<defaultCustomPrice> | null;
   followed: boolean;
   disabled: boolean;
 };
@@ -46,6 +48,7 @@ export const outputParser = (
     purchase_value,
     sale_price: rawOutput.sale_price,
     sale_value,
+    default_custom_price_ref: rawOutput.default_custom_price_ref,
     commission: rawOutput.commission,
     commission_value,
     entry_ref: rawOutput.entry_ref,

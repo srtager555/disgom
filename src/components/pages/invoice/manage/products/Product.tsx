@@ -23,6 +23,7 @@ import { getInventoryByProduct } from "@/tools/invoices/getInventoryByProduct";
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { numberParser } from "@/tools/numberPaser";
 import { useInvoice } from "@/contexts/InvoiceContext";
+import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
 
 const GrabButton = styled.button`
   display: inline-block;
@@ -80,6 +81,7 @@ export function Product({
   allInventory,
   setProductsResults,
 }: props) {
+  const outputs = useGetProductOutputByID(doc.id);
   const { invoice } = useInvoice();
   const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
   const [isFolded, setIsFolded] = useState(true);
@@ -172,7 +174,7 @@ export function Product({
     <ProductContainer
       $hide={false}
       $hasInventory={selectedSellerData?.hasInventory}
-      $withoutStock={currentStock}
+      $withoutStock={currentStock || outputs.length}
       $fold={!isFolded}
       $warn={warn}
     >
@@ -189,6 +191,7 @@ export function Product({
         <Column>{inventory.totalAmount}</Column>
       )}
       <AddOutput
+        outputs={outputs}
         productDoc={rtDoc}
         customPrice={customPrice}
         currentStock={currentStock}

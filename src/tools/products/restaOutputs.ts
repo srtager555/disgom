@@ -1,10 +1,4 @@
-import {
-  DocumentReference,
-  DocumentSnapshot,
-  getDoc,
-  updateDoc,
-  Timestamp,
-} from "firebase/firestore";
+import { DocumentSnapshot, updateDoc, Timestamp } from "firebase/firestore";
 import { productDoc } from "./create";
 import { outputType } from "./addOutputs";
 import { disableOutput } from "./disableOutput";
@@ -18,6 +12,7 @@ import { invoiceType } from "@/tools/invoices/createInvoice";
 export async function restaOutputs(
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
+  outputs: DocumentSnapshot<outputType>[],
   amount: number,
   currentAmount: number,
   customPrice?: number
@@ -25,17 +20,8 @@ export async function restaOutputs(
   // 1. Comprobar que amount no sea menor que 0
   const finalAmount = Math.max(0, amount);
 
-  // 2. Obtener los outputs del producto desde products_outputs
-  const productsOutputs = invoice.data()?.products_outputs || {};
-  const productOutputs = productsOutputs[productDoc.id] || [];
-
-  // 3. Obtener los documentos de los outputs
-  const outputDocs = await Promise.all(
-    productOutputs.map((ref: DocumentReference<outputType>) => getDoc(ref))
-  );
-
   // 4. Convertir outputs a stocks
-  const stocks = outputDocs.map((doc: DocumentSnapshot<outputType>) =>
+  const stocks = outputs.map((doc: DocumentSnapshot<outputType>) =>
     createStockFromOutputType(doc.data() as outputType)
   );
 
@@ -50,9 +36,7 @@ export async function restaOutputs(
 
   // 6. Deshabilitar outputs anteriores
   await Promise.all(
-    outputDocs.map((doc: DocumentSnapshot<outputType>) =>
-      disableOutput(doc.ref)
-    )
+    outputs.map((doc: DocumentSnapshot<outputType>) => disableOutput(doc.ref))
   );
 
   // return;

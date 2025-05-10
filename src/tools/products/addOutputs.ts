@@ -2,6 +2,7 @@ import {
   addDoc,
   collection,
   CollectionReference,
+  doc,
   DocumentReference,
   DocumentSnapshot,
   Timestamp,
@@ -28,105 +29,6 @@ export type outputType = {
   followed: boolean;
   disabled: boolean;
 };
-
-// export async function a(
-//   invoice_ref: DocumentReference<invoiceType>,
-//   product_id: string,
-//   productOutputData: productResult
-// ) {
-//   const db = Firestore();
-//   const productRef = doc(
-//     db,
-//     ProductsCollection.root,
-//     product_id
-//   ) as DocumentReference<productDoc>;
-//   const outputColl = collection(
-//     productRef,
-//     ProductsCollection.output
-//   ) as CollectionReference<outputType>;
-
-//   const productSnap = await getDoc(productRef);
-//   const { stock: stocky } = productSnap.data() as productDoc;
-//   const stocks = stocky && [...stocky];
-
-//   productOutputData.sold.variations.forEach(async (element, index) => {
-//     let remainingAmount = element.amount;
-//     if (remainingAmount <= 0) return;
-//     // const finalData = [];
-
-//     const data = (
-//       amount: number,
-//       cost_price: number,
-//       entry_ref: DocumentReference<entryDoc>
-//     ) => {
-//       const purchase_cost = amount * cost_price;
-//       const normal_price = element.price;
-//       const seller_price =
-//         productOutputData.seller_sold.variations[index].price;
-//       const normal_sale_value = normal_price * amount;
-//       const seller_sale_value = seller_price * amount;
-
-//       return {
-//         created_at: Timestamp.fromDate(new Date()),
-//         amount,
-//         cost_price,
-//         purchase_cost,
-//         sale_prices: {
-//           normal: normal_price,
-//           seller: seller_price,
-//         },
-//         sales_values: {
-//           normal: normal_sale_value,
-//           seller: seller_sale_value,
-//         },
-//         profit: {
-//           normal: normal_sale_value - purchase_cost,
-//           seller: seller_sale_value - normal_sale_value,
-//         },
-//         entry_ref,
-//         invoice_ref,
-//         disabled: false,
-//       };
-//     };
-
-//     for (let index = 0; index < stocks.length; index++) {
-//       const stock = stocks[index];
-
-//       const remaining = remainingAmount - stock.amount;
-
-//       if (remaining > 0) {
-//         remainingAmount = remaining;
-
-//         const outputRef = await addDoc(
-//           outputColl,
-//           data(stock.amount, stock.purchase_price, stock.entry_ref)
-//         );
-
-//         await updateStock(productRef, stock, undefined);
-
-//         await updateDoc(invoice_ref, {
-//           products_outputs: arrayUnion(outputRef),
-//         });
-//       } else {
-//         const outputRef = await addDoc(
-//           outputColl,
-//           data(remainingAmount, stock.purchase_price, stock.entry_ref)
-//         );
-
-//         await updateStock(productRef, stock, {
-//           ...stock,
-//           amount: stock.amount - remainingAmount,
-//         });
-
-//         await updateDoc(invoice_ref, {
-//           products_outputs: arrayUnion(outputRef),
-//         });
-
-//         break;
-//       }
-//     }
-//   });
-// }
 
 export const outputParser = (
   invoice: DocumentSnapshot<invoiceType>,
@@ -158,107 +60,42 @@ export async function addOutputs(
   invoice: DocumentSnapshot<invoiceType>,
   product_doc: DocumentSnapshot<productDoc>,
   rawOutputs: rawOutput[],
-  outputsKey: "products_outputs" | "outputs_sold" = "products_outputs",
-  outputColl: CollectionReference<outputType> = collection(
-    product_doc.ref,
-    ProductsCollection.output
-  ) as CollectionReference<outputType>,
+  outputColl: CollectionReference<outputType> | undefined = undefined,
   returnOutputs: boolean = false
 ) {
-  // let remainingAmount = rawOutputs.reduce((acc, next) => acc + next.amount, 0);
-  const outputs_field = outputsKey + "." + product_doc.ref.id;
-  // const currentOutputsField = invoice.data()?.[outputsKey] as unknown as Record<
-  //   string,
-  //   DocumentReference<outputType>[]
-  // >;
-  // const currentOutputs = currentOutputsField[product_doc.ref.id];
-
-  // if (currentOutputs) {
-  //   currentOutputs.forEach(async (outputRef: DocumentReference<outputType>) => {
-  //     await disableOutput(outputRef);
-  //   });
-  // }
+  const docRef = doc(invoice.ref, "outputs", product_doc.ref.id);
+  const normalColl = collection(
+    product_doc.ref,
+    ProductsCollection.output
+  ) as CollectionReference<outputType>;
+  const coll = outputColl || normalColl;
 
   if (rawOutputs.length === 0) {
     if (returnOutputs) return [];
 
-    await updateDoc(invoice.ref, {
-      [outputs_field]: [],
+    await updateDoc(docRef, {
+      outputs: [],
     });
 
     return;
   }
 
-  // const docData = (await getDoc(product_doc.ref)).data() as productDoc;
-  // const stocks = docData?.stock;
-
-  // remove stock
-  // for (let index = 0; index < stocks.length; index++) {
-  //   const stock = stocks[index];
-
-  //   console.log("stock", stock);
-
-  //   const remaining = remainingAmount - stock.amount;
-
-  //   if (remaining > 0) {
-  //     remainingAmount = remaining;
-
-  //     await updateStock(product_doc.ref, stock, undefined);
-  //   } else {
-  //     await updateStock(product_doc.ref, stock, {
-  //       ...stock,
-  //       amount: stock.amount - remainingAmount,
-  //     });
-
-  //     break;
-  //   }
-  // }
-
   const outputsReady = rawOutputs.map((el) => {
     return outputParser(invoice, product_doc, el);
   });
 
-  console.log("outputs coll patah", outputColl.path);
-  console.log("outputs field", outputs_field);
+  console.log("outputs coll patah", coll.path);
+
   if (returnOutputs) return outputsReady;
 
   const outputsRefsPromise = outputsReady.map(async (el) => {
-    return await addDoc(outputColl, el);
+    return await addDoc(coll, el);
   });
 
   const outputsRefs = await Promise.all(outputsRefsPromise);
 
-  // return;
-
-  await updateDoc(invoice.ref, {
-    [outputs_field]: outputsRefs,
-  });
+  if (!outputColl)
+    await updateDoc(docRef, {
+      outputs: outputsRefs,
+    });
 }
-// const amountListener =
-//     function (n: number) {
-//       let remainingAmount = n;
-
-//       setCostRequestData([]);
-//       if (remainingAmount <= 0) return;
-//       if (!stocks) return;
-
-//       for (let index = 0; index < stocks.length; index++) {
-//         const stock = stocks[index];
-
-//         const remaining = remainingAmount - stock.amount;
-
-//         if (remaining > 0) {
-//           remainingAmount = remaining;
-//           setCostRequestData((props) => [
-//             ...props,
-//             { amount: stock.amount, stockPosition: index },
-//           ]);
-//         } else {
-//           setCostRequestData((props) => [
-//             ...props,
-//             { amount: remainingAmount, stockPosition: index },
-//           ]);
-//           break;
-//         }
-//       }
-//     }

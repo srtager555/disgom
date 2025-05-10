@@ -59,6 +59,7 @@ export const AddOutput = (
 
   return (
     <MemoAddOutput
+      outputs={outputs}
       serverCurrentAmount={serverCurrentAmount}
       productDoc={props.productDoc}
       currentStock={props.currentStock}
@@ -70,26 +71,30 @@ export const AddOutput = (
 
 export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   if (prev.serverCurrentAmount != next.serverCurrentAmount) return false;
-  if (!isEqual(prev.currentStock, next.currentStock)) return false;
   if (prev.customPrice !== next.customPrice) return false;
+  if (prev.productDoc.id !== next.productDoc.id) return false;
+  if (prev.currentStock !== next.currentStock) return false;
+
+  if (!isEqual(prev.outputs, next.outputs)) return false;
+  if (!isEqual(prev.currentStock, next.currentStock)) return false;
   if (isEqual(prev.productDoc, next.productDoc)) return false;
 
   return true;
 });
 
-type baseProps = Omit<props, "outputs">;
 type lastAmountToChange = {
   amount: number;
   customPrice: number | undefined;
 };
 
 export function AddOutputBase({
+  outputs,
   serverCurrentAmount,
   productDoc,
   currentStock,
   customPrice,
   someHumanChangesDetected,
-}: baseProps) {
+}: props) {
   const [amount, setAmount] = useState(serverCurrentAmount);
   const [localCurrentAmount, setLocalCurrentAmount] =
     useState(serverCurrentAmount);
@@ -128,7 +133,7 @@ export function AddOutputBase({
     humanAmountChanged.current = true;
   }, [customPrice, lastCustomPrice]);
 
-  //effect to save the changes
+  // effect to save the changes
   useEffect(() => {
     async function manage() {
       let amountToWork: lastAmountToChange = {
@@ -178,6 +183,7 @@ export function AddOutputBase({
         await updatePrice(
           invoice,
           productDoc,
+          outputs,
           amountToWork.amount,
           amountToWork.customPrice
         );
@@ -193,6 +199,7 @@ export function AddOutputBase({
         await restaOutputs(
           invoice,
           productDoc,
+          outputs,
           amountToWork.amount,
           localCurrentAmount,
           amountToWork.customPrice
@@ -222,6 +229,7 @@ export function AddOutputBase({
 
     manage();
   }, [
+    outputs,
     cookedAmount,
     customPrice,
     productDoc,

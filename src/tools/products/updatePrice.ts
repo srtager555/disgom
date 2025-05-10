@@ -1,8 +1,4 @@
-import {
-  DocumentReference,
-  DocumentSnapshot,
-  getDoc,
-} from "firebase/firestore";
+import { DocumentSnapshot, getDoc } from "firebase/firestore";
 import { productDoc } from "./create";
 import { outputType } from "./addOutputs";
 import { createStockFromOutputType } from "./ManageSaves";
@@ -14,20 +10,19 @@ import { invoiceType } from "@/tools/invoices/createInvoice";
 export async function updatePrice(
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
+  outputs: DocumentSnapshot<outputType>[],
   amount: number,
   customPrice?: number
 ) {
   console.log("Solo cambia el precio, actualizando outputs");
 
   // Obtener los outputs actuales
-  const productsOutputs = invoice.data()?.products_outputs || {};
-  const productOutputs = productsOutputs[productDoc.id] || [];
   const currentProductStocks = productDoc.data()?.stock || [];
 
   // Obtener los documentos de los outputs
   const outputDocs = await Promise.all(
-    productOutputs.map(async (ref: DocumentReference<outputType>) => {
-      const doc = await getDoc(ref);
+    outputs.map(async (el) => {
+      const doc = await getDoc(el.ref);
       return doc;
     })
   );
@@ -49,8 +44,8 @@ export async function updatePrice(
 
   // Deshabilitar outputs anteriores
   await Promise.all(
-    productOutputs.map(async (ref: DocumentReference<outputType>) => {
-      await disableOutput(ref);
+    outputs.map(async (el) => {
+      await disableOutput(el.ref);
     })
   );
 

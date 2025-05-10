@@ -1,14 +1,19 @@
 import {
+  DocumentReference,
   DocumentSnapshot,
   addDoc,
   arrayUnion,
   collection,
+  doc,
+  getDoc,
+  setDoc,
   updateDoc,
 } from "firebase/firestore";
 import { productDoc } from "./create";
 import { amountListener, rawOutputToStock } from "./ManageSaves";
 import { invoiceType } from "../invoices/createInvoice";
 import { outputParser } from "./addOutputs";
+import { DocumentWithTheOutputs } from "@/hooks/invoice/getProductOutputsByID";
 
 export async function sumaOutputs(
   invoice: DocumentSnapshot<invoiceType>,
@@ -45,10 +50,32 @@ export async function sumaOutputs(
     })
   );
 
+  // Guardar las referencia de los outputs a su respectivo documento
+  const invoiceProductOutputRef = doc(
+    invoice.ref,
+    "outputs",
+    productDoc.id
+  ) as DocumentReference<DocumentWithTheOutputs>;
+
+  const currentDoc = await getDoc(invoiceProductOutputRef);
+  if (currentDoc.exists()) {
+    // update the outputs
+    await updateDoc(invoiceProductOutputRef, {
+      outputs: arrayUnion(...newOutputs),
+    });
+  } else {
+    // create the doc
+    await setDoc(invoiceProductOutputRef, {
+      product_ref: productDoc.ref,
+      invoice_ref: invoice.ref,
+      outputs: newOutputs,
+    });
+  }
+
   // 6. Agregar los nuevos outputs al array de products_outputs
-  await updateDoc(invoice.ref, {
-    [`products_outputs.${productDoc.id}`]: arrayUnion(...newOutputs),
-  });
+  // await updateDoc(invoice.ref, {
+  //   [`products_outputs.${productDoc.id}`]: arrayUnion(...newOutputs),
+  // });
 
   console.log("Proceso de suma completado");
 }

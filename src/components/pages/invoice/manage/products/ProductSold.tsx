@@ -5,7 +5,11 @@ import { addOutputs, outputType } from "@/tools/products/addOutputs";
 import {
   collection,
   CollectionReference,
+  getDocs,
+  query,
   QueryDocumentSnapshot,
+  updateDoc,
+  where,
 } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { isEqual } from "lodash";
@@ -68,14 +72,20 @@ export function ProductSoldBase({
         "outputs_sold"
       ) as CollectionReference<outputType>;
 
+      // disable the current outputs sold
+      const q = query(coll, where("disabled", "==", false));
+      const outputs_sold = await getDocs(q);
+
+      if (outputs_sold.size > 0) {
+        outputs_sold.forEach(async (doc) => {
+          await updateDoc(doc.ref, {
+            disabled: true,
+          });
+        });
+      }
+
       // outputs totalSold
-      await addOutputs(
-        invoiceDoc,
-        product_doc,
-        remainStock,
-        "outputs_sold",
-        coll
-      );
+      await addOutputs(invoiceDoc, product_doc, remainStock, coll);
 
       someHumanChangesDetected.current = {
         addOutput: false,

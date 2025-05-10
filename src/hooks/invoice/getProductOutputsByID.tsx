@@ -2,46 +2,49 @@ import { useEffect, useState } from "react";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { outputType } from "@/tools/products/addOutputs";
 import {
+  doc,
   DocumentReference,
   DocumentSnapshot,
   getDoc,
+  onSnapshot,
 } from "firebase/firestore";
-import { isEqual } from "lodash";
+import { productDoc } from "@/tools/products/create";
+import { invoiceType } from "@/tools/invoices/createInvoice";
+
+export type DocumentWithTheOutputs = {
+  outputs: DocumentReference<outputType>[];
+  product_ref: DocumentReference<productDoc>;
+  invoice_ref: DocumentReference<invoiceType>;
+};
 
 export function useGetProductOutputByID(id: string) {
   const { invoice } = useInvoice();
-  const [output, setOutput] = useState<Array<DocumentSnapshot<outputType>>>([]);
-  const [currentOutputs, setCurrentOutputs] = useState<
-    Record<string, DocumentReference<outputType>[]>
-  >({});
+  const [outputs, setOutputs] = useState<Array<DocumentSnapshot<outputType>>>(
+    []
+  );
 
   // effect to check if the outputs are equal
   useEffect(() => {
-    const data = invoice?.data();
-    const newOutputs = data?.products_outputs || {};
+    if (!invoice) return;
+    const ref = doc(
+      invoice.ref,
+      "outputs",
+      id
+    ) as DocumentReference<DocumentWithTheOutputs>;
 
-    if (isEqual(currentOutputs, newOutputs)) return;
+    const unsubscribe = onSnapshot(ref, async (snap) => {
+      const data = snap.data();
+      if (!data) return;
 
-    setCurrentOutputs(newOutputs);
+      const outputs = await Promise.all(
+        data?.outputs.map(async (ref) => await getDoc(ref))
+      );
+      setOutputs(outputs);
+    });
+
+    return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoice]);
 
-  // effect to get the outputs
-  useEffect(() => {
-    async function parseOutputs() {
-      const outputsRef = currentOutputs[id] || [];
-
-      const outputsPromises = outputsRef.map(async (ref) => await getDoc(ref));
-
-      const outputsFetcheds = await Promise.all(outputsPromises);
-
-      if (isEqual(outputsFetcheds, output)) return;
-
-      setOutput(outputsFetcheds);
-    }
-
-    parseOutputs();
-  }, [currentOutputs, id]);
-
-  return output;
+  return outputs;
 }

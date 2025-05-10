@@ -105,7 +105,7 @@ export const ProductContainer = styled.div<{
     css`
       position: sticky;
       top: 0;
-      z-index: 999;
+      z-index: 1;
       /* box-shadow: 0 5px 15px #0003; */
     `}
 

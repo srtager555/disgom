@@ -25,6 +25,7 @@ type props = {
   customPrice: number | undefined;
   productDoc: DocumentSnapshot<productDoc>;
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
+  setOverflowWarning: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export type variations = Array<{
@@ -67,6 +68,7 @@ export const AddOutput = (props: Omit<props, "serverCurrentAmount">) => {
       currentStock={props.currentStock}
       customPrice={props.customPrice}
       someHumanChangesDetected={props.someHumanChangesDetected}
+      setOverflowWarning={props.setOverflowWarning}
     />
   );
 };
@@ -96,6 +98,7 @@ export function AddOutputBase({
   currentStock,
   customPrice,
   someHumanChangesDetected,
+  setOverflowWarning,
 }: props) {
   const [amount, setAmount] = useState(serverCurrentAmount); // Input field's value
   const [localCurrentAmount, setLocalCurrentAmount] =
@@ -155,6 +158,7 @@ export function AddOutputBase({
   // The core saving logic
   const saveChangesLogic = useCallback(
     async (amountToSave: number, priceToSave: number | undefined) => {
+      setOverflowWarning(false);
       if (isCurrentlySavingRef.current) {
         console.log("AddOutput: Save already in progress. Ignoring this call.");
         return;
@@ -166,6 +170,15 @@ export function AddOutputBase({
       ) {
         console.log("AddOutput: No change in amount or price. Skipping save.");
         humanInteractionDetectedRef.current = false;
+        return;
+      }
+
+      if (currentStock < amountToSave) {
+        console.log(
+          "Addoutput: Not enough stock. Skipping save and showing warning."
+        );
+        humanInteractionDetectedRef.current = false;
+        setOverflowWarning(true);
         return;
       }
 
@@ -317,7 +330,7 @@ export function AddOutputBase({
           type="number"
           value={amount} // Controlled component
           min={0}
-          max={currentStock + serverCurrentAmount}
+          // max={currentStock + serverCurrentAmount}
           onChange={handleInputChange}
         />
       </form>

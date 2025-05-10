@@ -127,9 +127,9 @@ export const ProductContainer = styled.div<{
   ${(props) =>
     props.$warn &&
     css`
+      animation: warning 1.5s steps(1, end) infinite;
       color: red;
       font-weight: bold;
-      text-decoration: underline;
     `}
 
   ${(props) =>
@@ -148,6 +148,18 @@ export const ProductContainer = styled.div<{
       opacity: 0.5;
       pointer-events: none;
     `}
+
+  @keyframes warning {
+    0% {
+      color: red;
+    }
+    50% {
+      color: yellow;
+    }
+    100% {
+      color: red;
+    }
+  }
 `;
 
 type props = {

@@ -88,6 +88,7 @@ export function Product({
   const [rtDoc, setRtDoc] = useState<DocumentSnapshot<productDoc>>(doc);
   const [warn, setWarn] = useState(false);
   const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
+  const [stockOverflowWarning, setStockOverflowWarning] = useState(false);
   const [remainStockTotals, setRemainStockTotals] = useState<productResult>({
     amount: 0,
     cost: 0,
@@ -176,7 +177,7 @@ export function Product({
       $hasInventory={selectedSellerData?.hasInventory}
       $withoutStock={currentStock || outputs.length}
       $fold={!isFolded}
-      $warn={warn}
+      $warn={warn || stockOverflowWarning}
     >
       <Column>
         <GrabButton>-</GrabButton>
@@ -196,6 +197,7 @@ export function Product({
         customPrice={customPrice}
         currentStock={currentStock}
         someHumanChangesDetected={someHumanChangesDetected}
+        setOverflowWarning={setStockOverflowWarning}
       />
       <Devolution
         productDoc={doc}

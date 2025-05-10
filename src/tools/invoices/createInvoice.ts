@@ -9,6 +9,7 @@ import {
   orderBy,
   query,
   Timestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { Firestore } from "../firestore";
 import {
@@ -29,13 +30,8 @@ export type invoiceType = {
   client_ref: DocumentReference<client> | null;
   invoice_type: "normal" | "donation" | "damaged";
   products_outputs: Record<string, Array<DocumentReference<outputType>>>;
-  devolution: DocumentReference<inventory> | null;
-  // devolution: {
-  //   amount: number | null;
-  //   inventory_ref: DocumentReference<inventory> | null;
-  // };
   outputs_sold: Record<string, Array<DocumentReference<outputType>>>;
-  // inventory_ref: null;
+  devolution: DocumentReference<inventory> | null;
   last_inventory_ref: DocumentReference<inventory> | null;
   next_invoice_ref: DocumentReference<invoiceType> | null;
   prev_invoice_ref: DocumentReference<invoiceType> | null;
@@ -45,6 +41,7 @@ export type invoiceType = {
   route: number | null;
   bills: number;
   money: rawMoneyType;
+  refresh_data: boolean;
   diff: {
     amount: number;
     paid: boolean;
@@ -93,7 +90,10 @@ export async function createInvoice(
 
   if (!seller_ref) return;
 
-  return await addDoc(coll, {
+  const queryLastInvoice = query(coll, orderBy("created_at", "desc"), limit(1));
+  const lastInvoice = await getDocs(queryLastInvoice);
+
+  const newInvoice = await addDoc(coll, {
     created_at: Timestamp.fromDate(new Date()),
     seller_ref,
     client_ref: null,
@@ -117,7 +117,14 @@ export async function createInvoice(
     delete_at: null,
     last_inventory_ref: last_inventory?.ref || null,
     next_invoice_ref: null,
-    prev_invoice_ref: null,
+    prev_invoice_ref: lastInvoice.docs[0]?.ref || null,
+    refresh_data: false,
     invoice_type,
   });
+
+  await updateDoc(newInvoice, {
+    next_invoice_ref: newInvoice,
+  });
+
+  return newInvoice;
 }

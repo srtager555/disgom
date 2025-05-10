@@ -13,6 +13,7 @@ export const SellersCollection = {
   root: "Sellers",
   clients: "clients",
   credits: "credits",
+  defaulCustomPrices: "defaultCustomPrices",
   inventories: {
     root: "inventories",
     products: "products",

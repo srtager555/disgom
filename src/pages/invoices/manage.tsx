@@ -19,7 +19,16 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/router";
-import { useEffect, useState, useRef, useMemo, useCallback } from "react"; // Import useCallback
+import {
+  useEffect,
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+  createContext,
+  Dispatch,
+  SetStateAction,
+} from "react"; // Import useCallback
 import styled from "styled-components";
 import { useProductResults } from "@/hooks/useProductResults";
 import { InvoiceTotals } from "@/components/pages/invoice/manage/InvoiceTotals";
@@ -30,8 +39,8 @@ import { Preliminar } from "@/components/pages/invoice/manage/Preliminar";
 import { Button } from "@/styles/Form.styles";
 import { Firestore } from "@/tools/firestore";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
-
-export type rawCreditResult = Record<string, number>;
+import { productDoc } from "@/tools/products/create";
+import { CreateNewDefaultCustomPrices } from "@/components/pages/invoice/manage/CreateNewDefaultCustomPrices";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -42,6 +51,26 @@ const MainContainer = styled(FlexContainer)`
   padding: 20px;
 `;
 
+export type rawCreditResult = Record<string, number>;
+type newDefaultCustomPricesType = Record<
+  string,
+  {
+    price: number;
+    product_ref: DocumentReference<productDoc>;
+  }
+>;
+export type newDefaultCustomPrices = {
+  setNewDefaultCustomPrices: Dispatch<
+    SetStateAction<newDefaultCustomPricesType>
+  >;
+  newDefaultCustomPrices: newDefaultCustomPricesType;
+};
+
+export const NewDefaultCustomPrices = createContext<newDefaultCustomPrices>({
+  setNewDefaultCustomPrices: () => {},
+  newDefaultCustomPrices: {},
+});
+
 function InvoiceManager() {
   const { id, sellerId } = useQueryParams();
   const router = useRouter();
@@ -49,7 +78,8 @@ function InvoiceManager() {
   const [selectedSeller, setSelectedSeller] = useState<
     QueryDocumentSnapshot<SellersDoc> | undefined
   >(undefined);
-
+  const [newDefaultCustomPrices, setNewDefaultCustomPrices] =
+    useState<newDefaultCustomPricesType>({});
   const [productsResults, setProductsResults] = useState<
     Record<string, productResult>
   >({});
@@ -161,73 +191,81 @@ function InvoiceManager() {
   }, [productsResults, debouncedProcessResults]); // Depend on productsResults and the debounced function itself
 
   return (
-    <MainContainer>
-      <SelectSeller
-        currentSeller={selectedSeller}
-        setSelectedSeller={setSelectedSeller}
-      />
-      {selectedSeller && invoice?.data().invoice_type === "normal" && (
-        <SelectClient
-          sellerData={selectedSeller?.data()}
-          sellerDoc={selectedSeller}
+    <NewDefaultCustomPrices.Provider
+      value={{
+        newDefaultCustomPrices,
+        setNewDefaultCustomPrices,
+      }}
+    >
+      <MainContainer>
+        <SelectSeller
+          currentSeller={selectedSeller}
+          setSelectedSeller={setSelectedSeller}
         />
-      )}
-
-      {!selectedSeller ? (
-        <Container>
-          <p>Selecione un Vendedor para continuar</p>
-        </Container>
-      ) : !selectedSeller.data().hasInventory &&
-        !invoice?.data().client_ref &&
-        invoice?.data().invoice_type === "normal" ? (
-        <Container>
-          <p>Selecione un cliente para continuar</p>
-        </Container>
-      ) : (
-        <>
-          <Products
-            selectedSeller={selectedSeller}
-            setProductsResults={setProductsResults}
+        {selectedSeller && invoice?.data().invoice_type === "normal" && (
+          <SelectClient
+            sellerData={selectedSeller?.data()}
+            sellerDoc={selectedSeller}
           />
-          <InvoiceTotals
-            totalResults={totalResults}
-            hasInventory={selectedSeller?.data()?.hasInventory}
-          />
-          {selectedSeller?.data()?.hasInventory ? (
-            <>
-              <Credit
-                setRawCreditResult={setRawCreditResult}
-                creditResult={creditResult}
-              />
+        )}
 
-              <Close totals={totalResults} credits={creditResult} />
-            </>
-          ) : (
-            invoice?.data().invoice_type === "normal" && (
-              <>
-                <ClientCredit />
-                <Preliminar />
-              </>
-            )
-          )}
-          <FlexContainer styles={{ gap: "10px", marginTop: "60px" }}>
-            <Button onClick={() => window.print()}>Imprimir</Button>
-            <Button $primary onClick={() => router.push("/invoices")}>
-              Terminado
-            </Button>
-          </FlexContainer>
-          <Container styles={{ marginTop: "20px" }}>
-            <p>
-              Eleminar una factura es una acción <b>INRREVERSIBLE</b>, tenga
-              precaución
-            </p>
-            <Button $warn $hold>
-              Eleminar factura
-            </Button>
+        {!selectedSeller ? (
+          <Container>
+            <p>Selecione un Vendedor para continuar</p>
           </Container>
-        </>
-      )}
-    </MainContainer>
+        ) : !selectedSeller.data().hasInventory &&
+          !invoice?.data().client_ref &&
+          invoice?.data().invoice_type === "normal" ? (
+          <Container>
+            <p>Selecione un cliente para continuar</p>
+          </Container>
+        ) : (
+          <>
+            <Products
+              selectedSeller={selectedSeller}
+              setProductsResults={setProductsResults}
+            />
+            <InvoiceTotals
+              totalResults={totalResults}
+              hasInventory={selectedSeller?.data()?.hasInventory}
+            />
+            {selectedSeller?.data()?.hasInventory ? (
+              <>
+                <Credit
+                  setRawCreditResult={setRawCreditResult}
+                  creditResult={creditResult}
+                />
+
+                <Close totals={totalResults} credits={creditResult} />
+              </>
+            ) : (
+              invoice?.data().invoice_type === "normal" && (
+                <>
+                  <ClientCredit />
+                  <Preliminar />
+                </>
+              )
+            )}
+            <CreateNewDefaultCustomPrices />
+            <FlexContainer styles={{ gap: "10px", marginTop: "60px" }}>
+              <Button onClick={() => window.print()}>Imprimir</Button>
+              <Button $primary onClick={() => router.push("/invoices")}>
+                Terminado
+              </Button>
+            </FlexContainer>
+            <Container styles={{ marginTop: "20px" }}>
+              <p>
+                Eleminar una factura es una acción <b>INRREVERSIBLE</b>, tenga
+                precaución
+              </p>
+              <Button $warn $hold>
+                Eleminar factura
+              </Button>
+            </Container>
+          </>
+        )}
+      </MainContainer>
+    </NewDefaultCustomPrices.Provider>
   );
 }
 

@@ -186,21 +186,28 @@ export default function Page() {
         flexDirection: "column",
       }}
     >
-      <Container styles={{ marginBottom: "30px" }}>
-        <h1 style={{ textAlign: "center" }}>
-          Inventario de {seller.data()?.name ?? "Vendedor Desconocido"}
-        </h1>
+      <Container styles={{ margin: "30px 0" }}>
         {!invoiceID ? (
           <p>No se encontró un inventario valido</p>
         ) : (
-          <p>
-            <Link
-              href={`/invoices/manage?id=${invoiceID}`}
-              className="show-style"
-            >
-              Click aquí para ir a la factura referenciada
-            </Link>
-          </p>
+          <Container styles={{ width: "502px" }}>
+            <h1>
+              Inventario de {seller.data()?.name ?? "Vendedor Desconocido"}
+            </h1>
+            <p style={{ marginBottom: "10px" }}>
+              <Link
+                href={`/invoices/manage?id=${invoiceID}`}
+                className="show-style"
+              >
+                Click aquí para ir a la factura referenciada
+              </Link>
+            </p>
+            <p>
+              <Link href={"/seller?id=" + sellerId} className="show-style">
+                Información detallada de {seller.data()?.name}
+              </Link>
+            </p>
+          </Container>
         )}
       </Container>
       <Container styles={{ maxWidth: "600px", alignSelf: "center" }}>

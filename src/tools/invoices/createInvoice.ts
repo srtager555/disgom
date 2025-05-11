@@ -10,6 +10,7 @@ import {
   query,
   Timestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { Firestore } from "../firestore";
 import {
@@ -41,7 +42,7 @@ export type invoiceType = {
   route: number | null;
   bills: number;
   money: rawMoneyType;
-  refresh_data: boolean;
+  refresh_data: Record<string, boolean> | "deleted" | null;
   diff: {
     amount: number;
     paid: boolean;
@@ -90,7 +91,12 @@ export async function createInvoice(
 
   if (!seller_ref) return;
 
-  const queryLastInvoice = query(coll, orderBy("created_at", "desc"), limit(1));
+  const queryLastInvoice = query(
+    coll,
+    orderBy("created_at", "desc"),
+    where("disabled", "==", false),
+    limit(1)
+  );
   const lastInvoice = await getDocs(queryLastInvoice);
 
   const newInvoice = await addDoc(coll, {
@@ -118,11 +124,11 @@ export async function createInvoice(
     last_inventory_ref: last_inventory?.ref || null,
     next_invoice_ref: null,
     prev_invoice_ref: lastInvoice.docs[0]?.ref || null,
-    refresh_data: false,
+    refresh_data: null,
     invoice_type,
   });
 
-  await updateDoc(newInvoice, {
+  await updateDoc(lastInvoice.docs[0].ref, {
     next_invoice_ref: newInvoice,
   });
 

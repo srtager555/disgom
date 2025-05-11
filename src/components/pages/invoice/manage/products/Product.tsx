@@ -12,7 +12,7 @@ import { SellersDoc } from "@/tools/sellers/create";
 import { AddOutput, rawOutput } from "./AddOutput";
 import { ProductSold } from "./ProductSold";
 import { Price } from "./Price";
-import { isEqual } from "lodash";
+import { isEqual, isPlainObject } from "lodash";
 import { TotalSold } from "./TotalSold";
 import { Commission } from "./Commission";
 import { Profit } from "./Profit";
@@ -200,6 +200,13 @@ export function Product({
       $withoutStock={currentStock || outputs.length}
       $fold={!isFolded}
       $warn={warn || stockOverflowWarning}
+      $highlight={
+        isPlainObject(invoice?.data().refresh_data)
+          ? typeof (invoice?.data().refresh_data as Record<string, boolean>)[
+              doc.id
+            ] === "boolean"
+          : false
+      }
     >
       <Column>
         <GrabButton>-</GrabButton>

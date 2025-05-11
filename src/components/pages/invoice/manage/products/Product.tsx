@@ -26,6 +26,7 @@ import { useInvoice } from "@/contexts/InvoiceContext";
 import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
 import { getDefaultCustomPrice } from "@/tools/sellers/customPrice/getDefaultCustomPrice";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
+import { stockType } from "@/tools/products/addToStock";
 
 const GrabButton = styled.button`
   display: inline-block;
@@ -94,6 +95,7 @@ export function Product({
   const [warn, setWarn] = useState(false);
   const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
   const [stockOverflowWarning, setStockOverflowWarning] = useState(false);
+  const [stockFromParent, setStockFromParent] = useState<stockType[]>();
   const [remainStockTotals, setRemainStockTotals] = useState<productResult>({
     amount: 0,
     cost: 0,
@@ -111,10 +113,16 @@ export function Product({
     const data = rtDoc.data();
     if (!data) return 0;
 
+    if (stockFromParent) {
+      return stockFromParent.reduce((acc, stock) => {
+        return acc + stock.amount;
+      }, 0);
+    }
+
     return data.stock.reduce((acc, stock) => {
       return acc + stock.amount;
     }, 0);
-  }, [rtDoc]);
+  }, [rtDoc, stockFromParent]);
   const selectedSellerData = useMemo(
     () => selectedSeller?.data(),
     [selectedSeller]
@@ -124,6 +132,17 @@ export function Product({
     devolution: false,
     price: false,
   });
+
+  // effect to get the realtime parent to get him stock
+  useEffect(() => {
+    if (!rtDocData?.product_parent) return;
+
+    const unsubcribe = onSnapshot(rtDocData?.product_parent, (snap) => {
+      setStockFromParent(snap.data()?.stock);
+    });
+
+    return () => unsubcribe();
+  }, [rtDoc]);
 
   // effect to get the real time data from the product
   useEffect(() => {

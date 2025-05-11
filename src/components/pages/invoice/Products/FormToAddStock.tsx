@@ -3,11 +3,13 @@ import { ProductContext } from "@/components/layouts/Products.layout";
 import { useGetProduct } from "@/hooks/products/getProduct";
 import { Form, Button } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
+import { numberParser } from "@/tools/numberPaser";
 import { addEntry } from "@/tools/products/addEntry";
 import { stockType } from "@/tools/products/addToStock";
+import { productDoc } from "@/tools/products/create";
 import { EditEntry } from "@/tools/products/editEntry";
 import { removeEntry } from "@/tools/products/removeEntry";
-import { getDoc, updateDoc } from "firebase/firestore";
+import { getDoc, updateDoc, DocumentSnapshot } from "firebase/firestore";
 import {
   FormEvent,
   ChangeEvent,
@@ -29,6 +31,8 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
   const product = useGetProduct();
   const { selectedProduct } = useContext(ProductContext);
   const [timeoutSaved, setTimeoutSaved] = useState<NodeJS.Timeout>();
+  const [parentProduct, setParentProduct] =
+    useState<DocumentSnapshot<productDoc>>();
   const [defaultCost, setDefaultCost] = useState(0);
   const [dynamicMinCost, setDynamicMinCost] = useState<number | undefined>(
     undefined
@@ -44,33 +48,49 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
     e.preventDefault();
     if (!selectedProduct) return;
 
-    const { productCostPrice, productSalePrice, sellerProfit, amount } =
-      e.target as EventTarget & {
-        sellerProfit: HTMLInputElement;
-        productCostPrice: HTMLInputElement;
-        productSalePrice: HTMLInputElement;
-        amount: HTMLInputElement;
-      };
+    const {
+      productCostPrice,
+      productSalePrice,
+      sellerProfit,
+      amount: a,
+    } = e.target as EventTarget & {
+      sellerProfit: HTMLInputElement;
+      productCostPrice: HTMLInputElement;
+      productSalePrice: HTMLInputElement;
+      amount: HTMLInputElement;
+    };
 
-    const purchase_price = Number(productCostPrice.value);
+    const purchase_price = parentProduct
+      ? parentProduct.data()?.stock[0]?.purchase_price ?? 0
+      : Number(productCostPrice.value);
     const sale_price = Number(productSalePrice.value);
     const seller_commission = Number(sellerProfit.value);
+    const amount = parentProduct ? 0 : Number(a.value);
 
-    if (entryToEdit) {
+    const entryToManege = parentProduct ? product.data?.stock[0] : entryToEdit;
+    console.log("theEntry", entryToManege);
+
+    if (entryToManege) {
       console.log("?????");
-      await EditEntry(selectedProduct.ref, entryToEdit, {
-        amount: Number(amount.value),
-        purchase_price,
-        sale_price,
-        seller_commission,
-        product_ref: selectedProduct.ref,
-      });
+      await EditEntry(
+        selectedProduct.ref,
+        entryToManege,
+        {
+          amount,
+          purchase_price,
+          sale_price,
+          seller_commission,
+          product_ref: selectedProduct.ref,
+        },
+        parentProduct ? true : false
+      );
 
       setEntryToEdit(undefined);
     } else {
+      console.log("!!!!");
       await addEntry(selectedProduct?.ref, {
-        amount: Number(amount.value),
-        purchase_price,
+        amount,
+        purchase_price: purchase_price,
         sale_price,
         seller_commission,
       });
@@ -116,6 +136,22 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
     const newMin = e.target.value;
     setDynamicMinCost(Number(newMin));
   }
+
+  // effect to get the parent
+  useEffect(() => {
+    async function getParent() {
+      const parent_ref = product.data?.product_parent;
+
+      if (!parent_ref) return;
+
+      const parent = await getDoc(parent_ref);
+
+      console.log("the parent", parent);
+      setParentProduct(parent);
+    }
+
+    getParent();
+  }, [product]);
 
   // effect to set the default values in the inputs
   // if there is a entry selected the code will put their values
@@ -163,31 +199,48 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
     if (!formRef.current) return;
 
     formRef.current.reset();
+    setParentProduct(undefined);
+    setEntryToEdit(undefined);
   }, [selectedProduct]);
 
   return (
     <>
       <Form name="FormEditEntry" ref={formRef} onSubmit={handlerOnSubmit}>
-        <h3>Crear una nueva entrada</h3>
+        <h3>
+          {parentProduct ? "Actualizar precios" : "Crear una nueva entrada"}
+        </h3>
         <p>
-          {entryToEdit
+          {parentProduct
+            ? "Actualizar el precio del producto"
+            : entryToEdit
             ? "Edita la entrada seleccionada"
             : "Ingresa nuevo producto al stock."}
         </p>
         <FlexContainer>
-          <InputNumber
-            ref={costRef}
-            defaultValue={defaultCost}
-            min={0}
-            step={0.01}
-            onChange={handlerOnChangeOwnerMin}
-            name="productCostPrice"
-            inline
-            required
-            width="90px"
-          >
-            Costó
-          </InputNumber>
+          {parentProduct ? (
+            <Container styles={{ marginRight: "15px" }}>
+              <p>Costo</p>
+              <p style={{ fontSize: "1.3rem" }}>
+                {numberParser(
+                  parentProduct.data()?.stock[0]?.purchase_price ?? 0
+                )}
+              </p>
+            </Container>
+          ) : (
+            <InputNumber
+              ref={costRef}
+              defaultValue={defaultCost}
+              min={0}
+              step={0.01}
+              onChange={handlerOnChangeOwnerMin}
+              name="productCostPrice"
+              inline
+              required
+              width="90px"
+            >
+              Costó
+            </InputNumber>
+          )}
           <InputNumber
             ref={ownerRef}
             min={dynamicMinCost ?? defaultCost}
@@ -211,25 +264,27 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
             Com.
           </InputNumber>
 
-          <InputNumber
-            defaultValue={entryToEdit?.amount}
-            inline
-            name="amount"
-            required
-            step="0.01"
-            width="110px"
-          >
-            {entryToEdit ? (
-              <>Stock ({originalAmount})</>
-            ) : (
-              <>
-                Ingresó{" "}
-                {selectedProduct?.data()
-                  ? `${selectedProduct.data().units}`
-                  : ""}
-              </>
-            )}
-          </InputNumber>
+          {!parentProduct && (
+            <InputNumber
+              defaultValue={entryToEdit?.amount}
+              inline
+              name="amount"
+              required
+              step="0.01"
+              width="110px"
+            >
+              {entryToEdit ? (
+                <>Stock ({originalAmount})</>
+              ) : (
+                <>
+                  Ingresó{" "}
+                  {selectedProduct?.data()
+                    ? `${selectedProduct.data().units}`
+                    : ""}
+                </>
+              )}
+            </InputNumber>
+          )}
         </FlexContainer>
         <FlexContainer
           styles={{
@@ -239,7 +294,11 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
         >
           <Container>
             <Button style={{ marginRight: "10px" }}>
-              {entryToEdit ? "Editar entrada" : "Agregar entrada"}
+              {parentProduct
+                ? "Editar precio"
+                : entryToEdit
+                ? "Editar entrada"
+                : "Agregar entrada"}
             </Button>
             <Button onClick={disableProductManager}>
               {!product.data?.disabled ? "Deshabilitar" : "habilitar"}

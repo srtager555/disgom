@@ -41,6 +41,8 @@ import { Firestore } from "@/tools/firestore";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { productDoc } from "@/tools/products/create";
 import { CreateNewDefaultCustomPrices } from "@/components/pages/invoice/manage/CreateNewDefaultCustomPrices";
+import { RefreshData } from "@/components/pages/invoice/RefreshData";
+import { disabled } from "./disabled";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -71,6 +73,22 @@ export const NewDefaultCustomPrices = createContext<newDefaultCustomPrices>({
   newDefaultCustomPrices: {},
 });
 
+export const HasInvoice = createContext<{
+  hasInvoice: boolean;
+  setHasInvoice: Dispatch<SetStateAction<boolean>>;
+}>({
+  hasInvoice: false,
+  setHasInvoice: () => {},
+});
+
+export const DeleteInvouice = createContext<{
+  Delete: boolean;
+  setDelete: Dispatch<SetStateAction<boolean>>;
+}>({
+  Delete: false,
+  setDelete: () => {},
+});
+
 function InvoiceManager() {
   const { id, sellerId } = useQueryParams();
   const router = useRouter();
@@ -80,6 +98,8 @@ function InvoiceManager() {
   >(undefined);
   const [newDefaultCustomPrices, setNewDefaultCustomPrices] =
     useState<newDefaultCustomPricesType>({});
+  const [Delete, setDelete] = useState(false);
+  const [hasInvoice, setHasInvoice] = useState(false);
   const [productsResults, setProductsResults] = useState<
     Record<string, productResult>
   >({});
@@ -91,8 +111,27 @@ function InvoiceManager() {
       0
     );
   }, [rawCreditResult]);
-
   const { totalResults, calculateResults } = useProductResults();
+
+  // Función que se ejecutará después del debounce
+  const executeDeleteInvoice = useCallback(async () => {
+    console.log("Función de eliminación (debounced con lodash) ejecutada.");
+
+    try {
+      await disabled();
+    } catch (error) {
+      console.log(error);
+    } finally {
+      router.push("/invoices");
+    }
+  }, []); // Añade dependencias si `executeDeleteInvoice` las necesita (ej. `invoice`, `router`)
+
+  // Crear la función debounced usando lodash
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedDeleteInvoice = useCallback(
+    debounce(executeDeleteInvoice, 5000),
+    [executeDeleteInvoice] // executeDeleteInvoice es la dependencia
+  );
 
   // this effect is to create an invoice when select the seller
   useEffect(() => {
@@ -191,81 +230,93 @@ function InvoiceManager() {
   }, [productsResults, debouncedProcessResults]); // Depend on productsResults and the debounced function itself
 
   return (
-    <NewDefaultCustomPrices.Provider
-      value={{
-        newDefaultCustomPrices,
-        setNewDefaultCustomPrices,
-      }}
-    >
-      <MainContainer>
-        <SelectSeller
-          currentSeller={selectedSeller}
-          setSelectedSeller={setSelectedSeller}
-        />
-        {selectedSeller && invoice?.data().invoice_type === "normal" && (
-          <SelectClient
-            sellerData={selectedSeller?.data()}
-            sellerDoc={selectedSeller}
-          />
-        )}
-
-        {!selectedSeller ? (
-          <Container>
-            <p>Selecione un Vendedor para continuar</p>
-          </Container>
-        ) : !selectedSeller.data().hasInventory &&
-          !invoice?.data().client_ref &&
-          invoice?.data().invoice_type === "normal" ? (
-          <Container>
-            <p>Selecione un cliente para continuar</p>
-          </Container>
-        ) : (
-          <>
-            <Products
-              selectedSeller={selectedSeller}
-              setProductsResults={setProductsResults}
-            />
-            <InvoiceTotals
-              totalResults={totalResults}
-              hasInventory={selectedSeller?.data()?.hasInventory}
-            />
-            {selectedSeller?.data()?.hasInventory ? (
-              <>
-                <Credit
-                  setRawCreditResult={setRawCreditResult}
-                  creditResult={creditResult}
+    <HasInvoice.Provider value={{ hasInvoice, setHasInvoice }}>
+      <DeleteInvouice.Provider value={{ Delete, setDelete }}>
+        <NewDefaultCustomPrices.Provider
+          value={{
+            newDefaultCustomPrices,
+            setNewDefaultCustomPrices,
+          }}
+        >
+          <RefreshData>
+            <MainContainer>
+              <SelectSeller
+                currentSeller={selectedSeller}
+                setSelectedSeller={setSelectedSeller}
+              />
+              {selectedSeller && invoice?.data().invoice_type === "normal" && (
+                <SelectClient
+                  sellerData={selectedSeller?.data()}
+                  sellerDoc={selectedSeller}
                 />
+              )}
 
-                <Close totals={totalResults} credits={creditResult} />
-              </>
-            ) : (
-              invoice?.data().invoice_type === "normal" && (
+              {!selectedSeller ? (
+                <Container>
+                  <p>Selecione un Vendedor para continuar</p>
+                </Container>
+              ) : !selectedSeller.data().hasInventory &&
+                !invoice?.data().client_ref &&
+                invoice?.data().invoice_type === "normal" ? (
+                <Container>
+                  <p>Selecione un cliente para continuar</p>
+                </Container>
+              ) : (
                 <>
-                  <ClientCredit />
-                  <Preliminar />
+                  <Products
+                    selectedSeller={selectedSeller}
+                    setProductsResults={setProductsResults}
+                  />
+                  <InvoiceTotals
+                    totalResults={totalResults}
+                    hasInventory={selectedSeller?.data()?.hasInventory}
+                  />
+                  {selectedSeller?.data()?.hasInventory ? (
+                    <>
+                      <Credit
+                        setRawCreditResult={setRawCreditResult}
+                        creditResult={creditResult}
+                      />
+
+                      <Close totals={totalResults} credits={creditResult} />
+                    </>
+                  ) : (
+                    invoice?.data().invoice_type === "normal" && (
+                      <>
+                        <ClientCredit />
+                        <Preliminar />
+                      </>
+                    )
+                  )}
+                  <CreateNewDefaultCustomPrices />
+                  <FlexContainer styles={{ gap: "10px", marginTop: "60px" }}>
+                    <Button onClick={() => window.print()}>Imprimir</Button>
+                    <Button $primary onClick={() => router.push("/invoices")}>
+                      Terminado
+                    </Button>
+                  </FlexContainer>
+                  <Container styles={{ marginTop: "20px" }}>
+                    <p>
+                      Eleminar una factura es una acción <b>INRREVERSIBLE</b>,
+                      tenga precaución
+                    </p>
+                    <Button
+                      $warn
+                      $hold
+                      onPointerDown={debouncedDeleteInvoice}
+                      onPointerUp={debouncedDeleteInvoice.cancel}
+                      onMouseLeave={debouncedDeleteInvoice.cancel} // Cancela si el cursor sale mientras está presionado>
+                    >
+                      Eleminar factura
+                    </Button>
+                  </Container>
                 </>
-              )
-            )}
-            <CreateNewDefaultCustomPrices />
-            <FlexContainer styles={{ gap: "10px", marginTop: "60px" }}>
-              <Button onClick={() => window.print()}>Imprimir</Button>
-              <Button $primary onClick={() => router.push("/invoices")}>
-                Terminado
-              </Button>
-            </FlexContainer>
-            <Container styles={{ marginTop: "20px" }}>
-              <p>
-                Eleminar una factura es una acción <b>INRREVERSIBLE</b>, tenga
-                precaución
-              </p>
-              <Button $warn $hold>
-                Eleminar factura
-              </Button>
-            </Container>
-          </>
-        )}
-      </MainContainer>
-    </NewDefaultCustomPrices.Provider>
+              )}
+            </MainContainer>
+          </RefreshData>
+        </NewDefaultCustomPrices.Provider>
+      </DeleteInvouice.Provider>
+    </HasInvoice.Provider>
   );
 }
 

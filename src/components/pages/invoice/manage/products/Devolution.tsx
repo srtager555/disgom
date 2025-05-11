@@ -24,6 +24,7 @@ import { isEqual } from "lodash";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { useGetCurrentDevolutionByProduct } from "@/hooks/invoice/getCurrentDevolution";
 import { useInvoice } from "@/contexts/InvoiceContext";
+import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 
 // --- Tipos ---
 
@@ -121,6 +122,7 @@ function DevolutionBase({
   const [localCurrentDevoHistory, setLocalCurrentDevoHistory] = useState<
     number[]
   >([currentServerDevolution]); // Historial para evitar sobrescritura por datos del servidor
+  const { checkHasNextInvoice } = useHasNextInvoice();
   const lastCustomPrice = useRef(customPrice);
   const humanAmountChanged = useRef(false); // Flag para saber si el cambio fue por interacción humana
 
@@ -253,16 +255,21 @@ function DevolutionBase({
 
     // Llama a la función debounced CADA VEZ que 'devo' (el input) o 'customPrice' cambien.
     // La lógica DENTRO de debouncedSaveDevolution decidirá si realmente necesita guardar.
-    debouncedSaveDevolution(
-      devo, // Usa el valor actual del input
-      customPrice,
-      invoiceDoc,
-      productDoc,
-      seletedSeller,
-      inventory_outputs,
-      outputs,
-      localCurrentDevo, // Pasa el estado local confirmado actual
-      humanAmountChanged // Pasa el ref del flag de interacción humana
+    checkHasNextInvoice(
+      () =>
+        debouncedSaveDevolution(
+          devo, // Usa el valor actual del input
+          customPrice,
+          invoiceDoc,
+          productDoc,
+          seletedSeller,
+          inventory_outputs,
+          outputs,
+          localCurrentDevo, // Pasa el estado local confirmado actual
+          humanAmountChanged // Pasa el ref del flag de interacción humana
+        ),
+      humanAmountChanged.current,
+      productDoc.id
     );
 
     // Función de limpieza para cancelar el debounce si el componente se desmonta

@@ -17,6 +17,7 @@ import { outputType } from "@/tools/products/addOutputs";
 import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 import { productDoc } from "@/tools/products/create";
+import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 
 type props = {
   product_ref: DocumentReference<productDoc>;
@@ -154,13 +155,14 @@ function PriceInputBase({
   isDefaultCustomPrice,
 }: inputProps) {
   const { setNewDefaultCustomPrices } = useNewDefaultCustomPricesContext();
+  const { checkHasNextInvoice } = useHasNextInvoice();
 
   return (
     <>
       <Input
         onChange={(e) => {
           const value = Number(e.target.value);
-          setNewPrice(value);
+          checkHasNextInvoice(() => setNewPrice(value), true, product_ref.id);
 
           if (normalPrice != value && !isDefaultCustomPrice.areTheSame) {
             setNewDefaultCustomPrices((prev) => ({

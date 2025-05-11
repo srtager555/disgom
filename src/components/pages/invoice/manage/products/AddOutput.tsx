@@ -18,6 +18,7 @@ import { sumaOutputs } from "@/tools/products/sumaOutputs";
 import { updatePrice } from "@/tools/products/updatePrice";
 import { someHumanChangesDetected } from "./Product";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
+import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 
 type props = {
   outputs: DocumentSnapshot<outputType>[];
@@ -112,6 +113,7 @@ export function AddOutputBase({
     number[]
   >([serverCurrentAmount]);
 
+  const { checkHasNextInvoice } = useHasNextInvoice();
   const lastCustomPriceRef = useRef(customPrice); // Tracks the last successfully processed customPrice
   const humanInteractionDetectedRef = useRef(false); // User typed or relevant prop changed
   const isCurrentlySavingRef = useRef(false); // Prevents re-entrant saves
@@ -219,6 +221,7 @@ export function AddOutputBase({
           priceToSave !== lastCustomPriceRef.current
         ) {
           console.log("AddOutput: Price change detected.");
+
           await updatePrice(
             invoice,
             productDoc,
@@ -314,7 +317,11 @@ export function AddOutputBase({
       console.log(
         `AddOutput: Interaction detected. Scheduling save with amount: ${amount}, customPrice: ${customPrice}`
       );
-      debouncedSaveChanges(amount, customPrice);
+      checkHasNextInvoice(
+        () => debouncedSaveChanges(amount, customPrice),
+        humanInteractionDetectedRef.current,
+        productDoc.id
+      );
     }
     return () => {
       debouncedSaveChanges.cancel();

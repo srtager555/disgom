@@ -9,6 +9,7 @@ import {
 } from "./ManageSaves";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
+import { getParentStock } from "./getParentStock";
 
 export async function restaOutputs(
   invoice: DocumentSnapshot<invoiceType>,
@@ -19,6 +20,12 @@ export async function restaOutputs(
   currentAmount: number,
   customPrice?: number
 ) {
+  const data = productDoc.data();
+  const parentStock = data?.product_parent
+    ? await getParentStock(data?.product_parent)
+    : null;
+  const parentPrice = parentStock?.[0].sale_price;
+
   // 1. Comprobar que amount no sea menor que 0
   const finalAmount = Math.max(0, amount);
 
@@ -44,7 +51,9 @@ export async function restaOutputs(
 
   // return;
   // 7. Consolidar los stocks basados en entry_ref y precio de venta
-  const currentProductStock = productDoc.data()?.stock || [];
+  const currentProductStock = data?.product_parent
+    ? await getParentStock(data?.product_parent)
+    : productDoc.data()?.stock || [];
   const consolidatedStocks = [...currentProductStock];
 
   for (const newStock of outputsToCreate) {
@@ -61,7 +70,7 @@ export async function restaOutputs(
       // Si no encontramos un stock con el mismo entry_ref o tiene diferente precio, lo agregamos como nuevo
       consolidatedStocks.push({
         created_at: Timestamp.now(),
-        amount: newStock.amount,
+        amount: parentPrice || newStock.amount,
         product_ref: newStock.product_ref,
         entry_ref: newStock.entry_ref,
         purchase_price: newStock.purchase_price,
@@ -72,7 +81,8 @@ export async function restaOutputs(
   }
 
   // 8. Actualizar el stock del producto con los stocks consolidados
-  await updateDoc(productDoc.ref, {
+  // si tiene un padre se dara el stock a el
+  await updateDoc(data?.product_parent || productDoc.ref, {
     stock: consolidatedStocks,
   });
 

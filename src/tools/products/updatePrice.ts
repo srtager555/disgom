@@ -7,6 +7,7 @@ import { addOutputs } from "./addOutputs";
 import { amountListener } from "./ManageSaves";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
+import { getParentStock } from "./getParentStock";
 
 export async function updatePrice(
   invoice: DocumentSnapshot<invoiceType>,
@@ -17,9 +18,11 @@ export async function updatePrice(
   customPrice?: number
 ) {
   console.log("Solo cambia el precio, actualizando outputs");
-
+  const data = productDoc.data();
   // Obtener los outputs actuales
-  const currentProductStocks = productDoc.data()?.stock || [];
+  const currentProductStocks = data?.product_parent
+    ? await getParentStock(data?.product_parent)
+    : productDoc.data()?.stock || [];
 
   // Obtener los documentos de los outputs
   const outputDocs = await Promise.all(

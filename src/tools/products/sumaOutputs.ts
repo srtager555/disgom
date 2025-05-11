@@ -15,6 +15,7 @@ import { invoiceType } from "../invoices/createInvoice";
 import { outputParser } from "./addOutputs";
 import { DocumentWithTheOutputs } from "@/hooks/invoice/getProductOutputsByID";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
+import { getParentStock } from "./getParentStock";
 
 export async function sumaOutputs(
   invoice: DocumentSnapshot<invoiceType>,
@@ -26,8 +27,12 @@ export async function sumaOutputs(
     | undefined = undefined,
   customPrice?: number
 ) {
+  const data = productDoc.data();
+
   // 1. Obtener el stock actual del producto
-  const currentStock = productDoc.data()?.stock || [];
+  const currentStock = data?.product_parent
+    ? await getParentStock(data?.product_parent)
+    : productDoc.data()?.stock || [];
 
   // 2. Calcular la diferencia que necesitamos agregar
   const difference = amount - currentAmount;
@@ -42,25 +47,34 @@ export async function sumaOutputs(
   );
 
   // 4. Actualizar el stock del producto con los stocks restantes
-  await updateDoc(productDoc.ref, {
+  await updateDoc(data?.product_parent || productDoc.ref, {
     stock: remainingStocks.map(rawOutputToStock),
   });
 
   // 5. Agregar los nuevos outputs a firestore
   const outputsRef = collection(productDoc.ref, "output");
   const newOutputs = await Promise.all(
-    outputsToCreate.map(async (output) => {
-      const outputParsed = outputParser(invoice, productDoc, output);
-      return await addDoc(outputsRef, outputParsed);
-    })
+    outputsToCreate
+      .map((el) => {
+        return {
+          ...el,
+          sale_price: data?.stock[0].sale_price || el.sale_price,
+        };
+      })
+      .map(async (output) => {
+        const outputParsed = outputParser(invoice, productDoc, output);
+        return await addDoc(outputsRef, outputParsed);
+      })
   );
 
   // Guardar las referencia de los outputs a su respectivo documento
+
   const invoiceProductOutputRef = doc(
     invoice.ref,
     "outputs",
     productDoc.id
   ) as DocumentReference<DocumentWithTheOutputs>;
+  console.log(invoiceProductOutputRef.path);
 
   const currentDoc = await getDoc(invoiceProductOutputRef);
   if (currentDoc.exists()) {

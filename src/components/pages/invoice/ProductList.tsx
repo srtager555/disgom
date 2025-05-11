@@ -54,6 +54,7 @@ export const ProductContainer = styled.div<{
   $warn?: boolean;
   $hide?: boolean;
   $after?: string;
+  $highlight?: boolean;
 }>`
   position: relative;
   display: grid;
@@ -90,9 +91,15 @@ export const ProductContainer = styled.div<{
         `;
       }
 
-      return css`
-        background-color: ${globalCSSVars["--background-highlight"]};
-      `;
+      if (props.$highlight) {
+        return css`
+          background-color: #024d7c;
+        `;
+      } else {
+        return css`
+          background-color: ${globalCSSVars["--background-highlight"]};
+        `;
+      }
     }}
   }
 
@@ -136,7 +143,9 @@ export const ProductContainer = styled.div<{
     !props.$children
       ? css`
           /* padding-left: 10px; */
-          background-color: ${globalCSSVars["--background"]};
+          background-color: ${props.$highlight
+            ? globalCSSVars["--selected"]
+            : globalCSSVars["--background"]};
         `
       : css`
           background-color: transparent;

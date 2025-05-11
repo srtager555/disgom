@@ -12,7 +12,7 @@ import {
   where,
 } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
-import { isEqual } from "lodash";
+import { isEqual, isPlainObject } from "lodash";
 import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
 import { SellersDoc } from "@/tools/sellers/create";
 import { rawOutput } from "./AddOutput";
@@ -62,8 +62,21 @@ export function ProductSoldBase({
         someHumanChangesDetected.current
       ).some((v) => v);
 
+      let refresh_data;
+      if (isPlainObject(invoiceDoc?.data()?.refresh_data))
+        refresh_data = invoiceDoc?.data()?.refresh_data as Record<
+          string,
+          boolean
+        >;
+      else refresh_data = {};
+
       if (!invoiceDoc) return;
-      if (!isHumanChanges) return;
+
+      if (refresh_data[product_doc.id])
+        if (!isHumanChanges) {
+          console.log("skip");
+          return;
+        }
 
       console.log("save outputs solds");
 
@@ -86,6 +99,11 @@ export function ProductSoldBase({
 
       // outputs totalSold
       await addOutputs(invoiceDoc, product_doc, remainStock, coll);
+
+      // update the refresh data
+      await updateDoc(invoiceDoc.ref, {
+        [`refresh_data.${product_doc.id}`]: true,
+      });
 
       someHumanChangesDetected.current = {
         addOutput: false,

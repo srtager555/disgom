@@ -100,10 +100,11 @@ export function ProductSoldBase({
       // outputs totalSold
       await addOutputs(invoiceDoc, product_doc, remainStock, coll);
 
-      // update the refresh data
-      await updateDoc(invoiceDoc.ref, {
-        [`refresh_data.${product_doc.id}`]: true,
-      });
+      if (refresh_data[product_doc.id] === false)
+        // update the refresh data
+        await updateDoc(invoiceDoc.ref, {
+          [`refresh_data.${product_doc.id}`]: true,
+        });
 
       someHumanChangesDetected.current = {
         addOutput: false,

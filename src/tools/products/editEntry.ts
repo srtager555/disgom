@@ -14,7 +14,8 @@ import { removeEntry } from "./removeEntry";
 export async function EditEntry(
   product_ref: DocumentReference<productDoc>,
   currentStockData: stockType,
-  newStockData: Omit<stockType, "created_at" | "entry_ref">
+  newStockData: Omit<stockType, "created_at" | "entry_ref">,
+  withParent: boolean = false
 ) {
   const diff = newStockData.amount - currentStockData.amount;
   const newStockamount = currentStockData.amount + diff;
@@ -31,7 +32,7 @@ export async function EditEntry(
     amount: newStockData.amount,
   });
 
-  if (currentStockData.amount > 0)
+  if (withParent || currentStockData.amount > 0)
     // remove the outdated stock
     await updateDoc(product_ref, {
       stock: arrayRemove(currentStockData),

@@ -15,7 +15,7 @@ const StockMapContainer = styled(Container)`
   width: 100%;
   /* padding: 10px;
   border: solid 2px ${globalCSSVars["--foreground"]}; */
-  border-radius: 20px;
+  border-radius: 5px;
   margin-bottom: 20px;
 `;
 
@@ -59,8 +59,12 @@ export function ProductStock({ stock, entryToEdit, setEntryToEdit }: props) {
 
   return (
     <>
-      <h3>Existencias</h3>
-      {stock.length > 0 && <p>Para editar una entrada seleccionela</p>}
+      <h3>{product.data?.product_parent ? <>Precio</> : <>Existencias</>}</h3>
+      {stock.length > 0 && product.data?.product_parent ? (
+        <p>El precio actual que tiene el producto</p>
+      ) : (
+        <p>Para editar una entrada seleccionela</p>
+      )}
       <StockMapContainer>
         {stock.length === 0 ? (
           <p>No hay existencia de este producto</p>
@@ -73,8 +77,12 @@ export function ProductStock({ stock, entryToEdit, setEntryToEdit }: props) {
                     $selected={_ === entryToEdit}
                     onClick={() => handlerSelectEntry(_)}
                   >
-                    {_.created_at.toDate().toLocaleDateString()} - hay{" "}
-                    {_.amount} {product.data?.units}
+                    {!product.data?.product_parent && (
+                      <>
+                        {_.created_at.toDate().toLocaleDateString()} - hay{" "}
+                        {_.amount} {product.data?.units}
+                      </>
+                    )}
                     <FlexContainer>
                       <Container styles={{ marginRight: "10px" }}>
                         Costo {_.purchase_price} -

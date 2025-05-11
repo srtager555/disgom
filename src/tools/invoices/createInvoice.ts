@@ -95,6 +95,7 @@ export async function createInvoice(
     coll,
     orderBy("created_at", "desc"),
     where("disabled", "==", false),
+    where("seller_ref", "==", seller_ref),
     limit(1)
   );
   const lastInvoice = await getDocs(queryLastInvoice);

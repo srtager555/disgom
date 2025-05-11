@@ -22,6 +22,7 @@ import { Column, Input } from "../../Product";
 import { debounce } from "lodash";
 import { updateCredits } from "@/tools/sellers/credits/update";
 import { rawCreditResult } from "@/pages/invoices/manage";
+import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 
 type SavedCreditsMap = Record<string, DocumentReference<credit>>;
 
@@ -38,8 +39,10 @@ export const CreditClient = ({
     DocumentSnapshot<credit> | undefined
   >(undefined);
   const [amount, setAmount] = useState<number | string>(0);
+  const [lastAmount, setLastAmount] = useState(0);
   const [diff, setDiff] = useState(0);
   const { invoice } = useInvoice();
+  const { checkHasNextInvoice } = useHasNextInvoice();
 
   // Efecto para obtener o crear el crédito inicial para este cliente en esta factura
   useEffect(() => {
@@ -89,11 +92,12 @@ export const CreditClient = ({
           route: invoice.data().route ?? 0,
           amount: 0, // Iniciar en 0 para la nueva factura
           client_ref: clientCredit.ref,
-          last_amount: lastCredit?.data()?.amount ?? null,
+          // last_amount: lastCredit?.data()?.amount ?? null,
           last_credit: lastCredit?.ref ?? null,
           next_credit: null,
           invoice_ref: invoice.ref,
           seller_ref: invoice.data().seller_ref, // Asegúrate que seller_ref exista
+          disabled: false,
         });
 
         if (lastCredit)
@@ -114,12 +118,26 @@ export const CreditClient = ({
 
   // Efecto para calcular la diferencia (sin cambios)
   useEffect(() => {
-    const lastAmount = currentCredit?.data()?.last_amount ?? 0;
-    const currentAmount = Number(amount) || 0;
-    const diff = lastAmount - currentAmount;
+    async function calculateDiff() {
+      const currentCreditData = currentCredit?.data();
 
-    setDiff(diff);
-    setRawCreditResult((prev) => ({ ...prev, [clientCredit.id]: diff }));
+      let last_credit;
+      if (currentCreditData?.last_credit) {
+        last_credit = await getDoc(currentCreditData.last_credit);
+        setLastAmount(last_credit?.data()?.amount ?? 0);
+      } else {
+        setLastAmount(0);
+      }
+
+      const lastAmount = last_credit?.data()?.amount ?? 0;
+      const currentAmount = Number(amount) || 0;
+      const diff = lastAmount - currentAmount;
+
+      setDiff(diff);
+      setRawCreditResult((prev) => ({ ...prev, [clientCredit.id]: diff }));
+    }
+
+    calculateDiff();
 
     return () => {
       setRawCreditResult((prev) => {
@@ -171,7 +189,7 @@ export const CreditClient = ({
 
   // Handler para el input
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAmount(e.target.value);
+    checkHasNextInvoice(() => setAmount(e.target.value), true);
   };
 
   // Renderizado
@@ -180,7 +198,7 @@ export const CreditClient = ({
       <Column gridColumn="1 / 3">
         {clientCredit.data()?.name ?? "Nombre no disponible"}
       </Column>
-      <Column>{numberParser(currentCredit?.data()?.last_amount ?? 0)}</Column>
+      <Column>{numberParser(lastAmount)}</Column>
       <Column>
         <Input
           type="number"

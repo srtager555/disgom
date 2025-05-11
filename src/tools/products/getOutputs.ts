@@ -1,19 +1,31 @@
-import { getDoc } from "firebase/firestore";
+import { doc, DocumentReference, getDoc } from "firebase/firestore";
 import { getInvoiceByQuery } from "../invoices/getInvoiceByQuery";
+import { DocumentWithTheOutputs } from "@/hooks/invoice/getProductOutputsByID";
 
 export async function getProductOutputsByID(id: string) {
   const invoice = await getInvoiceByQuery();
   const data = invoice?.data();
   if (!data) return;
 
-  const outputsRefs = data.products_outputs[id] || [];
-  const outputs = outputsRefs?.map(async (output) => await getDoc(output));
+  if (!invoice) return;
+  const ref = doc(
+    invoice.ref,
+    "outputs",
+    id
+  ) as DocumentReference<DocumentWithTheOutputs>;
 
-  const outputsResolved = await Promise.all(outputs);
+  const outputs = await getDoc(ref).then(async (snap) => {
+    const data = snap.data();
+    if (!data) return;
 
-  const totalAmount = outputsResolved.reduce((acc, now) => {
+    return await Promise.all(
+      data?.outputs.map(async (ref) => await getDoc(ref))
+    );
+  });
+
+  const totalAmount = outputs?.reduce((acc, now) => {
     return acc + (now.data()?.amount || 0);
   }, 0);
 
-  return { outputs: outputsResolved, totalAmount };
+  return { outputs, totalAmount };
 }

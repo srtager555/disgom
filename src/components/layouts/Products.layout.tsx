@@ -1,6 +1,5 @@
 import { globalCSSVars } from "@/styles/colors";
 import { Container } from "@/styles/index.styles";
-import { AnchorNavigators } from "@/styles/Nav.module";
 import { Products } from "../pages/products";
 import {
   createContext,
@@ -32,9 +31,8 @@ export const ProductContext = createContext<{
 
 const MainContainer = styled(Container)<{ hideBorder: boolean | undefined }>`
   display: inline-block;
-  border: ${(props) => (!props.hideBorder ? "2px" : "0px")} solid
+  border: ${(props) => (!props.hideBorder ? "1px" : "0px")} solid
     ${globalCSSVars["--foreground"]};
-  border-radius: 20px;
   padding: 10px;
   width: 100%;
 
@@ -51,28 +49,6 @@ export function ProductsLayout({ children }: { children: children }) {
     true
   );
   const [hideBorder, setHideBorder] = useState<boolean | undefined>(false);
-  const url: Array<{ href: string; text: string }> = [
-    {
-      href: "",
-      text: "Descripción general",
-    },
-    {
-      href: "/detailed",
-      text: "Descripción detallada",
-    },
-    {
-      href: "/inventory",
-      text: "Inventarios",
-    },
-    {
-      href: "/create",
-      text: "Añadir o editar producto",
-    },
-    {
-      href: "/list",
-      text: "Lista de productos",
-    },
-  ];
 
   useEffect(() => {
     setSelectedProduct(undefined);
@@ -88,16 +64,7 @@ export function ProductsLayout({ children }: { children: children }) {
       }}
     >
       <Container styles={{ marginBottom: "25px" }}>
-        <MainContainer hideBorder={hideBorder}>
-          <Container styles={{ marginBottom: "30px" }}>
-            {url.map((el, i) => (
-              <AnchorNavigators key={i} href={"/products" + el.href}>
-                {el.text}
-              </AnchorNavigators>
-            ))}
-          </Container>
-          {children}
-        </MainContainer>
+        <MainContainer hideBorder={hideBorder}>{children}</MainContainer>
       </Container>
       {showProductsList && <Products />}
     </ProductContext.Provider>

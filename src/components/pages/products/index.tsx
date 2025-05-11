@@ -33,13 +33,15 @@ const ProductsContainer = styled.div`
 
 const Product = styled.button<{ $removeBottomPadding: boolean }>`
   text-align: start;
-  display: block;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
   font-size: 1rem;
   background-color: transparent;
   width: 100%;
   height: auto;
-  border-radius: 20px;
-  border: 2px solid ${globalCSSVars["--foreground"]};
+  border: 1px solid ${globalCSSVars["--foreground"]};
   padding: 10px;
   cursor: pointer;
 
@@ -59,16 +61,6 @@ const Product = styled.button<{ $removeBottomPadding: boolean }>`
   @media print {
     grid-column: 1 / -1;
     border: none;
-  }
-`;
-
-const ProductTitle = styled.h4`
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-
-  @media print {
-    margin-bottom: 0px;
   }
 `;
 
@@ -178,8 +170,8 @@ export function Products() {
                 onClick={() => handlerOnClik(_)}
                 $removeBottomPadding={bottomPadding.length > 0}
               >
-                <ProductTitle>
-                  <span>{data.name}</span>{" "}
+                <span>{data.name}</span>{" "}
+                {!data.product_parent && (
                   <span
                     style={{
                       textAlign: "end",
@@ -189,20 +181,7 @@ export function Products() {
                   >
                     {numberParser(stock)} {data.units}
                   </span>
-                </ProductTitle>
-                <RemoveOnPrint>
-                  {tags &&
-                    data.tags.map((el, i) => {
-                      const data = tags[el];
-
-                      if (data)
-                        return (
-                          <TagSimple $bg={data.color} key={i}>
-                            {data.name}
-                          </TagSimple>
-                        );
-                    })}
-                </RemoveOnPrint>
+                )}
               </Product>
             );
           })}
@@ -268,18 +247,16 @@ export function Products() {
                 onClick={() => handlerOnClik(_)}
                 $removeBottomPadding={bottomPadding.length > 0}
               >
-                <ProductTitle>
-                  <span>{data.name}</span>{" "}
-                  <span
-                    style={{
-                      textAlign: "end",
-                      whiteSpace: "nowrap",
-                      display: "inline-block",
-                    }}
-                  >
-                    {numberParser(stock)} {data.units}
-                  </span>
-                </ProductTitle>
+                <span>{data.name}</span>{" "}
+                <span
+                  style={{
+                    textAlign: "end",
+                    whiteSpace: "nowrap",
+                    display: "inline-block",
+                  }}
+                >
+                  {numberParser(stock)} {data.units}
+                </span>
                 <RemoveOnPrint>
                   {tags &&
                     data.tags.map((el, i) => {

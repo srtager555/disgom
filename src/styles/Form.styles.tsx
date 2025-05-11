@@ -70,7 +70,7 @@ export const Button = styled.button<{
   padding: 10px 15px;
   background-color: transparent;
   border: none;
-  border-radius: 10px;
+  border-radius: 5px;
   font-size: 1rem;
   cursor: pointer;
   transition: 200ms all ease;
@@ -119,7 +119,7 @@ export const Button = styled.button<{
       `;
     } else
       return css`
-        border: 2px solid ${globalCSSVars["--foreground"]};
+        border: 1px solid ${globalCSSVars["--foreground"]};
       `;
   }};
 

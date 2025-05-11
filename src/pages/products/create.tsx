@@ -5,7 +5,7 @@ import {
   ProductContext,
   ProductsLayout,
 } from "@/components/layouts/Products.layout";
-import { TagManager } from "@/components/pages/products/TagManager";
+// import { TagManager } from "@/components/pages/products/TagManager";
 import { useGetProducts } from "@/hooks/products/getProducts";
 import { NextPageWithLayout } from "@/pages/_app";
 import { Button, Form } from "@/styles/Form.styles";
@@ -251,7 +251,7 @@ const Page: NextPageWithLayout = () => {
             </Button>
           )}
         </Container>
-        <TagManager state={tagsAdded} setState={setTagsAdded} />
+        {/* <TagManager state={tagsAdded} setState={setTagsAdded} /> */}
       </Container>
     </Container>
   );

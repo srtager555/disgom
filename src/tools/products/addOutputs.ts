@@ -1,5 +1,4 @@
 import {
-  addDoc,
   collection,
   CollectionReference,
   doc,
@@ -7,6 +6,7 @@ import {
   DocumentSnapshot,
   Timestamp,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { ProductsCollection } from "../firestore/CollectionTyping";
 import { productDoc } from "./create";
@@ -83,22 +83,32 @@ export async function addOutputs(
     return;
   }
 
-  const outputsReady = rawOutputs.map((el) => {
-    return outputParser(invoice, product_doc, el);
-  });
-
-  console.log("outputs coll patah", coll.path);
+  const outputsReady = rawOutputs.map((el) =>
+    outputParser(invoice, product_doc, el)
+  );
 
   if (returnOutputs) return outputsReady;
 
-  const outputsRefsPromise = outputsReady.map(async (el) => {
-    return await addDoc(coll, el);
-  });
+  const batch = writeBatch(coll.firestore);
+  const createdRefs: { ref: ReturnType<typeof doc>; data: outputType }[] = [];
 
-  const outputsRefs = await Promise.all(outputsRefsPromise);
+  try {
+    for (const output of outputsReady) {
+      const newRef = doc(coll); // genera ID automático
+      batch.set(newRef, output);
+      createdRefs.push({ ref: newRef, data: output });
+    }
 
-  if (!outputColl)
-    await updateDoc(docRef, {
-      outputs: outputsRefs,
-    });
+    await batch.commit();
+
+    // Solo si no se pasó un outputColl externo, se actualiza la referencia de outputs en el invoice
+    if (!outputColl) {
+      await updateDoc(docRef, {
+        outputs: createdRefs.map((entry) => entry.ref),
+      });
+    }
+  } catch (error) {
+    console.error("Error al procesar el batch de outputs:", error);
+    throw new Error("No se pudieron guardar los outputs. Intenta de nuevo.");
+  }
 }

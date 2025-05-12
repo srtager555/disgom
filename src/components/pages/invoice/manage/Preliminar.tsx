@@ -1,11 +1,12 @@
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { useEffect, useState, useRef } from "react";
-import { DocumentReference, getDoc, updateDoc } from "firebase/firestore";
+import { DocumentReference, getDoc } from "firebase/firestore";
 import { client } from "@/tools/sellers/createClient";
 import styled from "styled-components";
 import { Button } from "@/styles/Form.styles";
 import { debounce } from "lodash";
+import { disabled } from "@/tools/invoices/disabled";
 
 const CustomContainer = styled(Container)`
   width: 50%;
@@ -26,10 +27,12 @@ export function Preliminar() {
 
     if (!invoice) return;
 
-    await updateDoc(invoice.ref, {
-      disabled: true,
-      deleted_at: new Date(),
-    });
+    await disabled();
+
+    // await updateDoc(invoice.ref, {
+    //   disabled: true,
+    //   deleted_at: new Date(),
+    // });
   }
 
   const handleMouseUp = () => {

@@ -1,4 +1,4 @@
-import { Select } from "@/components/Inputs/select";
+// import { Select } from "@/components/Inputs/select";
 import { ProductContext } from "@/components/layouts/Products.layout";
 import { useGetProducts } from "@/hooks/products/getProducts";
 import { globalCSSVars } from "@/styles/colors";
@@ -80,8 +80,7 @@ const ShowOnPrint = styled(Container)`
 
 export function Products() {
   const { setSelectedProduct } = useContext(ProductContext);
-  const [tagSelected, setTagSelected] = useState("");
-  const products = useGetProducts(tagSelected);
+  const products = useGetProducts();
   const [tags, setTags] = useState<Tag>();
   const [productToPrint, setProductToPrint] = useState<
     QueryDocumentSnapshot<productDoc, DocumentData>[]
@@ -141,7 +140,7 @@ export function Products() {
               ? "Productos"
               : "No hay productos"}
           </h2>
-          {tags && (
+          {/* {tags && (
             <Select
               onChange={(e) => {
                 setTagSelected(e.target.value);
@@ -154,7 +153,7 @@ export function Products() {
                 })),
               ]}
             />
-          )}
+          )} */}
         </FlexContainer>
         <ProductsContainer>
           {products.docs?.map((_, i) => {

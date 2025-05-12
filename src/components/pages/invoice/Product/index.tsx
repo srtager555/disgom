@@ -110,6 +110,7 @@ interface ColumnBaseProps extends React.HtmlHTMLAttributes<HTMLDivElement> {
   title?: string;
   hide?: boolean;
   styles?: CSSProperties;
+  ref?: unknown;
 }
 
 function ColumnBase({
@@ -120,6 +121,7 @@ function ColumnBase({
   title,
   hide,
   styles,
+  ref,
   ...props
 }: ColumnBaseProps) {
   if (hide) return <></>;
@@ -129,6 +131,7 @@ function ColumnBase({
       $gridColumn={$gridColumn}
       $printGridColumn={printGridColumn}
       styles={{ width: "100%", height: "100%", ...styles }}
+      ref={ref}
       {...props}
     >
       <Container className={className}>{children}</Container>

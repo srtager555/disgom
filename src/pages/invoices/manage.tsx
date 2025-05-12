@@ -42,7 +42,7 @@ import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { productDoc } from "@/tools/products/create";
 import { CreateNewDefaultCustomPrices } from "@/components/pages/invoice/manage/CreateNewDefaultCustomPrices";
 import { RefreshData } from "@/components/pages/invoice/RefreshData";
-import { disabled } from "./disabled";
+import { disabled } from "../../tools/invoices/disabled";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;

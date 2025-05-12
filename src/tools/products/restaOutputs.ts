@@ -1,12 +1,8 @@
 import { DocumentSnapshot, updateDoc, Timestamp } from "firebase/firestore";
 import { productDoc } from "./create";
-import { outputType } from "./addOutputs";
+import { addOutputs, outputType } from "./addOutputs";
 import { disableOutput } from "./disableOutput";
-import {
-  createStockFromOutputType,
-  amountListener,
-  saveNewOutputs,
-} from "./ManageSaves";
+import { createStockFromOutputType, amountListener } from "./ManageSaves";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 import { getParentStock } from "./getParentStock";
@@ -87,7 +83,7 @@ export async function restaOutputs(
   });
 
   // 9. Guardar los nuevos outputs
-  await saveNewOutputs(invoice, productDoc, remainingStocks);
+  await addOutputs(invoice, productDoc, remainingStocks);
 
   console.log("Proceso de resta completado");
 }

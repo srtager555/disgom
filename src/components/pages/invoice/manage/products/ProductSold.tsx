@@ -72,7 +72,7 @@ export function ProductSoldBase({
           someHumanChangesDetected.current
         ).some((v) => v);
 
-        if (refresh_data[product_doc.id])
+        if (!refresh_data[product_doc.id])
           if (!isHumanChanges) {
             console.log("skip");
             return;

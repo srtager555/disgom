@@ -45,7 +45,7 @@ const GrabButton = styled.button`
 `;
 
 // サラマンダー
-type props = {
+export type props = {
   doc: QueryDocumentSnapshot<productDoc>;
   selectedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
   hideProductWithoutStock: boolean;

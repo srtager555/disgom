@@ -17,9 +17,7 @@ import {
 import { useEffect, useState } from "react";
 
 function makeReference(
-  baseWheres: (QueryFieldFilterConstraint | QueryOrderByConstraint)[],
-  conditional: boolean,
-  conditionalWheres: (QueryFieldFilterConstraint | QueryOrderByConstraint)[]
+  baseWheres: (QueryFieldFilterConstraint | QueryOrderByConstraint)[]
 ) {
   const db = Firestore();
   const coll = collection(
@@ -29,12 +27,13 @@ function makeReference(
 
   const wheres = baseWheres;
 
-  if (conditional) wheres.push(...conditionalWheres);
-
   return query(coll, ...wheres);
 }
 
-export function useGetProducts(tag: string = "") {
+export function useGetProducts(
+  order: string = "name",
+  orderDirection: "asc" | "desc" = "desc"
+) {
   const [snap, setSnap] = useState<QuerySnapshot<productDoc>>();
   const [docs, setDocs] =
     useState<QueryDocumentSnapshot<productDoc, DocumentData>[]>();
@@ -50,10 +49,9 @@ export function useGetProducts(tag: string = "") {
     const wheres = [
       where("exclude", "!=", true),
       where("disabled", "==", false),
-      orderBy("name"),
+      orderBy(order, orderDirection),
     ];
-    const conditionalWheres = [where("tags", "array-contains", tag)];
-    const query = makeReference(wheres, tag != "", conditionalWheres);
+    const query = makeReference(wheres);
 
     const unsubcribe = onSnapshot(query, (snap) => {
       setSnap(snap);
@@ -63,17 +61,16 @@ export function useGetProducts(tag: string = "") {
     return function () {
       unsubcribe();
     };
-  }, [tag]);
+  }, []);
 
   // effect to the disabled products
   useEffect(() => {
     const wheres = [
       where("exclude", "!=", true),
       where("disabled", "==", true),
-      orderBy("name"),
+      orderBy(order, orderDirection),
     ];
-    const conditionalWheres = [where("tags", "array-contains", tag)];
-    const query = makeReference(wheres, tag != "", conditionalWheres);
+    const query = makeReference(wheres);
 
     const unsubcribe = onSnapshot(query, (snap) => {
       setDocsDisabled(snap.docs);
@@ -82,7 +79,7 @@ export function useGetProducts(tag: string = "") {
     return function () {
       unsubcribe();
     };
-  }, [tag]);
+  }, []);
 
   // effect to the return only the products withOutParent
   useEffect(() => {
@@ -90,9 +87,9 @@ export function useGetProducts(tag: string = "") {
       where("exclude", "==", false),
       where("disabled", "==", false),
       where("product_parent", "==", null),
-      orderBy("name"),
+      orderBy(order, orderDirection),
     ];
-    const query = makeReference(wheres, false, []);
+    const query = makeReference(wheres);
 
     const unsubcribe = onSnapshot(query, (snap) => {
       setDocsWithoutParent(snap.docs);
@@ -109,9 +106,9 @@ export function useGetProducts(tag: string = "") {
       where("exclude", "==", false),
       where("disabled", "==", false),
       where("product_parent", "!=", null),
-      orderBy("name"),
+      orderBy(order, orderDirection),
     ];
-    const query = makeReference(wheres, false, []);
+    const query = makeReference(wheres);
 
     const unsubcribe = onSnapshot(query, (snap) => {
       setDocsWithParent(snap.docs);

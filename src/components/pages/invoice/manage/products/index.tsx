@@ -44,6 +44,9 @@ export function Products({ selectedSeller, setProductsResults }: props) {
   const [displayedProducts, setDisplayedProducts] = useState<
     QueryDocumentSnapshot<productDoc>[]
   >([]);
+  const [currentSort, setCurrentSort] = useState<"position" | "name">(
+    "position"
+  );
   // Ref para controlar la carga inicial o el cambio de contexto (ej. cambio de vendedor)
   const loadedSellerIdRef = useRef<string | null | undefined>(null);
 
@@ -96,6 +99,25 @@ export function Products({ selectedSeller, setProductsResults }: props) {
     }
   }, [displayedProducts]);
 
+  const toggleSort = () => {
+    setCurrentSort((prevSort) =>
+      prevSort === "position" ? "name" : "position"
+    );
+  };
+
+  const productsToRender = useMemo(() => {
+    if (currentSort === "name") {
+      // Crea una copia de displayedProducts y la ordena por nombre para la visualización
+      return [...displayedProducts].sort((a, b) => {
+        const nameA = a.data()?.name?.toLowerCase() || "";
+        const nameB = b.data()?.name?.toLowerCase() || "";
+        return nameA.localeCompare(nameB);
+      });
+    }
+    // Si el orden es por 'position', displayedProducts ya tiene el orden correcto (o el que se está arrastrando)
+    return displayedProducts;
+  }, [displayedProducts, currentSort]);
+
   return (
     <DndProvider backend={HTML5Backend}>
       <Container styles={{ marginTop: "20px" }}>
@@ -109,6 +131,9 @@ export function Products({ selectedSeller, setProductsResults }: props) {
               hideProductWithoutStock={hideProductWithoutStock}
             />
           </Container>
+          <Button onClick={toggleSort}>
+            Ordenar por: {currentSort === "position" ? "Nombre" : "Posición"}
+          </Button>
           <Button
             onClick={() => {
               window.print();
@@ -119,20 +144,30 @@ export function Products({ selectedSeller, setProductsResults }: props) {
         </FlexContainer>
         <Container>
           <Descriptions hasInventory={selectedSeller?.data().hasInventory} />
-          {displayedProducts.map((product, i) => (
-            <DnDWrapper
-              key={product.id} // ¡Importante usar un ID estable como key!
-              product={product}
-              index={i} // El índice actual en la lista `displayedProducts`
-              moveProduct={moveProduct}
-              saveOrderToFirestore={saveOrderToFirestore}
-              // Pasar el resto de las props que MemoProduct (y por ende Product) necesita:
-              selectedSeller={selectedSeller}
-              hideProductWithoutStock={hideProductWithoutStock}
-              allInventory={allInventory}
-              setProductsResults={setProductsResults}
-            />
-          ))}
+          {productsToRender.map((productDoc) => {
+            // Es crucial obtener el índice del producto desde `displayedProducts`
+            // ya que esta es la lista que `moveProduct` y `saveOrderToFirestore` manipulan.
+            const dndIndex = displayedProducts.findIndex(
+              (p) => p.id === productDoc.id
+            );
+
+            // Esto no debería ocurrir si productsToRender se deriva correctamente de displayedProducts
+            if (dndIndex === -1) return null;
+
+            return (
+              <DnDWrapper
+                key={productDoc.id}
+                product={productDoc}
+                index={dndIndex}
+                moveProduct={moveProduct}
+                saveOrderToFirestore={saveOrderToFirestore}
+                selectedSeller={selectedSeller}
+                hideProductWithoutStock={hideProductWithoutStock}
+                allInventory={allInventory}
+                setProductsResults={setProductsResults}
+              />
+            );
+          })}
         </Container>
       </Container>
     </DndProvider>

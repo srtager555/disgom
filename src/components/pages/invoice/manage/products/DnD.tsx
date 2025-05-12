@@ -8,7 +8,21 @@ import { productDoc } from "@/tools/products/create";
 // Props que MemoProduct espera, excluyendo 'doc' ya que lo manejaremos como 'product' aquí.
 // Asumimos que las props de MemoProduct son las mismas que las de Product.
 import { type props as ProductComponentProps } from "./Product";
+import styled from "styled-components";
+import { Container } from "@/styles/index.styles";
+import { globalCSSVars } from "@/styles/colors";
 
+export const ProductDnDCotaniner = styled(Container)`
+  & > div {
+    background-color: transparent;
+  }
+
+  &:nth-child(even) {
+    & > div {
+      background-color: ${globalCSSVars["--background-highlight"]};
+    }
+  }
+`;
 export interface DnDWrapperProps extends Omit<ProductComponentProps, "doc"> {
   product: QueryDocumentSnapshot<productDoc>;
   index: number;
@@ -92,12 +106,12 @@ export const DnDWrapper: React.FC<DnDWrapperProps> = ({
   drag(ref); // Hace que el elemento completo sea el origen del arrastre
 
   return (
-    <div
+    <ProductDnDCotaniner
       ref={ref}
-      style={{ opacity: isDragging ? 0.4 : 1, cursor: "move" }}
+      styles={{ opacity: isDragging ? 0.4 : 1, cursor: "move" }}
       data-handler-id={handlerId}
     >
       <MemoProduct doc={product} {...memoProductProps} />
-    </div>
+    </ProductDnDCotaniner>
   );
 };

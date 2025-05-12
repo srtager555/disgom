@@ -32,7 +32,7 @@ function makeReference(
 
 export function useGetProducts(
   order: string = "name",
-  orderDirection: "asc" | "desc" = "desc"
+  orderDirection: "asc" | "desc" = "asc"
 ) {
   const [snap, setSnap] = useState<QuerySnapshot<productDoc>>();
   const [docs, setDocs] =
@@ -61,7 +61,7 @@ export function useGetProducts(
     return function () {
       unsubcribe();
     };
-  }, []);
+  }, [order, orderDirection]);
 
   // effect to the disabled products
   useEffect(() => {
@@ -79,7 +79,7 @@ export function useGetProducts(
     return function () {
       unsubcribe();
     };
-  }, []);
+  }, [order, orderDirection]);
 
   // effect to the return only the products withOutParent
   useEffect(() => {
@@ -98,7 +98,7 @@ export function useGetProducts(
     return function () {
       unsubcribe();
     };
-  }, []);
+  }, [order, orderDirection]);
 
   // effect to return only the products withParent
   useEffect(() => {
@@ -117,7 +117,7 @@ export function useGetProducts(
     return function () {
       unsubcribe();
     };
-  }, []);
+  }, [order, orderDirection]);
 
   return { snap, docs, docsDisabled, docsWithParent, docsWithoutParent };
 }

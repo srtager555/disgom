@@ -206,9 +206,9 @@ export function Product({
     }
 
     getDefaultCutomPriceFunctionBTW();
-  }, []);
+  }, [selectedSeller, doc.ref, invoice]);
 
-  useEffect(() => console.log("root remaingStock", remainStock), [remainStock]);
+  // useEffect(() => console.log("root remaingStock", remainStock), [remainStock]);
 
   if (hideProductWithoutStock && currentStock === 0) return <></>;
 

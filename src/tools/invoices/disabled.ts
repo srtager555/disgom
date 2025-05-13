@@ -70,10 +70,19 @@ export async function disabled() {
       } as PartialWithFieldValue<invoiceType>);
     }
 
-    if (invoiceData.next_invoice_ref)
+    // Alert the next invoice
+    if (invoiceData.next_invoice_ref) {
       await updateDoc(invoiceData.next_invoice_ref, {
         refresh_data: "deleted",
       } as PartialWithFieldValue<invoiceType>);
+    }
+
+    // check if there is a prev invoice to update
+    if (invoiceData.prev_invoice_ref && invoiceData.next_invoice_ref) {
+      await updateDoc(invoiceData.prev_invoice_ref, {
+        next_invoice_ref: invoiceData.next_invoice_ref,
+      } as PartialWithFieldValue<invoiceType>);
+    }
   } catch (error) {
     console.log(error);
     return false;

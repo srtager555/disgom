@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 import React, { useEffect, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
@@ -10,7 +8,8 @@ import {
   Legend,
   CategoryScale,
   LinearScale,
-  // @ts-ignore
+  ChartData as ChartJSChartData,
+  TooltipItem,
 } from "chart.js";
 
 ChartJS.register(
@@ -22,69 +21,110 @@ ChartJS.register(
   LinearScale
 );
 
-const SalesComparisonChart = () => {
-  const [chartData, setChartData] = useState<any>(null);
+// Estructura de los datos de factura que se esperan como entrada
+export type ChartData = Array<{ createdAt: Date; amount: number }>;
+
+// Tipos para la estructura de datos interna de Chart.js
+type ChartJSDatasetDataPoint = { x: string; y: number | null };
+
+interface SalesChartDataset {
+  label: string;
+  data: ChartJSDatasetDataPoint[];
+  backgroundColor: string;
+  borderColor: string;
+  borderWidth: number;
+  pointRadius: number;
+  showLine: boolean;
+  borderDash?: number[];
+}
+
+interface SalesChartJSData {
+  labels: string[];
+  datasets: SalesChartDataset[];
+}
+
+type props = {
+  invoiceDataToChart?: ChartData; // Hacer opcional, ya que feed/index.tsx lo usa sin esta prop
+  numberOfDaysToShow?: number; // Nueva prop para especificar el número de días
+};
+
+const SalesComparisonChart = ({
+  invoiceDataToChart = [],
+  numberOfDaysToShow = 7, // Valor por defecto de 7 días
+}: props) => {
+  const [chartData, setChartData] = useState<SalesChartJSData | null>(null);
 
   useEffect(() => {
-    const fetchInvoices = async () => {
-      const invoices = [
-        { createdAt: "2025-01-11", amount: 400 },
-        { createdAt: "2025-01-12", amount: 750 },
-        { createdAt: "2025-01-13", amount: 500 },
-        { createdAt: "2025-01-14", amount: 600 },
-        { createdAt: "2025-01-15", amount: 950 },
-        { createdAt: "2025-01-16", amount: 700 },
-        { createdAt: "2025-01-17", amount: 850 },
-        { createdAt: "2025-01-04", amount: 500 },
-        { createdAt: "2025-01-05", amount: 800 },
-        { createdAt: "2025-01-06", amount: 450 },
-        { createdAt: "2025-01-07", amount: 700 },
-        { createdAt: "2025-01-08", amount: 1000 },
-        { createdAt: "2025-01-09", amount: 650 },
-        { createdAt: "2025-01-10", amount: 900 },
-      ];
+    const processChartData = () => {
+      const today = new Date();
+      const dayInMilliseconds = 24 * 60 * 60 * 1000;
 
-      const today = new Date("2025-01-17"); // Cambia a `new Date()` en producción
-
-      // Crear un rango de los últimos 7 días con el día de la semana incluido
       const formatDate = (date: Date) => {
         const options: Intl.DateTimeFormatOptions = {
-          weekday: "short", // Día de la semana (e.g., Lun)
+          weekday: "short",
           day: "numeric",
-          month: "short", // Mes abreviado (e.g., Ene)
+          month: "short",
         };
         return date.toLocaleDateString("es-ES", options);
       };
 
-      const last7Days = Array.from({ length: 7 }, (_, i) =>
-        formatDate(new Date(today.getTime() - (6 - i) * 24 * 60 * 60 * 1000))
+      // Generar etiquetas para los últimos N días
+      const lastNDaysLabels = Array.from(
+        { length: numberOfDaysToShow },
+        (_, i) => {
+          const date = new Date(
+            today.getTime() - (numberOfDaysToShow - 1 - i) * dayInMilliseconds
+          );
+          return formatDate(date);
+        }
       );
 
-      // Crear un mapeo para las ventas de la semana actual
-      const currentWeekData = invoices
-        .filter(
-          (invoice) =>
-            new Date(invoice.createdAt) >=
-            new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000)
-        )
+      // --- Datos del Período Actual ---
+      const startOfCurrentPeriod = new Date(
+        today.getTime() - (numberOfDaysToShow - 1) * dayInMilliseconds
+      );
+      startOfCurrentPeriod.setHours(0, 0, 0, 0); // Normalizar al inicio del día
+
+      const currentPeriodDataMap = invoiceDataToChart
+        .filter((invoice) => {
+          const invoiceDate = new Date(invoice.createdAt);
+          invoiceDate.setHours(0, 0, 0, 0); // Normalizar para la comparación
+          return invoiceDate >= startOfCurrentPeriod && invoiceDate <= today;
+        })
         .reduce((acc, invoice) => {
-          acc[formatDate(new Date(invoice.createdAt))] = invoice.amount;
+          const formattedDate = formatDate(new Date(invoice.createdAt));
+          acc[formattedDate] = (acc[formattedDate] || 0) + invoice.amount;
           return acc;
         }, {} as Record<string, number>);
 
-      // Crear un mapeo para las ventas de la semana anterior, proyectando al mismo día de la semana
-      const previousWeekData = invoices
-        .filter(
-          (invoice) =>
-            new Date(invoice.createdAt) <
-            new Date(today.getTime() - 6 * 24 * 60 * 60 * 1000)
-        )
+      // --- Datos del Período Anterior ---
+      const endOfPreviousPeriodBoundary = new Date(
+        startOfCurrentPeriod.getTime()
+      ); // Límite superior (exclusivo) para el período anterior
+      const startOfPreviousPeriod = new Date(
+        endOfPreviousPeriodBoundary.getTime() -
+          numberOfDaysToShow * dayInMilliseconds
+      );
+      startOfPreviousPeriod.setHours(0, 0, 0, 0); // Normalizar
+
+      const previousPeriodDataMap = invoiceDataToChart
+        .filter((invoice) => {
+          const invoiceDate = new Date(invoice.createdAt);
+          invoiceDate.setHours(0, 0, 0, 0); // Normalizar
+          return (
+            invoiceDate >= startOfPreviousPeriod &&
+            invoiceDate < endOfPreviousPeriodBoundary
+          );
+        })
         .reduce((acc, invoice) => {
           const invoiceDate = new Date(invoice.createdAt);
+          // Proyectar esta fecha al día correspondiente en el rango de visualización actual
           const projectedDate = formatDate(
-            new Date(invoiceDate.getTime() + 7 * 24 * 60 * 60 * 1000) // Proyectar al día correspondiente de la semana actual
+            new Date(
+              invoiceDate.getTime() + numberOfDaysToShow * dayInMilliseconds
+            )
           );
-          acc[projectedDate] = invoice.amount;
+          acc[projectedDate] = (acc[projectedDate] || 0) + invoice.amount;
           return acc;
         }, {} as Record<string, number>);
 
@@ -92,15 +132,15 @@ const SalesComparisonChart = () => {
       const createDataset = (dataMap: Record<string, number>, days: string[]) =>
         days.map((date) => ({
           x: date,
-          y: dataMap[date] || null, // Usar null si no hay datos para la fecha
+          y: dataMap[date] || null,
         }));
 
       const data = {
-        labels: last7Days, // Solo los últimos 7 días con día de la semana
+        labels: lastNDaysLabels,
         datasets: [
           {
-            label: "Semana Actual",
-            data: createDataset(currentWeekData, last7Days),
+            label: `Últimos ${numberOfDaysToShow} días`,
+            data: createDataset(currentPeriodDataMap, lastNDaysLabels),
             backgroundColor: "rgba(75, 192, 192, 0.6)",
             borderColor: "rgba(75, 192, 192, 1)",
             borderWidth: 2,
@@ -108,8 +148,8 @@ const SalesComparisonChart = () => {
             showLine: true,
           },
           {
-            label: "Semana Anterior",
-            data: createDataset(previousWeekData, last7Days),
+            label: `${numberOfDaysToShow} días anteriores`,
+            data: createDataset(previousPeriodDataMap, lastNDaysLabels),
             backgroundColor: "rgba(255, 99, 132, 0.6)",
             borderColor: "rgba(255, 99, 132, 1)",
             borderWidth: 2,
@@ -123,8 +163,8 @@ const SalesComparisonChart = () => {
       setChartData(data);
     };
 
-    fetchInvoices();
-  }, []);
+    processChartData();
+  }, [invoiceDataToChart, numberOfDaysToShow]); // Añadir numberOfDaysToShow a las dependencias
 
   const options = {
     responsive: true,
@@ -134,9 +174,11 @@ const SalesComparisonChart = () => {
       },
       tooltip: {
         callbacks: {
-          //@ts-ignore
-          label: (context) => {
-            return `Fecha: ${context.raw.x}, Ventas: ${context.raw.y}`;
+          label: (context: TooltipItem<"line">) => {
+            const rawData = context.raw as ChartJSDatasetDataPoint;
+            return `Fecha: ${rawData.x}, Ventas: ${
+              rawData.y !== null ? rawData.y : "N/A"
+            }`;
           },
         },
       },
@@ -159,8 +201,9 @@ const SalesComparisonChart = () => {
   };
 
   return chartData ? (
-    //@ts-ignore
-    <Line data={chartData} options={options} />
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    <Line data={chartData as ChartJSChartData} options={options} />
   ) : (
     <p>Cargando datos...</p>
   );

@@ -85,8 +85,12 @@ export function ProductSoldBase({
           "outputs_sold"
         ) as CollectionReference<outputType>;
 
-        // disable the current outputs sold
-        const q = query(coll, where("disabled", "==", false));
+        // disable the current outputs sold from the product
+        const q = query(
+          coll,
+          where("disabled", "==", false),
+          where("product_ref", "==", product_doc.ref)
+        );
         const outputs_sold = await getDocs(q);
 
         if (outputs_sold.size > 0) {

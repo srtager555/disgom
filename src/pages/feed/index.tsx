@@ -15,6 +15,7 @@ import { getCurrentMonthRange } from "@/tools/time/current";
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import styled from "styled-components";
+import { InvoicePreview } from "@/components/pages/invoice/InvoicePreview";
 
 const WarnsContainer = styled(Container)`
   width: 100%;
@@ -23,6 +24,9 @@ const WarnsContainer = styled(Container)`
 const Feed: NextPageWithLayout = () => {
   const [chartData, setChartData] = useState<ChartData>([]);
   const [overdueInvoices, setOverdueInvoices] = useState<
+    QueryDocumentSnapshot<invoiceType>[]
+  >([]);
+  const [invoicesRefreshData, setInvoiceRefreshData] = useState<
     QueryDocumentSnapshot<invoiceType>[]
   >([]);
 
@@ -72,16 +76,36 @@ const Feed: NextPageWithLayout = () => {
       ) as CollectionReference<invoiceType> as CollectionReference<invoiceType>;
 
       const q = query(coll, where("credit.paid", "==", false));
-      const docs = getDocs(q);
+      const snap = await getDocs(q);
 
-      setOverdueInvoices(docs);
+      setOverdueInvoices(snap.docs);
     }
 
     getOverdueInvoices();
   }, []);
 
+  // Effect to get the overdue invoices
+  useEffect(() => {
+    async function getInvoicesWithRefreshData() {
+      const db = Firestore();
+      const coll = collection(
+        db,
+        InvoiceCollection.root
+      ) as CollectionReference<invoiceType> as CollectionReference<invoiceType>;
+
+      const q = query(coll, where("refresh_data", "!=", null));
+      const snap = await getDocs(q);
+
+      setInvoiceRefreshData(snap.docs);
+    }
+
+    getInvoicesWithRefreshData();
+  }, []);
+
   return (
-    <Container styles={{ maxWidth: "1500px", marginTop: "30px" }}>
+    <Container
+      styles={{ maxWidth: "1500px", marginTop: "30px", marginBottom: "60px" }}
+    >
       <h1 style={{ textAlign: "center" }}>Ventas del mes</h1>
 
       <Container styles={{ marginBottom: "30px" }}>
@@ -97,8 +121,7 @@ const Feed: NextPageWithLayout = () => {
           <Container>
             {overdueInvoices.length > 0 ? (
               overdueInvoices.map((doc, i) => {
-                const data = doc.data();
-                return <Container key={i}></Container>;
+                return <InvoicePreview key={i} doc={doc} />;
               })
             ) : (
               <p>Todo en orden</p>
@@ -108,7 +131,13 @@ const Feed: NextPageWithLayout = () => {
         <WarnsContainer>
           <h2>Facturas que necesitan revisión</h2>
           <Container>
-            <p>Todo en orden</p>
+            {invoicesRefreshData.length > 0 ? (
+              invoicesRefreshData.map((doc, i) => {
+                return <InvoicePreview key={i} doc={doc} />;
+              })
+            ) : (
+              <p>Todo en orden</p>
+            )}
           </Container>
         </WarnsContainer>
       </FlexContainer>
@@ -120,4 +149,7 @@ const Feed: NextPageWithLayout = () => {
 
 export default Feed;
 
-export function OverdueInvoicePreview() {}
+// export function OverdueInvoicePreview() {
+
+//   return <InvoicePreview
+// }

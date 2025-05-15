@@ -16,7 +16,9 @@ import styled from "styled-components";
 
 export const InvoiceContainer = styled.div<{ small?: boolean }>`
   display: grid;
-  grid-template-columns: repeat(${(props) => (props.small ? "1" : "3")}, 350px);
+  grid-template-columns: repeat(
+    ${(props) => (props.small ? "2, 1fr" : "3, 350px")}
+  );
   grid-auto-rows: 50px;
   gap: 10px;
 `;
@@ -101,9 +103,11 @@ export function InvoicePreview({ doc, inSeller }: props) {
           <p>{client.data()?.name}</p>
         </Container>
       ) : inSeller ? (
-        <p>{data.created_at?.toDate().toLocaleDateString()}</p>
+        <p style={{ textOverflow: "ellipsis" }}>
+          {data.created_at?.toDate().toLocaleDateString()}
+        </p>
       ) : (
-        <p>{primaryDisplay}</p> // Use the determined display value
+        <p style={{ textOverflow: "ellipsis" }}>{primaryDisplay}</p> // Use the determined display value
       )}
       <Container styles={{ height: "100%" }}>
         {numberParser(data.total_sold)}

@@ -15,9 +15,18 @@ import { getCurrentMonthRange } from "@/tools/time/current";
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import styled from "styled-components";
-import { InvoicePreview } from "@/components/pages/invoice/InvoicePreview";
+import {
+  InvoiceContainer,
+  InvoicePreview,
+} from "@/components/pages/invoice/InvoicePreview";
+import { numberParser } from "@/tools/numberPaser";
 
 const WarnsContainer = styled(Container)`
+  width: 50%;
+`;
+
+const ExtraDataContainer = styled(Container)`
+  max-width: 33%;
   width: 100%;
 `;
 
@@ -26,6 +35,16 @@ const Feed: NextPageWithLayout = () => {
   const [overdueInvoices, setOverdueInvoices] = useState<
     QueryDocumentSnapshot<invoiceType>[]
   >([]);
+  const [maxSale, setMaxSale] = useState<{
+    date: string;
+    amount: number;
+  } | null>(null);
+  const [minSale, setMinSale] = useState<{
+    date: string;
+    amount: number;
+  } | null>(null);
+  const [avgSale, setAvgSale] = useState<number | null>(null);
+
   const [invoicesRefreshData, setInvoiceRefreshData] = useState<
     QueryDocumentSnapshot<invoiceType>[]
   >([]);
@@ -39,7 +58,6 @@ const Feed: NextPageWithLayout = () => {
         InvoiceCollection.root
       ) as CollectionReference<invoiceType>;
       const range = getCurrentMonthRange(new Date(), 2);
-      console.log(range);
 
       const q = query(
         coll,
@@ -50,17 +68,46 @@ const Feed: NextPageWithLayout = () => {
 
       const snap = await getDocs(q);
 
-      console.log("invoices", snap.docs);
-
       const data = snap.docs.map((doc) => {
         return {
           createdAt: doc.data().created_at?.toDate() as Date,
           amount: Number(doc.data().total_sold.toFixed(2)),
         };
       });
-      console.log(data);
 
       setChartData(data);
+
+      if (data.length > 0) {
+        let max = data[0];
+        let min = data[0];
+        let sum = 0;
+
+        data.forEach((item) => {
+          if (item.amount > max.amount) {
+            max = item;
+          }
+          if (item.amount < min.amount) {
+            min = item;
+          }
+          sum += item.amount;
+        });
+
+        const average = sum / data.length;
+
+        setMaxSale({
+          date: max.createdAt.toLocaleDateString(),
+          amount: max.amount,
+        });
+        setMinSale({
+          date: min.createdAt.toLocaleDateString(),
+          amount: min.amount,
+        });
+        setAvgSale(average);
+      } else {
+        setMaxSale(null);
+        setMinSale(null);
+        setAvgSale(null);
+      }
     }
 
     getSales();
@@ -75,7 +122,12 @@ const Feed: NextPageWithLayout = () => {
         InvoiceCollection.root
       ) as CollectionReference<invoiceType> as CollectionReference<invoiceType>;
 
-      const q = query(coll, where("credit.paid", "==", false));
+      const q = query(
+        coll,
+        where("credit.due_date", "<=", new Date()),
+        where("credit.paid", "==", false),
+        where("disabled", "==", false)
+      );
       const snap = await getDocs(q);
 
       setOverdueInvoices(snap.docs);
@@ -93,7 +145,11 @@ const Feed: NextPageWithLayout = () => {
         InvoiceCollection.root
       ) as CollectionReference<invoiceType> as CollectionReference<invoiceType>;
 
-      const q = query(coll, where("refresh_data", "!=", null));
+      const q = query(
+        coll,
+        where("refresh_data", "!=", null),
+        where("disabled", "==", false)
+      );
       const snap = await getDocs(q);
 
       setInvoiceRefreshData(snap.docs);
@@ -108,6 +164,38 @@ const Feed: NextPageWithLayout = () => {
     >
       <h1 style={{ textAlign: "center" }}>Ventas del mes</h1>
 
+      <FlexContainer styles={{ gap: "10px", marginBottom: "20px" }}>
+        <ExtraDataContainer>
+          {maxSale ? (
+            <>
+              El {maxSale.date} se hizo la venta máxima de este mes con un total
+              de <b>{numberParser(maxSale.amount)}</b>
+            </>
+          ) : (
+            "No hay datos de ventas para mostrar el máximo."
+          )}
+        </ExtraDataContainer>
+        <ExtraDataContainer>
+          {minSale ? (
+            <>
+              El {minSale.date} se hizo la venta mínima de este mes con un total
+              de <b>{numberParser(minSale.amount)}</b>
+            </>
+          ) : (
+            "No hay datos de ventas para mostrar el mínimo."
+          )}
+        </ExtraDataContainer>
+        <ExtraDataContainer>
+          {avgSale !== null ? (
+            <>
+              La media de ventas es de <b>{numberParser(avgSale)}</b>
+            </>
+          ) : (
+            "No hay datos de ventas para calcular la media."
+          )}
+        </ExtraDataContainer>
+      </FlexContainer>
+
       <Container styles={{ marginBottom: "30px" }}>
         <SalesComparisonChart
           invoiceDataToChart={chartData}
@@ -118,7 +206,7 @@ const Feed: NextPageWithLayout = () => {
       <FlexContainer styles={{ justifyContent: "space-between", gap: "10px" }}>
         <WarnsContainer>
           <h2>Facturas vencidas</h2>
-          <Container>
+          <InvoiceContainer small>
             {overdueInvoices.length > 0 ? (
               overdueInvoices.map((doc, i) => {
                 return <InvoicePreview key={i} doc={doc} />;
@@ -126,11 +214,11 @@ const Feed: NextPageWithLayout = () => {
             ) : (
               <p>Todo en orden</p>
             )}
-          </Container>
+          </InvoiceContainer>
         </WarnsContainer>
         <WarnsContainer>
           <h2>Facturas que necesitan revisión</h2>
-          <Container>
+          <InvoiceContainer small>
             {invoicesRefreshData.length > 0 ? (
               invoicesRefreshData.map((doc, i) => {
                 return <InvoicePreview key={i} doc={doc} />;
@@ -138,11 +226,9 @@ const Feed: NextPageWithLayout = () => {
             ) : (
               <p>Todo en orden</p>
             )}
-          </Container>
+          </InvoiceContainer>
         </WarnsContainer>
       </FlexContainer>
-
-      <p>There is the Feed</p>
     </Container>
   );
 };

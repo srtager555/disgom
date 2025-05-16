@@ -6,6 +6,7 @@ import {
   AnchorPlus,
   Anchor,
   AnchorContainer,
+  SimpleAnchor,
 } from "@/styles/Nav.module";
 import { Icon, iconType } from "../Icons";
 import { Container } from "@/styles/index.styles";
@@ -29,6 +30,7 @@ export interface NavElementData {
   href: string;
   name: string;
   icon?: iconType;
+  mustBeAnchor?: boolean;
 }
 
 // Interfaz NavElement actualizada con children como Record
@@ -295,6 +297,7 @@ export function NavLayout({ children }: { children: children }) {
           none: {
             href: "/invoices/manage?id=" + sellers[0].id,
             name: sellers[0].data().name,
+            mustBeAnchor: true,
           },
           ...createInvoiceRecord,
         },
@@ -354,20 +357,38 @@ type anchorProps = NavElement & {
   child: boolean;
 };
 
-const Anchors = ({ href, name, icon, children, child }: anchorProps) => {
+const Anchors = ({
+  href,
+  name,
+  icon,
+  children,
+  child,
+  mustBeAnchor,
+}: anchorProps) => {
   // Verifica si hay hijos usando Object.keys y su longitud
   const hasChildren = children && Object.keys(children).length > 0;
 
   return (
     <AnchorContainer>
-      <Anchor
-        href={!hasChildren ? href : ""} // El enlace principal no es navegable si tiene hijos
-        onClick={hasChildren ? (e) => e.preventDefault() : undefined} // Previene navegación si hay hijos
-      >
-        {icon && <Icon iconType={icon} />}
-        {name}
-        {hasChildren && <AnchorPlus />}
-      </Anchor>
+      {mustBeAnchor ? (
+        <SimpleAnchor
+          href={!hasChildren ? href : ""}
+          onClick={hasChildren ? (e) => e.preventDefault() : undefined}
+        >
+          {icon && <Icon iconType={icon} />}
+          {name}
+          {hasChildren && <AnchorPlus />}
+        </SimpleAnchor>
+      ) : (
+        <Anchor
+          href={!hasChildren ? href : ""} // El enlace principal no es navegable si tiene hijos
+          onClick={hasChildren ? (e) => e.preventDefault() : undefined} // Previene navegación si hay hijos
+        >
+          {icon && <Icon iconType={icon} />}
+          {name}
+          {hasChildren && <AnchorPlus />}
+        </Anchor>
+      )}
 
       {hasChildren && (
         <AnchorList className={child ? "list child" : "list"}>

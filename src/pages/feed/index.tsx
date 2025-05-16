@@ -25,7 +25,7 @@ const WarnsContainer = styled(Container)`
   width: 50%;
 `;
 
-const ExtraDataContainer = styled(Container)`
+export const ExtraDataContainer = styled(Container)`
   max-width: 33%;
   width: 100%;
 `;

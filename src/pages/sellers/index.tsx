@@ -18,7 +18,7 @@ import { invoiceType } from "@/tools/invoices/createInvoice";
 import { numberParser } from "@/tools/numberPaser";
 import { SellersDoc } from "@/tools/sellers/create";
 import { clientCredit, credit } from "@/tools/sellers/credits/create";
-import { getClientCredits, getCredits } from "@/tools/sellers/credits/get";
+import { getClientCredits } from "@/tools/sellers/credits/get";
 import { getCurrentTwoWeekRange } from "@/tools/time/current";
 import {
   collection,
@@ -28,21 +28,25 @@ import {
   DocumentSnapshot,
   getDoc,
   getDocs,
-  limit,
+  onSnapshot,
   orderBy,
   query,
   QueryDocumentSnapshot,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import {
   Dispatch,
   ReactElement,
   SetStateAction,
+  useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
 import { ExtraDataContainer } from "../feed";
+import { Input } from "@/components/pages/invoice/Product";
+import { debounce } from "lodash";
 
 const Page: NextPageWithLayout = () => {
   const { id } = useQueryParams();
@@ -109,7 +113,7 @@ const Page: NextPageWithLayout = () => {
         const data = el.data();
         return {
           createdAt: data.created_at?.toDate() as Date,
-          amount: data.total_sold,
+          amount: Number(data.total_sold.toFixed(2)),
         };
       });
 
@@ -153,8 +157,17 @@ const Page: NextPageWithLayout = () => {
   useEffect(() => {
     async function getClientsWithCredit() {
       if (!sellerDoc) return;
-      const clientsWithCredit = await getCredits(0, sellerDoc?.ref, true);
-      setClientsWithCredits(clientsWithCredit.docs);
+      const creditColl = collection(
+        sellerDoc.ref,
+        SellersCollection.credits
+      ) as CollectionReference<clientCredit>;
+
+      const unsubcribe = onSnapshot(creditColl, (snap) => {
+        console.log(snap.docs);
+        setClientsWithCredits(snap.docs);
+      });
+
+      return () => unsubcribe();
     }
 
     getClientsWithCredit();
@@ -169,7 +182,7 @@ const Page: NextPageWithLayout = () => {
 
   return (
     <Container>
-      <FlexContainer>
+      <FlexContainer styles={{ marginBottom: "30px" }}>
         <Container styles={{ marginRight: "20px", width: "60%" }}>
           <h2>Ventas de las ultimas 2 semanas</h2>
           <FlexContainer styles={{ gap: "10px", marginBottom: "20px" }}>
@@ -206,36 +219,47 @@ const Page: NextPageWithLayout = () => {
           <SalesComparisonChart invoiceDataToChart={chartData} />
         </Container>
 
-        <Container styles={{ marginRight: "20px", width: "40%" }}>
-          <h2>Facturas</h2>
-          <InvoiceContainer small>
-            {invoicesDocs?.map((el, i) => {
-              return <InvoicePreview key={i} doc={el} inSeller />;
-            })}
-          </InvoiceContainer>
-        </Container>
-      </FlexContainer>
-      <FlexContainer styles={{ justifyContent: "space-between" }}>
-        <Container>
-          <FlexContainer styles={{ justifyContent: "space-between" }}>
-            <h2>Creditos</h2>
-            <h2>Total</h2>
-          </FlexContainer>
-          <Container>
-            {clientsWithCredits?.map((el, i) => {
-              return (
-                <CreditPreview
-                  key={i}
-                  doc={el}
-                  setCreditAmount={setCreditAmount}
-                />
-              );
-            })}
+        <FlexContainer
+          styles={{
+            marginRight: "20px",
+            width: "40%",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <Container styles={{ marginBottom: "100px" }}>
+            <h2>Facturas</h2>
+            <InvoiceContainer small>
+              {invoicesDocs?.map((el, i) => {
+                return <InvoicePreview key={i} doc={el} inSeller />;
+              })}
+            </InvoiceContainer>
           </Container>
-          <FlexContainer styles={{ justifyContent: "flex-end" }}>
-            <span>{numberParser(creditTotal)}</span>
+          <FlexContainer styles={{ justifyContent: "space-between" }}>
+            <Container>
+              <FlexContainer
+                styles={{ justifyContent: "space-between", marginTop: "10px" }}
+              >
+                <h2>Creditos</h2>
+                <h2>Total</h2>
+              </FlexContainer>
+              <Container>
+                {clientsWithCredits?.map((el, i) => {
+                  return (
+                    <CreditPreview
+                      key={i}
+                      doc={el}
+                      setCreditAmount={setCreditAmount}
+                    />
+                  );
+                })}
+              </Container>
+              <FlexContainer styles={{ justifyContent: "flex-end" }}>
+                <span>{numberParser(creditTotal)}</span>
+              </FlexContainer>
+            </Container>
           </FlexContainer>
-        </Container>
+        </FlexContainer>
       </FlexContainer>
     </Container>
   );
@@ -259,13 +283,15 @@ function CreditPreview({
   doc: QueryDocumentSnapshot<clientCredit>;
   setCreditAmount: Dispatch<SetStateAction<Array<number>>>;
 }) {
-  const data = useMemo(() => doc.data(), [doc]);
+  const initialData = useMemo(() => doc.data(), [doc]);
+  const [clientName, setClientName] = useState(initialData.name);
+  const [clientAddress, setClientAddress] = useState(initialData.address);
   const [lasstCredit, setLasstCredit] = useState<credit>();
 
   useEffect(() => {
     async function getLastCredit() {
-      const latCredit = await getClientCredits(doc);
-      const creditData = latCredit?.data();
+      const lastCredit = await getClientCredits(doc.ref);
+      const creditData = lastCredit?.data();
       if (!creditData) return;
 
       setLasstCredit(creditData);
@@ -275,22 +301,78 @@ function CreditPreview({
     getLastCredit();
   }, [doc, setCreditAmount]);
 
+  // Effect to update the client name in Firestore
+  useEffect(() => {
+    async function updateName() {
+      // Only update if the name has changed from the initial data
+      if (clientName !== initialData.name) {
+        // Debounce this update in a real application to avoid excessive writes
+        // For simplicity, we'll update directly here, but debouncing is recommended.
+        await updateDoc(doc.ref, {
+          name: clientName,
+        }).catch(console.error); // Add error handling
+      }
+    }
+
+    updateName();
+  }, [clientName, doc.ref, initialData.name]); // Depend on clientName and doc.ref
+
+  // Debounced function to update address
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedUpdateAddress = useCallback(
+    debounce(async (newAddress: string) => {
+      if (newAddress !== initialData.address) {
+        console.log("Updating address in Firestore:", newAddress);
+        await updateDoc(doc.ref, {
+          address: newAddress,
+        }).catch(console.error);
+      }
+    }, 3000), // 3000ms = 3 seconds
+    [doc.ref, initialData.address] // Dependencies for useCallback
+  );
+
+  const handleAddressChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setClientAddress(e.target.value);
+    debouncedUpdateAddress(e.target.value);
+  };
+
   if (!lasstCredit) return <>Cargando...</>;
   return (
     <FlexContainer
       styles={{
         justifyContent: "space-between",
-        width: "350px",
+        width: "400px",
         paddingBottom: "10px",
         marginBottom: "10px",
         borderBottom: "1px solid " + globalCSSVars["--detail"],
       }}
     >
-      <Container>
-        <h3 style={{ margin: "0" }}>{data.name}</h3>
-        <small>{data.address}</small>
-      </Container>
-      {numberParser(lasstCredit?.amount)}
+      <FlexContainer
+        styles={{ width: "100%", maxWidth: "300px", flexDirection: "column" }}
+      >
+        <Container>
+          <Input
+            type="text"
+            value={clientName}
+            onChange={(e) => setClientName(e.target.value)}
+            style={{ padding: "5px" }} // Style to look like h3
+          />
+        </Container>
+
+        <textarea
+          value={clientAddress === "not provided" ? "" : clientAddress} // Handle "not provided" for placeholder effect
+          onChange={handleAddressChange}
+          placeholder="Dirección"
+          rows={2}
+          style={{
+            fontSize: "1rem",
+            marginTop: "5px",
+            width: "100%",
+            padding: "5px",
+          }} // Style to look like small
+        />
+      </FlexContainer>
+      <span>{numberParser(lasstCredit?.amount)}</span>
     </FlexContainer>
   );
 }

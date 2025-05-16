@@ -318,7 +318,16 @@ export function NavLayout({ children }: { children: children }) {
 
   // Efecto para removeMaxWith (sin cambios)
   useEffect(() => {
-    setRemoveMaxWith(asPath.includes("/invoices")); // Simplificado
+    const conditions = [
+      asPath.includes("/invoices"),
+      asPath.includes("/sellers"),
+    ];
+
+    if (conditions.some(Boolean)) {
+      return setRemoveMaxWith(true);
+    } else {
+      return setRemoveMaxWith(false);
+    }
   }, [asPath]);
 
   return (

@@ -35,7 +35,10 @@ const InvoiceComponent = styled.div`
   overflow: hidden;
 `;
 
-const ButtonBro = styled(Button)`
+const AnchorBro = styled.a`
+  display: inline-flex;
+  align-items: center;
+  background-color: ${globalCSSVars["--highlight"]};
   height: 100%;
   border: none;
   border-radius: 0px;
@@ -112,23 +115,9 @@ export function InvoicePreview({ doc, inSeller }: props) {
       <Container styles={{ height: "100%" }}>
         {numberParser(data.total_sold)}
         {client ? (
-          <ButtonBro
-            $primary
-            onClick={() => {
-              router.push("/invoices/preview?id=" + doc.id);
-            }}
-          >
-            Más
-          </ButtonBro>
+          <AnchorBro href={"/invoices/preview?id=" + doc.id}>Más</AnchorBro>
         ) : (
-          <ButtonBro
-            $primary
-            onClick={() => {
-              router.push("/invoices/manage?id=" + doc.id);
-            }}
-          >
-            Ver más
-          </ButtonBro>
+          <AnchorBro href={"/invoices/manage?id=" + doc.id}>Ver más</AnchorBro>
         )}
       </Container>
     </InvoiceComponent>

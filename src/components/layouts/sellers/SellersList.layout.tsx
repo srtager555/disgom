@@ -8,7 +8,9 @@ export function SellersList() {
   if (params.id) return <></>;
 
   return (
-    <Container styles={{ marginTop: "50px" }}>
+    <Container
+      styles={{ margin: "0 auto", marginTop: "50px", maxWidth: "600px" }}
+    >
       <h2>Lista de Vendedores</h2>
       <Container>
         <SellerListPrinter />

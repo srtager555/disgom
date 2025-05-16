@@ -282,10 +282,10 @@ function InvoiceManager() {
                     </>
                   ) : (
                     invoice?.data().invoice_type === "normal" && (
-                      <>
+                      <Container styles={{ maxWidth: "1100px" }}>
                         <ClientCredit />
                         <Preliminar />
-                      </>
+                      </Container>
                     )
                   )}
                   <CreateNewDefaultCustomPrices />

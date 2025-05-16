@@ -148,6 +148,17 @@ export const Anchor = styled(Link)`
   border-bottom: 1px solid ${globalCSSVars["--detail"]};
 `;
 
+export const SimpleAnchor = styled.a`
+  position: relative;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 5px;
+  padding: 10px;
+  background-color: ${globalCSSVars["--background"]};
+  border-bottom: 1px solid ${globalCSSVars["--detail"]};
+`;
+
 export const AnchorList = styled(FlexContainer)`
   flex-direction: column;
   position: absolute;

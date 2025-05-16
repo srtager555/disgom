@@ -1,4 +1,4 @@
-import SalesComparisonChart from "@/components/chart";
+import SalesComparisonChart, { ChartData } from "@/components/chart";
 import { SellersLayout } from "@/components/layouts/sellers/Sellers.layout";
 import { SellersList } from "@/components/layouts/sellers/SellersList.layout";
 import {
@@ -19,6 +19,7 @@ import { numberParser } from "@/tools/numberPaser";
 import { SellersDoc } from "@/tools/sellers/create";
 import { clientCredit, credit } from "@/tools/sellers/credits/create";
 import { getClientCredits, getCredits } from "@/tools/sellers/credits/get";
+import { getCurrentTwoWeekRange } from "@/tools/time/current";
 import {
   collection,
   CollectionReference,
@@ -41,6 +42,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { ExtraDataContainer } from "../feed";
 
 const Page: NextPageWithLayout = () => {
   const { id } = useQueryParams();
@@ -51,6 +53,16 @@ const Page: NextPageWithLayout = () => {
     useState<QueryDocumentSnapshot<clientCredit>[]>();
   const [creditAmount, setCreditAmount] = useState<number[]>([]);
   const [creditTotal, setCreditTotal] = useState(0);
+  const [chartData, setChartData] = useState<ChartData>([]);
+  const [maxSale, setMaxSale] = useState<{
+    date: string;
+    amount: number;
+  } | null>(null);
+  const [minSale, setMinSale] = useState<{
+    date: string;
+    amount: number;
+  } | null>(null);
+  const [avgSale, setAvgSale] = useState<number | null>(null);
 
   // effect to get the seller
   useEffect(() => {
@@ -80,16 +92,60 @@ const Page: NextPageWithLayout = () => {
         db,
         InvoiceCollection.root
       ) as CollectionReference<invoiceType>;
+      const range = getCurrentTwoWeekRange(new Date());
 
       const q = query(
         coll,
         orderBy("created_at", "desc"),
         where("seller_ref", "==", sellerDoc.ref),
-        limit(7)
+        where("created_at", ">=", range.start),
+        where("created_at", "<=", range.end),
+        where("disabled", "==", false)
       );
       const invoices = await getDocs(q);
 
       setInvoicesDocs(invoices.docs);
+      const data: ChartData = invoices.docs.map((el) => {
+        const data = el.data();
+        return {
+          createdAt: data.created_at?.toDate() as Date,
+          amount: data.total_sold,
+        };
+      });
+
+      setChartData(data);
+
+      if (data.length > 0) {
+        let max = data[0];
+        let min = data[0];
+        let sum = 0;
+
+        data.forEach((item) => {
+          if (item.amount > max.amount) {
+            max = item;
+          }
+          if (item.amount < min.amount) {
+            min = item;
+          }
+          sum += item.amount;
+        });
+
+        const average = sum / data.length;
+
+        setMaxSale({
+          date: max.createdAt.toLocaleDateString(),
+          amount: max.amount,
+        });
+        setMinSale({
+          date: min.createdAt.toLocaleDateString(),
+          amount: min.amount,
+        });
+        setAvgSale(average);
+      } else {
+        setMaxSale(null);
+        setMinSale(null);
+        setAvgSale(null);
+      }
     }
     getInvoices();
   }, [sellerDoc]);
@@ -113,18 +169,44 @@ const Page: NextPageWithLayout = () => {
 
   return (
     <Container>
-      {/* <Container
-        styles={{
-          width: "900px",
-          height: "250px",
-          backgroundColor: "#ccc",
-          borderRadius: "20px",
-          marginBottom: "20px",
-        }}
-      ></Container> */}
-      <SalesComparisonChart />
-      <FlexContainer styles={{ justifyContent: "space-between" }}>
-        <Container styles={{ marginRight: "20px" }}>
+      <FlexContainer>
+        <Container styles={{ marginRight: "20px", width: "60%" }}>
+          <h2>Ventas de las ultimas 2 semanas</h2>
+          <FlexContainer styles={{ gap: "10px", marginBottom: "20px" }}>
+            <ExtraDataContainer>
+              {maxSale ? (
+                <>
+                  El {maxSale.date} se hizo la venta máxima de este mes con un
+                  total de <b>{numberParser(maxSale.amount)}</b>
+                </>
+              ) : (
+                "No hay datos de ventas para mostrar el máximo."
+              )}
+            </ExtraDataContainer>
+            <ExtraDataContainer>
+              {minSale ? (
+                <>
+                  El {minSale.date} se hizo la venta mínima de este mes con un
+                  total de <b>{numberParser(minSale.amount)}</b>
+                </>
+              ) : (
+                "No hay datos de ventas para mostrar el mínimo."
+              )}
+            </ExtraDataContainer>
+            <ExtraDataContainer>
+              {avgSale !== null ? (
+                <>
+                  La media de ventas es de <b>{numberParser(avgSale)}</b>
+                </>
+              ) : (
+                "No hay datos de ventas para calcular la media."
+              )}
+            </ExtraDataContainer>
+          </FlexContainer>
+          <SalesComparisonChart invoiceDataToChart={chartData} />
+        </Container>
+
+        <Container styles={{ marginRight: "20px", width: "40%" }}>
           <h2>Facturas</h2>
           <InvoiceContainer small>
             {invoicesDocs?.map((el, i) => {
@@ -132,6 +214,8 @@ const Page: NextPageWithLayout = () => {
             })}
           </InvoiceContainer>
         </Container>
+      </FlexContainer>
+      <FlexContainer styles={{ justifyContent: "space-between" }}>
         <Container>
           <FlexContainer styles={{ justifyContent: "space-between" }}>
             <h2>Creditos</h2>

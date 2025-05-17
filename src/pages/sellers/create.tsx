@@ -76,13 +76,24 @@ const Page: NextPageWithLayout = () => {
   }, [sellerSelected, setSellerSelected]);
 
   return (
-    <Container>
-      <h3>Agregar o editar un vendedor</h3>
+    <Container styles={{ margin: "0 auto", maxWidth: "600px" }}>
+      <h1>Agregar o editar un vendedor</h1>
       <p>
         Para editar información basica de un vendedor seleccionelo en la lista
       </p>
-      <Form ref={formRef} onSubmit={handlerCreateSeller}>
-        <FlexContainer styles={{ alignItems: "flex-end" }}>
+      <Form
+        ref={formRef}
+        onSubmit={handlerCreateSeller}
+        style={{ marginTop: "20px" }}
+      >
+        <FlexContainer
+          styles={{
+            marginBottom: "20px",
+            gap: "10px",
+            alignItems: "flex-start",
+            flexDirection: "column",
+          }}
+        >
           <InputText
             name="sellerName"
             defaultValue={defaultName}
@@ -115,17 +126,23 @@ const Page: NextPageWithLayout = () => {
           <Button $primary>{sellerSelected ? "Editar" : "Agregar"}</Button>
         </FlexContainer>
         {sellerSelected && (
-          <Button
-            onPointerDown={hideSeller}
-            onPointerUp={() => clearTimeout(timeOut)}
-            onMouseUp={() => clearTimeout(timeOut)}
-            onMouseLeave={() => clearTimeout(timeOut)}
-            $warn
-            $hold
-            style={{ marginTop: "10px" }}
-          >
-            Eliminar
-          </Button>
+          <Container>
+            <p>
+              Eliminar un vendedor es <b>INRREVERSIBLE</b>, las facturas
+              vinculadas a el no desaparecerán
+            </p>
+            <Button
+              onPointerDown={hideSeller}
+              onPointerUp={() => clearTimeout(timeOut)}
+              onMouseUp={() => clearTimeout(timeOut)}
+              onMouseLeave={() => clearTimeout(timeOut)}
+              $warn
+              $hold
+              style={{ marginTop: "10px" }}
+            >
+              Eliminar
+            </Button>
+          </Container>
         )}
       </Form>
     </Container>

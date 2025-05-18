@@ -18,6 +18,12 @@ export async function updatePrice(
   customPrice?: number
 ) {
   console.log("Solo cambia el precio, actualizando outputs");
+
+  if (outputs.length === 0) {
+    console.log("No hay outputs para actualizar");
+    return;
+  }
+
   const data = productDoc.data();
   // Obtener los outputs actuales
   const currentProductStocks = data?.product_parent

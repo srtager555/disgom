@@ -1,6 +1,5 @@
 import { globalCSSVars } from "@/styles/colors";
-import { Button } from "@/styles/Form.styles";
-import { Container } from "@/styles/index.styles";
+import { Container, FlexContainer } from "@/styles/index.styles";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { numberParser } from "@/tools/numberPaser";
 import { SellersDoc } from "@/tools/sellers/create";
@@ -10,7 +9,6 @@ import {
   getDoc,
   QueryDocumentSnapshot,
 } from "firebase/firestore";
-import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 
@@ -27,6 +25,7 @@ const InvoiceComponent = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   width: 100%;
   height: 100%;
   padding-left: 10px;
@@ -44,6 +43,8 @@ const AnchorBro = styled.a`
   border-radius: 0px;
   padding: 0px 10px;
   margin-left: 10px;
+  color: #fff;
+  white-space: nowrap;
 `;
 
 type props = {
@@ -56,7 +57,6 @@ export function InvoicePreview({ doc, inSeller }: props) {
   const [client, setClient] = useState<DocumentSnapshot<client>>();
   const data = useMemo(() => doc.data(), [doc]);
   const sellerData = useMemo(() => seller?.data(), [seller]);
-  const router = useRouter();
 
   // effect to get the seller
   useEffect(() => {
@@ -100,7 +100,7 @@ export function InvoicePreview({ doc, inSeller }: props) {
     <InvoiceComponent>
       {client ? (
         <Container>
-          <small>
+          <small style={{ textOverflow: "ellipsis", textWrap: "nowrap" }}>
             {primaryDisplay} - {data.credit?.paid ? "pagado" : "en credito"}
           </small>
           <p>{client.data()?.name}</p>
@@ -112,14 +112,11 @@ export function InvoicePreview({ doc, inSeller }: props) {
       ) : (
         <p style={{ textOverflow: "ellipsis" }}>{primaryDisplay}</p> // Use the determined display value
       )}
-      <Container styles={{ height: "100%" }}>
+      <FlexContainer styles={{ height: "100%", alignItems: "center" }}>
         {numberParser(data.total_sold)}
-        {client ? (
-          <AnchorBro href={"/invoices/preview?id=" + doc.id}>Más</AnchorBro>
-        ) : (
-          <AnchorBro href={"/invoices/manage?id=" + doc.id}>Ver más</AnchorBro>
-        )}
-      </Container>
+
+        <AnchorBro href={"/invoices/manage?id=" + doc.id}>Ver más</AnchorBro>
+      </FlexContainer>
     </InvoiceComponent>
   );
 }

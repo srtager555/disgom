@@ -43,6 +43,7 @@ import { productDoc } from "@/tools/products/create";
 import { CreateNewDefaultCustomPrices } from "@/components/pages/invoice/manage/CreateNewDefaultCustomPrices";
 import { RefreshData } from "@/components/pages/invoice/RefreshData";
 import { disabled } from "../../tools/invoices/disabled";
+import { PrintInvoiceHeader } from "@/components/print/InvoiceHeader";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -240,16 +241,20 @@ function InvoiceManager() {
         >
           <RefreshData>
             <MainContainer>
-              <SelectSeller
-                currentSeller={selectedSeller}
-                setSelectedSeller={setSelectedSeller}
-              />
-              {selectedSeller && invoice?.data().invoice_type === "normal" && (
-                <SelectClient
-                  sellerData={selectedSeller?.data()}
-                  sellerDoc={selectedSeller}
+              <PrintInvoiceHeader />
+              <Container className="hide-print">
+                <SelectSeller
+                  currentSeller={selectedSeller}
+                  setSelectedSeller={setSelectedSeller}
                 />
-              )}
+                {selectedSeller &&
+                  invoice?.data().invoice_type === "normal" && (
+                    <SelectClient
+                      sellerData={selectedSeller?.data()}
+                      sellerDoc={selectedSeller}
+                    />
+                  )}
+              </Container>
 
               {!selectedSeller ? (
                 <Container>
@@ -271,47 +276,58 @@ function InvoiceManager() {
                     totalResults={totalResults}
                     hasInventory={selectedSeller?.data()?.hasInventory}
                   />
-                  {selectedSeller?.data()?.hasInventory ? (
-                    <>
-                      <Credit
-                        setRawCreditResult={setRawCreditResult}
-                        creditResult={creditResult}
-                      />
 
-                      <Close totals={totalResults} credits={creditResult} />
-                    </>
-                  ) : (
-                    invoice?.data().invoice_type === "normal" && (
-                      <Container
-                        styles={{ maxWidth: "1100px", marginBottom: "30px" }}
+                  <FlexContainer
+                    className="hide-print"
+                    styles={{
+                      width: "100%",
+                      maxWidth: "1100px",
+                      alignItems: "center",
+                      flexDirection: "column",
+                    }}
+                  >
+                    {selectedSeller?.data()?.hasInventory ? (
+                      <>
+                        <Credit
+                          setRawCreditResult={setRawCreditResult}
+                          creditResult={creditResult}
+                        />
+
+                        <Close totals={totalResults} credits={creditResult} />
+                      </>
+                    ) : (
+                      invoice?.data().invoice_type === "normal" && (
+                        <Container
+                          styles={{ maxWidth: "1100px", marginBottom: "30px" }}
+                        >
+                          <ClientCredit />
+                          <Preliminar />
+                        </Container>
+                      )
+                    )}
+                    <CreateNewDefaultCustomPrices />
+                    <FlexContainer styles={{ gap: "10px", marginTop: "60px" }}>
+                      <Button onClick={() => window.print()}>Imprimir</Button>
+                      <Button $primary onClick={() => router.push("/invoices")}>
+                        Terminado
+                      </Button>
+                    </FlexContainer>
+                    <Container styles={{ marginTop: "20px" }}>
+                      <p>
+                        Eleminar una factura es una acción <b>INRREVERSIBLE</b>,
+                        tenga precaución
+                      </p>
+                      <Button
+                        $warn
+                        $hold
+                        onPointerDown={debouncedDeleteInvoice}
+                        onPointerUp={debouncedDeleteInvoice.cancel}
+                        onMouseLeave={debouncedDeleteInvoice.cancel} // Cancela si el cursor sale mientras está presionado>
                       >
-                        <ClientCredit />
-                        <Preliminar />
-                      </Container>
-                    )
-                  )}
-                  <CreateNewDefaultCustomPrices />
-                  <FlexContainer styles={{ gap: "10px", marginTop: "60px" }}>
-                    <Button onClick={() => window.print()}>Imprimir</Button>
-                    <Button $primary onClick={() => router.push("/invoices")}>
-                      Terminado
-                    </Button>
+                        Eleminar factura
+                      </Button>
+                    </Container>
                   </FlexContainer>
-                  <Container styles={{ marginTop: "20px" }}>
-                    <p>
-                      Eleminar una factura es una acción <b>INRREVERSIBLE</b>,
-                      tenga precaución
-                    </p>
-                    <Button
-                      $warn
-                      $hold
-                      onPointerDown={debouncedDeleteInvoice}
-                      onPointerUp={debouncedDeleteInvoice.cancel}
-                      onMouseLeave={debouncedDeleteInvoice.cancel} // Cancela si el cursor sale mientras está presionado>
-                    >
-                      Eleminar factura
-                    </Button>
-                  </Container>
                 </>
               )}
             </MainContainer>

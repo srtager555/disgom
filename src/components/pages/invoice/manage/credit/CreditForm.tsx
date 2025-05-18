@@ -1,4 +1,3 @@
-import { InputNumber } from "@/components/Inputs/number";
 import { InputText } from "@/components/Inputs/text";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { Form, Button } from "@/styles/Form.styles";
@@ -26,7 +25,8 @@ export const CreditForm = ({
       amount: HTMLInputElement;
     };
     const creditName = target.creditName.value;
-    const amount = target.amount.value;
+    const amount = 0;
+    //  target.amount.value;
 
     await createClientCredit(
       route,
@@ -40,6 +40,10 @@ export const CreditForm = ({
     formRef.current?.reset();
     setShowForm(false);
   };
+
+  if (!invoice?.data().route) {
+    return <p>Agregue una ruta primero</p>;
+  }
 
   return (
     <Form
@@ -56,12 +60,12 @@ export const CreditForm = ({
           marginBottom="0px"
           name="creditName"
         />
-        <InputNumber
+        {/* <InputNumber
           type="number"
           placeholder="Monto"
           marginBottom="0px"
           name="amount"
-        />
+        /> */}
       </FlexContainer>
       <Button>Agregar</Button>
     </Form>

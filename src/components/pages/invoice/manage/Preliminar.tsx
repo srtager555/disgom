@@ -4,12 +4,9 @@ import { useEffect, useState, useRef } from "react";
 import { DocumentReference, getDoc } from "firebase/firestore";
 import { client } from "@/tools/sellers/createClient";
 import styled from "styled-components";
-import { Button } from "@/styles/Form.styles";
-import { debounce } from "lodash";
-import { disabled } from "@/tools/invoices/disabled";
 
 const CustomContainer = styled(Container)`
-  width: 50%;
+  width: 100%;
 
   & p {
     margin-bottom: 10px;
@@ -20,28 +17,6 @@ export function Preliminar() {
   const { invoice } = useInvoice();
   const [clientData, setClientData] = useState<client | null>(null);
   const clientRef = useRef<DocumentReference<client>>(null);
-  const debouncedDelete = debounce(handleDelete, 5000);
-
-  async function handleDelete() {
-    console.log("Deleting...");
-
-    if (!invoice) return;
-
-    await disabled();
-
-    // await updateDoc(invoice.ref, {
-    //   disabled: true,
-    //   deleted_at: new Date(),
-    // });
-  }
-
-  const handleMouseUp = () => {
-    debouncedDelete.cancel();
-  };
-
-  const handleMouseDown = () => {
-    debouncedDelete();
-  };
 
   useEffect(() => {
     const getClientData = async () => {
@@ -71,23 +46,12 @@ export function Preliminar() {
         justifyContent: "space-between",
       }}
     >
-      <CustomContainer styles={{ width: "50%" }}>
+      <CustomContainer>
         <h2>Información preliminar</h2>
         <p>Nombre: {clientData?.name}</p>
         <p>Dirección: {clientData?.address}</p>
         <p>Numero de teléfono: {clientData?.phone_number}</p>
       </CustomContainer>
-      <FlexContainer styles={{ gap: "10px", alignItems: "flex-start" }}>
-        <Button onClick={() => window.print()}>Imprimir</Button>
-        <Button
-          $warn
-          $hold
-          onMouseUp={handleMouseUp}
-          onMouseDown={handleMouseDown}
-        >
-          ELIMINAR
-        </Button>
-      </FlexContainer>
     </FlexContainer>
   );
 }

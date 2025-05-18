@@ -15,20 +15,30 @@ import { someHumanChangesDetected } from "./Product";
 import { useNewDefaultCustomPricesContext } from "@/hooks/invoice/useNewDefaultCustomPricesContext";
 import { outputType } from "@/tools/products/addOutputs";
 import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
-import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 import { productDoc } from "@/tools/products/create";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
+import { isEqual } from "lodash";
 
 type props = {
   product_ref: DocumentReference<productDoc>;
-  defaultCustomPrice: defaultCustomPrice | undefined;
+  defaultCustomPrice: number | undefined;
   outputs: DocumentSnapshot<outputType>[];
   normalPrice: number;
   setCustomPrice: Dispatch<SetStateAction<number | undefined>>;
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
 };
 
-export function Price({
+// サラマンダー
+export const Price = memo(BasePrice, (prev, next) => {
+  if (prev.product_ref.id !== next.product_ref.id) return false;
+  if (prev.defaultCustomPrice !== next.defaultCustomPrice) return false;
+  if (prev.normalPrice !== next.normalPrice) return false;
+  if (isEqual(prev.outputs, next.outputs)) return false;
+
+  return true;
+});
+
+export function BasePrice({
   product_ref,
   defaultCustomPrice,
   normalPrice,
@@ -77,7 +87,12 @@ export function Price({
   useEffect(() => {
     async function manageThePrice() {
       // use the normal price or the default custom price if exits
-      const priceToUse = defaultCustomPrice?.price || normalPrice;
+      console.log(
+        "revision de los precion en price",
+        defaultCustomPrice,
+        normalPrice
+      );
+      const priceToUse = defaultCustomPrice || normalPrice;
 
       // Getting the price from the outputs
       if (outputs.length > 0) {
@@ -88,7 +103,7 @@ export function Price({
         if (output?.default_custom_price_ref) {
           setIsDefaultCustomPrice({
             isThat: true,
-            areTheSame: defaultCustomPrice?.price === priceFromOutput,
+            areTheSame: defaultCustomPrice === priceFromOutput,
           });
         } else {
           setIsDefaultCustomPrice({
@@ -140,6 +155,11 @@ const PriceInputMemo = memo(PriceInputBase, (prev, next) => {
   if (prev.newPrice != next.newPrice) return false;
   if (prev.normalPrice != next.normalPrice) return false;
   if (prev.priceMultiplier != next.priceMultiplier) return false; // Compare multiplier
+  if (
+    isEqual(prev.isDefaultCustomPrice.isThat, next.isDefaultCustomPrice.isThat)
+  )
+    return false;
+
   // No need to compare refs or setters
   return true;
 });

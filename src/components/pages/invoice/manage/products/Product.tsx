@@ -127,6 +127,10 @@ export function Product({
     () => selectedSeller?.data(),
     [selectedSeller]
   );
+  const defaultPriceData = useMemo(() => {
+    return defaultCustomPrice?.data();
+  }, [defaultCustomPrice]);
+
   const someHumanChangesDetected = useRef<someHumanChangesDetected>({
     addOutput: false,
     devolution: false,
@@ -202,11 +206,18 @@ export function Product({
         invoice?.data().client_ref
       );
 
+      if ("SvlOP05N8Ovk7w6hfcGJ" === doc.id)
+        console.log("lastDefaultCustomPrice", lastDefaultCustomPrice);
+
       setDefaultCustomPrice(lastDefaultCustomPrice);
     }
 
     getDefaultCutomPriceFunctionBTW();
-  }, [selectedSeller, doc.ref, invoice]);
+
+    return () => {
+      setDefaultCustomPrice(undefined);
+    };
+  }, [selectedSeller, doc.id]);
 
   // useEffect(() => console.log("root remaingStock", remainStock), [remainStock]);
 
@@ -265,7 +276,7 @@ export function Product({
       />
       <Price
         product_ref={doc.ref}
-        defaultCustomPrice={defaultCustomPrice?.data()}
+        defaultCustomPrice={defaultPriceData?.price}
         normalPrice={rtDocData?.stock[0]?.sale_price || 0}
         outputs={outputs}
         setCustomPrice={setCustomPrice}

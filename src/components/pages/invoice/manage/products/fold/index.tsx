@@ -24,6 +24,7 @@ export function Fold({
   return (
     <>
       <Column
+        className="hide-print"
         style={{ cursor: "pointer" }}
         onClick={() => {
           setIsFolded(!isFolded);

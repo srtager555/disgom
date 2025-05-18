@@ -9,7 +9,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { InvoiceContext } from "@/pages/invoices/create";
+import { InvoiceContext } from "@/trash/create";
 import { globalCSSVars } from "@/styles/colors";
 import { Select } from "@/components/Inputs/select";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
@@ -59,12 +59,11 @@ export const ProductContainer = styled.div<{
   position: relative;
   display: grid;
   grid-column: 1 / -1;
-  /* gap: 10px; */
+
   transition: 200ms ease all;
   height: ${(props) =>
-    !props.$hide ? (!props.$fold ? "36px" : "auto") : "0px"};
-  /* padding: ${(props) =>
-    !props.$hide ? (props.$header ? "10px" : "5px") : 0} 0; */
+    // !props.$hide ? (!props.$fold ? "36px" : "auto") : "0px"};
+    !props.$hide ? "auto" : "0px"};
   visibility: ${(props) => (props.$hide ? "hidden" : "visible")};
   grid-template-columns: ${(props) => {
     if (props.$closing) return "75px repeat(17, 85px)";
@@ -74,6 +73,21 @@ export const ProductContainer = styled.div<{
       return "75px repeat(12, 85px)";
     }
   }};
+
+  @media print {
+    & > * {
+      font-size: 0.8rem !important;
+    }
+
+    grid-template-columns: ${(props) => {
+      if (props.$closing) return "repeat(15, 85px)";
+      if (props.$hasInventory) {
+        return "repeat(10, 85px)";
+      } else {
+        return "repeat(10, 85px)";
+      }
+    }};
+  }
 
   border-left: 1px solid ${globalCSSVars["--detail"]};
   border-right: 1px solid ${globalCSSVars["--detail"]};
@@ -103,9 +117,9 @@ export const ProductContainer = styled.div<{
     }}
   }
 
-  @media print {
+  /* @media print {
     grid-template-columns: repeat(20, 1fr);
-  }
+  } */
 
   ${(props) =>
     props.$header &&
@@ -287,23 +301,19 @@ export const Descriptions = ({
   hasInventory: boolean | undefined;
 }) => (
   <ProductContainer $header $withoutStock={1} $hasInventory={hasInventory}>
-    <Column>Inventario</Column>
-    <Column gridColumn="2 / 5" printGridColumn="1 / 8">
+    <Column className="hide-print">Inventario</Column>
+    <Column gridColumn="2 / 5" printGridColumn="1 / 4">
       Producto
     </Column>
-    <Column printGridColumn="8 / 10" hide={!hasInventory}>
-      Guardo
-    </Column>
+    <Column hide={!hasInventory}>Guardo</Column>
     <Column>{hasInventory ? "Consig." : "Cantidad"}</Column>
     <Column hide={!hasInventory}>Devol.</Column>
-    <Column printGridColumn="-4 / -6" hide={!hasInventory}>
-      Venta
-    </Column>
-    <Column printGridColumn="-1 / -4">Precio</Column>
+    <Column hide={!hasInventory}>Venta</Column>
+    <Column>Precio</Column>
     <Column gridColumn={hasInventory ? "" : "-3 / -4"}>Total</Column>
     <Column hide={!hasInventory}>Comision</Column>
-    <Column>Utilidad</Column>
-    <Column>
+    <Column className="hide-print">Utilidad</Column>
+    <Column className="hide-print">
       <Container styles={{ marginRight: "10px" }}>
         <Icon iconType="fold" />
       </Container>

@@ -14,6 +14,7 @@ export const Profit = memo(function Profit({
 }: props) {
   return (
     <Column
+      className="hide-print"
       gridColumn={!sellerHasInventory ? "-2 / -3" : ""}
       title={numberParser(remainStockTotals.profit)}
     >

@@ -1,4 +1,4 @@
-import { invoiceOwners, rawProduct } from "@/pages/invoices/preview";
+import { invoiceOwners, rawProduct } from "@/trash/preview";
 import { Column, ExtraButton, ProductName } from "..";
 import { ProductContainer } from "../../ProductList";
 import { useEffect, useMemo, useState } from "react";

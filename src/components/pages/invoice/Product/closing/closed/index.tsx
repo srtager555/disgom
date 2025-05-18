@@ -1,4 +1,4 @@
-import { rawProductWithInventory } from "@/pages/invoices/closing";
+import { rawProductWithInventory } from "@/trash/closing";
 import { Dispatch, SetStateAction, useEffect, useMemo, useState } from "react";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
 import { productDoc } from "@/tools/products/create";

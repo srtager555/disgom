@@ -1,6 +1,6 @@
 import { Column, ExtraButton, Input } from "..";
 import { ProductContainer } from "../../ProductList";
-import { rawProductWithInventory } from "@/pages/invoices/closing";
+import { rawProductWithInventory } from "@/trash/closing";
 import {
   ChangeEvent,
   Dispatch,

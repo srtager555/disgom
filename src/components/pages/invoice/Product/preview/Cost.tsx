@@ -1,6 +1,6 @@
 import { numberParser } from "@/tools/numberPaser";
 import { Column } from "..";
-import { purchases_amounts } from "@/pages/invoices/preview";
+import { purchases_amounts } from "@/trash/preview";
 
 export type props = {
   data: purchases_amounts;

@@ -1,7 +1,7 @@
 import { Container } from "@/styles/index.styles";
 import { useEffect, useState } from "react";
 import { numberParser } from "@/tools/numberPaser";
-import { rawProduct } from "@/pages/invoices/preview";
+import { rawProduct } from "@/trash/preview";
 import { Column } from "..";
 import { ProductContainer } from "../../ProductList";
 

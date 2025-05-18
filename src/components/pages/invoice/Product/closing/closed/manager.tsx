@@ -1,8 +1,5 @@
 import { Container } from "@/styles/index.styles";
-import {
-  Descriptions,
-  rawProductWithInventory,
-} from "@/pages/invoices/closing";
+import { Descriptions, rawProductWithInventory } from "@/trash/closing";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { inventoryProductDoc } from "@/tools/sellers/invetory/addProduct";
 import { numberParser } from "@/tools/numberPaser";

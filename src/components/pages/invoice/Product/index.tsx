@@ -67,7 +67,7 @@ const ColumnGrid = styled(Container)<{
   }}
 
   @media print {
-    display: ${(props) => (props.$printGridColumn ? "block" : "none")};
+    /* display: ${(props) => (props.$printGridColumn ? "block" : "none")}; */
     grid-column: ${(props) => props.$printGridColumn};
   }
 
@@ -152,9 +152,11 @@ export const Column = styled(ColumnBase)<{
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* line-height: 0px; */
   text-align: ${(props) => props.$textAlign || "start"};
   background-color: inherit;
-  padding: 5px;
+  padding: 3px 5px;
+  padding-bottom: 0px;
   /* padding-left: 10px; */
 
   & > button {
@@ -185,6 +187,10 @@ export const Input = styled.input`
   border: none;
   padding: 2px 5px;
   font-size: 1rem;
+
+  @media print {
+    font-size: 0.8rem;
+  }
 
   @media (prefers-color-scheme: light) {
     background-color: #a9faf6;

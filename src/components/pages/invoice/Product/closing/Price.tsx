@@ -1,4 +1,4 @@
-import { sales_amounts } from "@/pages/invoices/preview";
+import { sales_amounts } from "@/trash/preview";
 import { Column } from "..";
 import { numberParser } from "@/tools/numberPaser";
 

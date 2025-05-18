@@ -7,7 +7,7 @@ import {
 import { ProductContainer } from "../../ProductList";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Column } from "../../Product";
-import styled from "styled-components";
+
 import { SellersDoc } from "@/tools/sellers/create";
 import { AddOutput, rawOutput } from "./AddOutput";
 import { ProductSold } from "./ProductSold";
@@ -27,22 +27,6 @@ import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
 import { getDefaultCustomPrice } from "@/tools/sellers/customPrice/getDefaultCustomPrice";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 import { stockType } from "@/tools/products/addToStock";
-
-const GrabButton = styled.button`
-  display: inline-block;
-  width: 100%;
-  height: 100%;
-  border: none;
-  text-decoration: none !important;
-  background-color: transparent;
-
-  &:active {
-    cursor: grabbing;
-  }
-  &:hover {
-    cursor: grab;
-  }
-`;
 
 // サラマンダー
 export type props = {
@@ -238,10 +222,13 @@ export function Product({
           : false
       }
     >
-      <Column title={numberParser(currentStock)}>
+      <Column title={numberParser(currentStock)} className="hide-print">
         {numberParser(currentStock)}
       </Column>
-      <Column gridColumn="2 / 5">{rtDocData?.name}</Column>
+
+      <Column gridColumn="2 / 5" printGridColumn="1 / 4">
+        {rtDocData?.name}
+      </Column>
 
       {/* ここから下は、src/components/pages/invoice/manage/products/Product.tsx のコード */}
       {selectedSellerData?.hasInventory && (

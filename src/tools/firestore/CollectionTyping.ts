@@ -7,6 +7,8 @@ export const ProductsCollection = {
 
 export const InvoiceCollection = {
   root: "Invoices",
+  outputs: "outputs",
+  outputs_sold: "outputs_sold",
 };
 
 export const SellersCollection = {

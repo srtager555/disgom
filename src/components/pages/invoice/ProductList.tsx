@@ -67,11 +67,11 @@ export const ProductContainer = styled.div<{
     !props.$hide ? (props.$header ? "10px" : "5px") : 0} 0; */
   visibility: ${(props) => (props.$hide ? "hidden" : "visible")};
   grid-template-columns: ${(props) => {
-    if (props.$closing) return "15px 75px repeat(17, 85px)";
+    if (props.$closing) return "75px repeat(17, 85px)";
     if (props.$hasInventory) {
-      return "15px 75px repeat(12, 85px)";
+      return "75px repeat(12, 85px)";
     } else {
-      return "15px 75px repeat(12, 85px)";
+      return "75px repeat(12, 85px)";
     }
   }};
 
@@ -287,9 +287,8 @@ export const Descriptions = ({
   hasInventory: boolean | undefined;
 }) => (
   <ProductContainer $header $withoutStock={1} $hasInventory={hasInventory}>
-    <Column>-</Column>
     <Column>Inventario</Column>
-    <Column gridColumn="3 / 6" printGridColumn="1 / 8">
+    <Column gridColumn="2 / 5" printGridColumn="1 / 8">
       Producto
     </Column>
     <Column printGridColumn="8 / 10" hide={!hasInventory}>

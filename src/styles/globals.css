@@ -1,3 +1,17 @@
+*.hide-print {
+  @media print {
+    display: none !important;
+  }
+}
+
+*.show-print {
+  display: none !important;
+
+  @media print {
+    display: block !important;
+  }
+}
+
 :root {
   color-scheme: light dark;
 

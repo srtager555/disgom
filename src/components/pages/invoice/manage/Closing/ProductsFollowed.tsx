@@ -33,7 +33,10 @@ export function ProductsFollowed() {
     [totalCommission]
   );
 
+  // effect to get the invoices from the week
   useEffect(() => {
+    if (!invoice) return;
+
     const time = getCurrentWeekRange(invoice?.data().created_at?.toDate());
     const db = Firestore();
     const coll = collection(
@@ -56,7 +59,7 @@ export function ProductsFollowed() {
     return () => {
       unsubcribe();
     };
-  }, []);
+  }, [invoice]);
 
   return (
     <Container styles={{ width: "177px" }}>
@@ -87,6 +90,7 @@ function ProductFolledTotalAmount({
 }) {
   const [invoiceCommission, setInvoiceCommission] = useState(0);
 
+  // effect to get the outputs solds from the products followed
   useEffect(() => {
     const coll = collection(
       invoice.ref,

@@ -13,11 +13,11 @@ import {
 } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { isEqual, isPlainObject } from "lodash";
-import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
 import { SellersDoc } from "@/tools/sellers/create";
 import { rawOutput } from "./AddOutput";
 import { someHumanChangesDetected } from "./Product";
 import { productResult } from "@/components/pages/invoice/ProductList";
+import { useInvoice } from "@/contexts/InvoiceContext";
 
 type props = {
   product_doc: QueryDocumentSnapshot<productDoc>;
@@ -50,7 +50,7 @@ export function ProductSoldBase({
   sellerHasInventory,
   someHumanChangesDetected,
 }: props) {
-  const invoiceDoc = useGetInvoiceByQuery();
+  const { invoice } = useInvoice();
 
   useEffect(() => {
     setWarn(remainStockTotals.amount < 0);
@@ -58,13 +58,14 @@ export function ProductSoldBase({
 
   useEffect(() => {
     async function saveOutputsSolds() {
-      if (!invoiceDoc) return;
+      if (!invoice) {
+        console.log("no invoice in product sold");
+        return;
+      }
+
       let refresh_data;
-      if (isPlainObject(invoiceDoc?.data()?.refresh_data))
-        refresh_data = invoiceDoc?.data()?.refresh_data as Record<
-          string,
-          boolean
-        >;
+      if (isPlainObject(invoice?.data()?.refresh_data))
+        refresh_data = invoice?.data()?.refresh_data as Record<string, boolean>;
       else refresh_data = {};
 
       try {
@@ -81,7 +82,7 @@ export function ProductSoldBase({
         console.log("save outputs solds");
 
         const coll = collection(
-          invoiceDoc.ref,
+          invoice.ref,
           "outputs_sold"
         ) as CollectionReference<outputType>;
 
@@ -102,7 +103,7 @@ export function ProductSoldBase({
         }
 
         // outputs totalSold
-        await addOutputs(invoiceDoc, product_doc, remainStock, coll);
+        await addOutputs(invoice, product_doc, remainStock, coll);
       } catch (error) {
         console.error(error);
       } finally {
@@ -111,7 +112,7 @@ export function ProductSoldBase({
           refresh_data[product_doc.id] === false
         )
           // update the refresh data
-          await updateDoc(invoiceDoc.ref, {
+          await updateDoc(invoice.ref, {
             [`refresh_data.${product_doc.id}`]: true,
           });
 

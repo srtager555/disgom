@@ -282,7 +282,9 @@ function InvoiceManager() {
                     </>
                   ) : (
                     invoice?.data().invoice_type === "normal" && (
-                      <Container styles={{ maxWidth: "1100px" }}>
+                      <Container
+                        styles={{ maxWidth: "1100px", marginBottom: "30px" }}
+                      >
                         <ClientCredit />
                         <Preliminar />
                       </Container>

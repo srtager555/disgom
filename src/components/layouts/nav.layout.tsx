@@ -295,7 +295,7 @@ export function NavLayout({ children }: { children: children }) {
         children: {
           // Ponemos la OFICINA de forma directa para no moverla a la liquidación
           none: {
-            href: "/invoices/manage?id=" + sellers[0].id,
+            href: "/invoices/manage?sellerId=" + sellers[0].id,
             name: sellers[0].data().name,
             mustBeAnchor: true,
           },

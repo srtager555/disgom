@@ -37,8 +37,9 @@ export function useGetProductOutputByID(id: string) {
       if (!data) return;
 
       const outputs = await Promise.all(
-        data?.outputs.map(async (ref) => await getDoc(ref))
+        data.outputs.map(async (ref) => await getDoc(ref))
       );
+
       setOutputs(outputs);
     });
 

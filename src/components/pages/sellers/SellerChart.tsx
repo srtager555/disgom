@@ -107,7 +107,14 @@ export function SellerChart({ sellerDoc }: props) {
   }, [sellerDoc]);
 
   return (
-    <FlexContainer styles={{ marginRight: "20px", width: "100%" }}>
+    <FlexContainer
+      styles={{
+        marginRight: "20px",
+        width: "100%",
+        minWidth: "1100px",
+        marginBottom: "30px",
+      }}
+    >
       <Container styles={{ width: "60%" }}>
         <h2 style={{ textAlign: "center" }}>Ventas de las ultimas 2 semanas</h2>
         <FlexContainer styles={{ gap: "10px", marginBottom: "20px" }}>

@@ -1,12 +1,20 @@
 import { Column } from "../../../Product";
 import { memo, useEffect, useState } from "react";
 import { outputType } from "@/tools/products/addOutputs";
-import { DocumentReference, getDoc } from "firebase/firestore";
+import {
+  collection,
+  CollectionReference,
+  DocumentReference,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import { isEqual } from "lodash";
 import { ProductContainer } from "../../../ProductList";
 import { numberParser } from "@/tools/numberPaser";
-import { useGetInvoiceByQuery } from "@/hooks/invoice/getInvoiceByQuery";
 import { productDoc } from "@/tools/products/create";
+import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
+import { useInvoice } from "@/contexts/InvoiceContext";
 
 type props = {
   product_ref: DocumentReference<productDoc>;
@@ -23,23 +31,29 @@ export const SaleDescMemo = memo(SaleDesc, (prev, next) => {
 });
 
 export function SaleDesc({ product_ref }: props) {
-  const invoice = useGetInvoiceByQuery();
+  const { invoice } = useInvoice();
   const [outputs, setOutputs] = useState<Array<outputType>>([]);
 
   useEffect(() => {
     async function getOutputs() {
-      const product_id = product_ref.id;
-      const outputs_sold = invoice?.data()?.outputs_sold[product_id] || [];
+      if (!invoice) return;
 
-      const outputs = outputs_sold.map(async (el) => {
-        const output = (await getDoc(el)).data() as outputType;
+      const coll = collection(
+        invoice.ref,
+        InvoiceCollection.outputs_sold
+      ) as CollectionReference<outputType>;
 
-        return output;
-      });
+      const q = query(
+        coll,
+        where("disabled", "==", false),
+        where("product_ref", "==", product_ref)
+      );
 
+      const fetch = await getDocs(q);
+      const outputs = fetch.docs.map((el) => el.data());
       console.log("desc of outputs", outputs);
 
-      setOutputs(await Promise.all(outputs));
+      setOutputs(outputs);
     }
 
     getOutputs();

@@ -183,9 +183,12 @@ export const Input = styled.input`
   width: 100%;
   height: 100%;
   border: none;
-  /* border-bottom: 1px solid ${globalCSSVars["--detail"]}; */
   padding: 2px 5px;
   font-size: 1rem;
+
+  @media (prefers-color-scheme: light) {
+    background-color: #a9faf6;
+  }
 `;
 
 export const ExtraButton = styled.button`

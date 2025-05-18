@@ -13,8 +13,8 @@ export function InvoiceTotals({ totalResults, hasInventory }: Props) {
   return (
     <Container styles={{ marginBottom: "50px" }}>
       <ProductContainer $hasInventory={hasInventory} $withoutStock={1}>
-        <Column gridColumn={"9 / 10"}>{""}</Column>
-        <Column gridColumn={"10 / 11"}>
+        <Column gridColumn={"8 / 9"}>{""}</Column>
+        <Column gridColumn={"9 / 10"}>
           <b>Total</b>
         </Column>
         <Column

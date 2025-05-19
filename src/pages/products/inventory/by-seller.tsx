@@ -23,6 +23,7 @@ import {
   limit,
   orderBy,
   query,
+  where,
 } from "firebase/firestore";
 import { isEqual } from "lodash";
 import Link from "next/link";
@@ -97,6 +98,8 @@ export default function Page() {
         // 2. Query for the latest inventory document
         const latestInvoiceQuery = query(
           InvoiceColl,
+          where("disabled", "==", false),
+          where("seller_ref", "==", seller.ref),
           orderBy("created_at", "desc"),
           limit(1)
         ) as CollectionReference<invoiceType>;
@@ -203,7 +206,7 @@ export default function Page() {
               </Link>
             </p>
             <p>
-              <Link href={"/seller?id=" + sellerId} className="show-style">
+              <Link href={"/sellers?id=" + sellerId} className="show-style">
                 Información detallada de {seller.data()?.name}
               </Link>
             </p>

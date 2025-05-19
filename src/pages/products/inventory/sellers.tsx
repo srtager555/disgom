@@ -15,6 +15,7 @@ import {
   // doc, // 'doc' no se usa directamente aquí ahora
   DocumentData,
   DocumentReference,
+  where,
 } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { SellersDoc } from "@/tools/sellers/create";
@@ -82,6 +83,7 @@ export default function Page() {
             // 2. Query para obtener el último inventario
             const latestInventoryQuery = query(
               inventoriesColRef,
+              where("disabled", "==", false),
               orderBy("created_at", "desc"),
               limit(1)
             );

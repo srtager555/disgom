@@ -68,17 +68,39 @@ export const filterSellerHasInventory = (
 export function NavLayout({ children }: { children: children }) {
   // Estado inicial actualizado para usar Record en children
   const [url, setUrl] = useState<Record<string, NavElement>>({
-    home: { href: "/feed", name: "Inicio", icon: "home" },
-    seller: {
-      href: "/sellers",
-      icon: "seller",
-      name: "Vendedores",
+    // home: { href: "/feed", name: "Inicio", icon: "home" },
+    invoice: {
+      href: "/invoices",
+      icon: "invoice",
+      name: "Facturación",
       children: {
+        // 👇 Claves descriptivas para cada hijo
+        list: { name: "Lista de facturas", href: "/invoices" },
         create: {
-          href: "/sellers/create",
-          name: "Crear vendedor",
+          name: "Crear factura a",
+          href: "/invoices/manage",
+          children: {},
+        }, // Inicialmente vacío
+        liquidate: {
+          name: "Liquidar a",
+          href: "/invoices/manage",
+          children: {},
+        }, // Inicialmente vacío
+        various: {
+          name: "Varios",
+          href: "/invoices/manage",
+          children: {
+            donations: {
+              name: "Donaciones",
+              href: "/invoices/manage?invoice_type=donation",
+            },
+            damagedProduct: {
+              name: "Producto en mal estado",
+              href: "/invoices/manage?invoice_type=damaged",
+            },
+          },
         },
-      }, // Inicialmente vacío, se llenará desde Firestore
+      },
     },
     products: {
       href: "/products",
@@ -124,38 +146,16 @@ export function NavLayout({ children }: { children: children }) {
         },
       },
     },
-    invoice: {
-      href: "/invoices",
-      icon: "invoice",
-      name: "Facturación",
+    seller: {
+      href: "/sellers",
+      icon: "seller",
+      name: "Vendedores",
       children: {
-        // 👇 Claves descriptivas para cada hijo
-        list: { name: "Lista de facturas", href: "/invoices" },
         create: {
-          name: "Crear factura a",
-          href: "/invoices/manage",
-          children: {},
-        }, // Inicialmente vacío
-        liquidate: {
-          name: "Liquidar a",
-          href: "/invoices/manage",
-          children: {},
-        }, // Inicialmente vacío
-        various: {
-          name: "Varios",
-          href: "/invoices/manage",
-          children: {
-            donations: {
-              name: "Donaciones",
-              href: "/invoices/manage?invoice_type=donation",
-            },
-            damagedProduct: {
-              name: "Producto en mal estado",
-              href: "/invoices/manage?invoice_type=damaged",
-            },
-          },
+          href: "/sellers/create",
+          name: "Crear vendedor",
         },
-      },
+      }, // Inicialmente vacío, se llenará desde Firestore
     },
   });
   const { asPath } = useRouter();

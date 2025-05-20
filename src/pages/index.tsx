@@ -19,7 +19,7 @@ import { useEffect } from "react";
 export default function Home() {
   const push = useRouter().push;
   useEffect(() => {
-    push("/feed");
+    push("/invoices");
   }, [push]);
 
   return <p>Nothing here</p>;

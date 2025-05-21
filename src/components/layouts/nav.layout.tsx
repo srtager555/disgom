@@ -24,6 +24,7 @@ import { Firestore } from "@/tools/firestore";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { SellersDoc } from "@/tools/sellers/create";
 import { useInvoiceStatusRealtime } from "@/hooks/useInvoiceStatusRealtime";
+import { client } from "@/tools/sellers/createClient";
 
 // Interfaz actualizada para NavElementData (sin cambios aquí)
 export interface NavElementData {
@@ -59,10 +60,21 @@ const arrayToNavElementRecord = (
 // --- Fin Helper function ---
 
 export const filterSellerHasInventory = (
-  arr: Array<QueryDocumentSnapshot<SellersDoc>>,
+  sellers: Array<QueryDocumentSnapshot<SellersDoc>>,
   condition: boolean
 ) => {
-  return arr.filter((el) => el.data().hasInventory === condition);
+  return sellers.filter((el) => el.data().hasInventory === condition);
+};
+
+// Helper function to sort sellers alphabetically by name
+const sortSellersByName = (
+  sellers: Array<QueryDocumentSnapshot<SellersDoc>>
+): Array<QueryDocumentSnapshot<SellersDoc>> => {
+  return [...sellers].sort((a, b) => {
+    const nameA = a.data().name?.toLowerCase() || "";
+    const nameB = b.data().name?.toLowerCase() || "";
+    return nameA.localeCompare(nameB);
+  });
 };
 
 export function NavLayout({ children }: { children: children }) {
@@ -163,6 +175,7 @@ export function NavLayout({ children }: { children: children }) {
   const [sellers, setSellers] = useState<
     Array<QueryDocumentSnapshot<SellersDoc>>
   >([]);
+  const [clients, setClients] = useState(Array<QueryDocumentSnapshot<client>>);
   // Hook para obtener datos de facturas en tiempo real
   const { createInvoiceList, liquidateInvoiceList, isLoading, error } =
     useInvoiceStatusRealtime(sellers);
@@ -192,9 +205,18 @@ export function NavLayout({ children }: { children: children }) {
 
     const unsubscribe = onSnapshot(q, (snap) => {
       const fetchedSellers = snap.docs;
+      const sellersWithNoInventory = filterSellerHasInventory(
+        fetchedSellers,
+        false
+      );
+      const sellersWithInventory = filterSellerHasInventory(
+        fetchedSellers,
+        true
+      );
+
       const sellersSorted = [
-        ...filterSellerHasInventory(fetchedSellers, false),
-        ...filterSellerHasInventory(fetchedSellers, true),
+        ...sortSellersByName(sellersWithNoInventory),
+        ...sortSellersByName(sellersWithInventory),
       ];
       setSellers(fetchedSellers); // Actualiza el estado de sellers (si aún lo necesitas)
 
@@ -246,6 +268,23 @@ export function NavLayout({ children }: { children: children }) {
 
     return unsubscribe;
   }, []);
+
+  // effecto para obtener los clientes
+  useEffect(() => {
+    const office = sellers.find((el) => el.data().hasInventory);
+    if (!office) return;
+
+    const coll = collection(
+      office.ref,
+      SellersCollection.clients
+    ) as CollectionReference<client>;
+    const unsubcribe = onSnapshot(coll, (snap) => {
+      const docs = snap.docs;
+      setClients(docs);
+    });
+
+    return unsubcribe();
+  });
 
   // Efecto para actualizar los submenús de facturación ('create' y 'liquidate')
   useEffect(() => {

@@ -57,15 +57,15 @@ export function CustomLink({ children, ...props }: props) {
 
 export const Nav = styled.nav`
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
-  gap: 10px;
+
   width: 100%;
-  padding: 10px 0;
-  background: ${globalCSSVars["--background"]};
   position: sticky;
   top: 0;
   z-index: 1000;
+  background: ${globalCSSVars["--background"]};
+  border-bottom: 1px solid ${globalCSSVars["--detail"]};
 
   @media print {
     display: none;
@@ -119,6 +119,7 @@ export const NavContainer = styled.div<{
   overflow: scroll;
   transition: all 200ms ease;
   padding: 10px;
+  padding-top: 0px;
 
   @media print {
     display: block;
@@ -131,6 +132,13 @@ export const AnchorNavigators = styled(CustomLink)`
 `;
 
 export const AnchorContainer = styled(Container)`
+  border-bottom: dashed 1px ${globalCSSVars["--detail"]};
+  background-color: inherit;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
   &:hover > .list {
     opacity: 1;
     pointer-events: all;
@@ -144,8 +152,10 @@ export const Anchor = styled(Link)`
   align-items: center;
   gap: 5px;
   padding: 10px;
-  background-color: ${globalCSSVars["--background"]};
-  border-bottom: 1px solid ${globalCSSVars["--detail"]};
+
+  &:hover {
+    background-color: ${globalCSSVars["--foreground-hover"]};
+  }
 `;
 
 export const SimpleAnchor = styled.a`
@@ -155,8 +165,10 @@ export const SimpleAnchor = styled.a`
   align-items: center;
   gap: 5px;
   padding: 10px;
-  background-color: ${globalCSSVars["--background"]};
-  border-bottom: 1px solid ${globalCSSVars["--detail"]};
+
+  &:hover {
+    background-color: ${globalCSSVars["--foreground-hover"]};
+  }
 `;
 
 export const AnchorList = styled(FlexContainer)`
@@ -170,6 +182,8 @@ export const AnchorList = styled(FlexContainer)`
   pointer-events: none;
   transition: 200ms all;
   z-index: 1;
+  border: 1px solid ${globalCSSVars["--detail"]};
+  box-shadow: 0px 16px 20px #0002;
 
   &.child {
     top: 0;
@@ -180,27 +194,19 @@ export const AnchorList = styled(FlexContainer)`
 export const AnchorPlus = styled.span`
   position: relative;
   display: inline-block;
-  min-width: 15px;
-  height: 15px;
+  min-width: 10px;
+  height: 10px;
+  margin-left: 5px;
 
-  &:before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 2px;
-    background-color: ${globalCSSVars["--foreground"]};
-  }
   &:after {
     content: "";
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 2px;
+    width: 100%;
     height: 100%;
-    background-color: ${globalCSSVars["--foreground"]};
+    border-right: 2px solid ${globalCSSVars["--foreground"]};
+    border-top: 2px solid ${globalCSSVars["--foreground"]};
+    transform: translate(-50%, -50%) rotate(45deg);
   }
 `;

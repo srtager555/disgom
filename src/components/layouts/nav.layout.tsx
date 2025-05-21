@@ -350,6 +350,7 @@ export function NavLayout({ children }: { children: children }) {
           position: "sticky",
           left: "0",
           zIndex: "10",
+          marginBottom: "30px",
         }}
       >
         <Nav>

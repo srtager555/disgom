@@ -290,18 +290,28 @@ export function NavLayout({ children }: { children: children }) {
       const newInvoiceChildren = { ...currentInvoiceChildren };
 
       // Actualiza los children de 'create' y 'liquidate' con los nuevos Records
-      newInvoiceChildren["create"] = {
-        ...createChild,
-        children: {
-          // Ponemos la OFICINA de forma directa para no moverla a la liquidación
-          none: {
-            href: "/invoices/manage?sellerId=" + sellers[0].id,
-            name: sellers[0].data().name,
-            mustBeAnchor: true,
+      const office = sellers.find((el) => el.data().hasInventory);
+      if (office) {
+        newInvoiceChildren["create"] = {
+          ...createChild,
+          children: {
+            // Ponemos la OFICINA de forma directa para no moverla a la liquidación
+            none: {
+              href: "/invoices/manage?sellerId=" + office.id,
+              name: office.data().name,
+              mustBeAnchor: true,
+            },
+            ...createInvoiceRecord,
           },
-          ...createInvoiceRecord,
-        },
-      };
+        };
+      } else {
+        newInvoiceChildren["create"] = {
+          ...createChild,
+          children: {
+            ...createInvoiceRecord,
+          },
+        };
+      }
       newInvoiceChildren["liquidate"] = {
         ...liquidateChild,
         children: liquidateInvoiceRecord,

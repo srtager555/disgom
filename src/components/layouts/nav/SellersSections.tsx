@@ -3,12 +3,15 @@ import { NavElement } from ".";
 import { Anchors } from "./Anchors";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { SellersDoc } from "@/tools/sellers/create";
+import { client } from "@/tools/sellers/createClient";
+import { filterSellerHasInventory } from "@/tools/sellers/filterHasInventory";
 
 interface props {
   sellers: QueryDocumentSnapshot<SellersDoc>[];
+  clients: QueryDocumentSnapshot<client>[];
 }
 
-export function SellersNavSection({ sellers }: props) {
+export function SellersNavSection({ sellers, clients }: props) {
   const [url, setUrl] = useState<Record<string, NavElement>>({
     seller: {
       href: "/sellers",
@@ -26,8 +29,9 @@ export function SellersNavSection({ sellers }: props) {
   useEffect(() => {
     // Crea el Record para los children de 'seller'
     const sellerChildrenRecord: Record<string, NavElement> = {};
+    const clientsChildrenRecord: Record<string, NavElement> = {};
 
-    sellers.forEach((el) => {
+    filterSellerHasInventory(sellers, true).forEach((el) => {
       const sellerData = el.data();
       const sellerId = el.id;
 
@@ -35,6 +39,17 @@ export function SellersNavSection({ sellers }: props) {
       sellerChildrenRecord[sellerId] = {
         name: sellerData?.name ?? `Vendedor ${sellerId}`,
         href: `/sellers?id=${sellerId}`,
+      };
+    });
+
+    clients.forEach((el) => {
+      const clientData = el.data();
+      const clientId = el.id;
+
+      // Usa el ID del vendedor como clave para el Record
+      clientsChildrenRecord[clientId] = {
+        name: clientData?.name ?? `Vendedor ${clientId}`,
+        href: `/sellers?id=${clientId}`,
       };
     });
 
@@ -47,13 +62,22 @@ export function SellersNavSection({ sellers }: props) {
           ...currentUrl.seller.children,
           sellersList: {
             href: "sellers/list/",
-            name: "Lista de vendedores",
+            name: "Vendedores",
             children: sellerChildrenRecord,
+          },
+          createClient: {
+            href: "/sellers/createClient",
+            name: "Crear cliente",
+          },
+          clientsList: {
+            href: "clients/list/",
+            name: "Clientes",
+            children: clientsChildrenRecord,
           },
         },
       },
     }));
-  }, [sellers]);
+  }, [sellers, clients]);
 
   return Object.values(url).map((el, i) => (
     <Anchors key={i} {...el} child={false} />

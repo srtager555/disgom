@@ -10,49 +10,31 @@ interface props {
 
 export function ProductNavSection({ sellers }: props) {
   const [url, setUrl] = useState<Record<string, NavElement>>({
-    // home: { href: "/feed", name: "Inicio", icon: "home" },
-
     products: {
       href: "/products",
       icon: "product",
-      name: "Inventarios",
+      name: "Inventario",
       children: {
-        inventoryList: {
-          href: "/products/inventory",
-          name: "Inventario",
-          children: {
-            inventory: {
-              href: "/products/inventory",
-              name: "Inventario actual",
-            },
-            addStock: {
-              href: "/products/inventory/manage",
-              name: "Entradas y salidas",
-            },
-          },
+        addOrEdit: {
+          href: "/products/create",
+          name: "Añadir o Editar",
         },
-        generalStorage: {
-          href: "/products/inventory/sellers",
-          name: "Guardo general",
+        entriesANDoutputs: {
+          href: "/products/inventory/manage",
+          name: "Entradas y salidas",
+        },
+        currentInventory: {
+          href: "/products/inventory",
+          name: "Inventario actual",
         },
         individualStorage: {
           href: "/products/inventory/sellers",
           name: "Guardo individual",
           children: {},
         },
-        products: {
-          href: "/products/",
-          name: "Lista de productos",
-          children: {
-            addOrEdit: {
-              href: "/products/create",
-              name: "Añadir o editar",
-            },
-            detailed: {
-              href: "/products/detailed",
-              name: "Información detallada",
-            },
-          },
+        generalStorage: {
+          href: "/products/inventory/sellers",
+          name: "Guardo general",
         },
       },
     },

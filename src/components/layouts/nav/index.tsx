@@ -42,7 +42,7 @@ export function TheMotherFuckingNav({ sellers, clients }: props) {
     <Nav>
       <InvoicesNavSection sellers={sellers} clients={clients} />
       <ProductNavSection sellers={sellers} />
-      <SellersNavSection sellers={sellers} />
+      <SellersNavSection sellers={sellers} clients={clients} />
     </Nav>
   );
 }

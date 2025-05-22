@@ -1,5 +1,5 @@
 import { globalCSSVars } from "@/styles/colors";
-import { Container } from "@/styles/index.styles";
+import { Container, FlexContainer } from "@/styles/index.styles";
 import { Products } from "../pages/products";
 import {
   createContext,
@@ -31,10 +31,12 @@ export const ProductContext = createContext<{
 
 const MainContainer = styled(Container)<{ hideBorder: boolean | undefined }>`
   display: inline-block;
+  position: sticky;
+  top: 20px;
+  width: calc(100% - 350px - 20px);
   border: ${(props) => (!props.hideBorder ? "1px" : "0px")} solid
     ${globalCSSVars["--foreground"]};
   padding: 10px;
-  width: 100%;
 
   @media print {
     display: none;
@@ -63,10 +65,10 @@ export function ProductsLayout({ children }: { children: children }) {
         setHideBorder,
       }}
     >
-      <Container styles={{ marginBottom: "25px" }}>
+      <FlexContainer styles={{ gap: "20px", alignItems: "flex-start" }}>
+        {showProductsList && <Products />}
         <MainContainer hideBorder={hideBorder}>{children}</MainContainer>
-      </Container>
-      {showProductsList && <Products />}
+      </FlexContainer>
     </ProductContext.Provider>
   );
 }

@@ -44,6 +44,7 @@ import { CreateNewDefaultCustomPrices } from "@/components/pages/invoice/manage/
 import { RefreshData } from "@/components/pages/invoice/RefreshData";
 import { disabled } from "../../tools/invoices/disabled";
 import { PrintInvoiceHeader } from "@/components/print/InvoiceHeader";
+import { client } from "@/tools/sellers/createClient";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -91,7 +92,7 @@ export const DeleteInvouice = createContext<{
 });
 
 function InvoiceManager() {
-  const { id, sellerId } = useQueryParams();
+  const { id, sellerId, clientId } = useQueryParams();
   const router = useRouter();
   const { invoice } = useInvoice();
   const [selectedSeller, setSelectedSeller] = useState<
@@ -161,8 +162,19 @@ function InvoiceManager() {
           sellerId
         ) as DocumentReference<SellersDoc>;
 
+        let client_ref = null;
+
+        if (clientId) {
+          client_ref = doc(
+            sellerRef,
+            SellersCollection.clients,
+            clientId
+          ) as DocumentReference<client>;
+        }
+
         const result = await createInvoice({
           seller_ref: sellerRef,
+          client_ref,
         });
 
         if (!result) return;

@@ -59,7 +59,9 @@ export type invoiceType = {
 };
 
 export async function createInvoice(
-  data: Partial<Pick<invoiceType, "seller_ref" | "invoice_type">>,
+  data: Partial<
+    Pick<invoiceType, "seller_ref" | "invoice_type" | "client_ref">
+  >,
   fromAnormalInvoiceProcess?: boolean
 ): Promise<DocumentReference<invoiceType> | undefined> {
   const { seller_ref, invoice_type = "normal" } = data;
@@ -103,7 +105,7 @@ export async function createInvoice(
   const newInvoice = await addDoc(coll, {
     created_at: Timestamp.fromDate(new Date()),
     seller_ref,
-    client_ref: null,
+    client_ref: data.client_ref ?? null,
     products_outputs: {},
     devolution: null,
     outputs_sold: {},

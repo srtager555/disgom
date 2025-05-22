@@ -70,15 +70,18 @@ export function InvoicesList() {
         />
       </Container>
       {docsInvoices.length === 0 && date === "" ? (
-        <h2>No se han hecho para hoy</h2>
+        <h2>No se han hecho Facturas hoy</h2>
       ) : docsInvoices.length === 0 && date != "" ? (
         <h2>No se encontraron facturas para el {date}</h2>
       ) : (
-        <InvoiceContainer>
-          {docsInvoices.map((el, i) => {
-            return <InvoicePreview key={i} doc={el} />;
-          })}
-        </InvoiceContainer>
+        <>
+          <h2>Facturas hechas {date ? `el ${date}` : "hoy"}</h2>
+          <InvoiceContainer>
+            {docsInvoices.map((el, i) => {
+              return <InvoicePreview key={i} doc={el} />;
+            })}
+          </InvoiceContainer>
+        </>
       )}
     </Container>
   );

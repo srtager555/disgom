@@ -3,15 +3,15 @@ import { InvoicesList } from "@/components/pages/invoice/list/InvoicesList";
 import { OutdatedInvoicesList } from "@/components/pages/invoice/list/outdatedInvoicesList";
 import { OverDueInvoicesList } from "@/components/pages/invoice/list/OverDueInvoices";
 import { NextPageWithLayout } from "@/pages/_app";
-import { Container } from "@/styles/index.styles";
+import { FlexContainer } from "@/styles/index.styles";
 
 const Page: NextPageWithLayout = () => {
   return (
-    <Container>
+    <FlexContainer styles={{ flexDirection: "column", gap: "20px" }}>
       <InvoicesList />
       <OverDueInvoicesList />
       <OutdatedInvoicesList />
-    </Container>
+    </FlexContainer>
   );
 };
 

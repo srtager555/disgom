@@ -42,7 +42,7 @@ export function OverDueInvoicesList() {
   }, []);
 
   return (
-    <Container styles={{ marginBottom: "20px" }}>
+    <Container>
       {overdueInvoices.length === 0 ? (
         <>
           <h2>No hay Facturas vencidas</h2>

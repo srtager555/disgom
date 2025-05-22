@@ -40,7 +40,7 @@ export function OutdatedInvoicesList() {
   }, []);
 
   return (
-    <Container styles={{ marginBottom: "20px" }}>
+    <Container>
       {outdatedInvoices.length === 0 ? (
         <h2>No hay Facturas que necesitan revisión</h2>
       ) : (

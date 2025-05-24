@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { SellersDoc } from "@/tools/sellers/create";
-import { NavElementData } from "@/components/layouts/nav.layout"; // Asegúrate que la ruta sea correcta
+import { NavElementData } from "@/components/layouts/nav";
 import { Firestore } from "@/tools/firestore";
 
 interface InvoiceStatus {
@@ -105,7 +105,8 @@ export function useInvoiceStatusRealtime(
       invoiceColl,
       where("seller_ref", "in", sellerRefsToQuery),
       where("created_at", ">=", startOfDayTimestamp),
-      where("created_at", "<=", endOfDayTimestamp)
+      where("created_at", "<=", endOfDayTimestamp),
+      where("disabled", "==", false)
     );
 
     setStatus((prev) => ({ ...prev, isLoading: true, error: null }));

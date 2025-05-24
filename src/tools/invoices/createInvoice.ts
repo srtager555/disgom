@@ -92,15 +92,18 @@ export async function createInvoice(
   }
 
   if (!seller_ref) return;
+  let lastInvoice = null;
 
-  const queryLastInvoice = query(
-    coll,
-    orderBy("created_at", "desc"),
-    where("disabled", "==", false),
-    where("seller_ref", "==", seller_ref),
-    limit(1)
-  );
-  const lastInvoice = await getDocs(queryLastInvoice);
+  if (invoice_type === "normal") {
+    const queryLastInvoice = query(
+      coll,
+      orderBy("created_at", "desc"),
+      where("disabled", "==", false),
+      where("seller_ref", "==", seller_ref),
+      limit(1)
+    );
+    lastInvoice = await getDocs(queryLastInvoice);
+  }
 
   const newInvoice = await addDoc(coll, {
     created_at: Timestamp.fromDate(new Date()),
@@ -126,14 +129,15 @@ export async function createInvoice(
     delete_at: null,
     last_inventory_ref: last_inventory?.ref || null,
     next_invoice_ref: null,
-    prev_invoice_ref: lastInvoice.docs[0]?.ref || null,
+    prev_invoice_ref: lastInvoice?.docs[0]?.ref || null,
     refresh_data: null,
     invoice_type,
   });
 
-  await updateDoc(lastInvoice.docs[0].ref, {
-    next_invoice_ref: newInvoice,
-  });
+  if (lastInvoice)
+    await updateDoc(lastInvoice.docs[0].ref, {
+      next_invoice_ref: newInvoice,
+    });
 
   return newInvoice;
 }

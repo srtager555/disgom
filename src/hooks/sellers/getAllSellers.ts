@@ -5,14 +5,11 @@ import {
   collection,
   CollectionReference,
   onSnapshot,
-  orderBy,
-  query,
   QuerySnapshot,
-  where,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 
-export function useGetSellers() {
+export function useGetAllSellers() {
   const [sellers, setSellers] = useState<QuerySnapshot<SellersDoc> | undefined>(
     undefined
   );
@@ -24,14 +21,7 @@ export function useGetSellers() {
       SellersCollection.root
     ) as CollectionReference<SellersDoc>;
 
-    const q = query(
-      coll,
-      where("exclude", "==", false),
-      where("disabled", "==", false),
-      orderBy("name")
-    );
-
-    const unsubcribe = onSnapshot(q, (snap) => {
+    const unsubcribe = onSnapshot(coll, (snap) => {
       setSellers(snap);
     });
 

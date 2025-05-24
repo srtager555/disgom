@@ -21,6 +21,7 @@ import {
 } from "react";
 import { useRouter } from "next/router"; // Importar useRouter
 import styled from "styled-components";
+import { useGetAllSellers } from "@/hooks/sellers/getAllSellers";
 
 type SelectSellerProps = {
   setSelectedSeller: Dispatch<
@@ -76,7 +77,9 @@ export function SelectSeller({
   const [isCreating, setIsCreating] = useState(false); // Estado para prevenir doble creación
 
   const seller_id = useMemo(() => invoice?.data().seller_ref.id, [invoice]);
+
   const sellers = useGetSellers();
+  const allSellers = useGetAllSellers();
   const [lastSellerID, setLastSellerID] = useState<string>();
 
   // --- Estado local para el tipo de factura ---
@@ -156,10 +159,10 @@ export function SelectSeller({
   // --- Funciones de ayuda (sin cambios) ---
   const findTheSeller = useCallback(
     (id: string) => {
-      if (id === "" || !sellers) return;
-      return sellers.docs.find((el) => el.id === id);
+      if (id === "" || !allSellers) return;
+      return allSellers.docs.find((el) => el.id === id);
     },
-    [sellers]
+    [allSellers]
   );
   const selectSeller = useCallback(
     (e: ChangeEvent<HTMLSelectElement> | string) => {

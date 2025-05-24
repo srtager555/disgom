@@ -126,7 +126,7 @@ function InvoiceManager() {
     } finally {
       router.push("/invoices");
     }
-  }, []); // Añade dependencias si `executeDeleteInvoice` las necesita (ej. `invoice`, `router`)
+  }, [router]); // Añade dependencias si `executeDeleteInvoice` las necesita (ej. `invoice`, `router`)
 
   // Crear la función debounced usando lodash
   // eslint-disable-next-line react-hooks/exhaustive-deps

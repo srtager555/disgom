@@ -8,13 +8,12 @@ import styled, { css } from "styled-components";
 
 const StockMapContainer = styled(Container)`
   display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 1fr;
+  justify-content: flex-start;
   align-items: center;
   gap: 10px;
   width: 100%;
-  /* padding: 10px;
-  border: solid 2px ${globalCSSVars["--foreground"]}; */
   border-radius: 5px;
   margin-bottom: 20px;
 `;
@@ -57,14 +56,14 @@ export function ProductStock({ stock, entryToEdit, setEntryToEdit }: props) {
     else setEntryToEdit(stock);
   }
 
+  if (product.data?.product_parent) return <></>;
+
   return (
     <>
-      <h3>{product.data?.product_parent ? <>Precio</> : <>Existencias</>}</h3>
-      {stock.length > 0 && product.data?.product_parent ? (
-        <p>El precio actual que tiene el producto</p>
-      ) : (
-        <p>Para editar una entrada seleccionela</p>
-      )}
+      <h3>Existencias</h3>
+
+      <p>Para editar una entrada seleccionela</p>
+
       <StockMapContainer>
         {stock.length === 0 ? (
           <p>No hay existencia de este producto</p>
@@ -77,12 +76,8 @@ export function ProductStock({ stock, entryToEdit, setEntryToEdit }: props) {
                     $selected={_ === entryToEdit}
                     onClick={() => handlerSelectEntry(_)}
                   >
-                    {!product.data?.product_parent && (
-                      <>
-                        {_.created_at.toDate().toLocaleDateString()} - hay{" "}
-                        {_.amount} {product.data?.units}
-                      </>
-                    )}
+                    {_.created_at.toDate().toLocaleDateString()} - hay{" "}
+                    {_.amount.toFixed(2)} {product.data?.units}
                     <FlexContainer>
                       <Container styles={{ marginRight: "10px" }}>
                         Costo {_.purchase_price} -

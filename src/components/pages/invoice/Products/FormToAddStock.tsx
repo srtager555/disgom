@@ -9,7 +9,7 @@ import { stockType } from "@/tools/products/addToStock";
 import { productDoc } from "@/tools/products/create";
 import { EditEntry } from "@/tools/products/editEntry";
 import { removeEntry } from "@/tools/products/removeEntry";
-import { getDoc, updateDoc, DocumentSnapshot } from "firebase/firestore";
+import { getDoc, DocumentSnapshot } from "firebase/firestore";
 import {
   FormEvent,
   ChangeEvent,
@@ -98,15 +98,6 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
 
     formRef.current?.reset();
   };
-
-  async function disableProductManager(e: unknown) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    e.preventDefault();
-
-    if (!product.snap?.ref || !product.data) return;
-    await updateDoc(product.snap.ref, { disabled: !product.data.disabled });
-  }
 
   // functions to remove a stock
   async function handlerRemoveStock() {
@@ -225,100 +216,101 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
                   parentProduct.data()?.stock[0]?.purchase_price ?? 0
                 )}
               </p>
+              <p style={{ fontSize: "1.3rem" }}>
+                El precio de este producto se maneja desde la factura
+              </p>
             </Container>
           ) : (
-            <InputNumber
-              ref={costRef}
-              defaultValue={defaultCost}
-              min={0}
-              step={0.01}
-              onChange={handlerOnChangeOwnerMin}
-              name="productCostPrice"
-              inline
-              required
-              width="90px"
-            >
-              Costó
-            </InputNumber>
-          )}
-          <InputNumber
-            ref={ownerRef}
-            min={dynamicMinCost ?? defaultCost}
-            defaultValue={defaultProfitOwner}
-            name="productSalePrice"
-            step="0.01"
-            inline
-            required
-            width="90px"
-          >
-            Precio
-          </InputNumber>
-          <InputNumber
-            defaultValue={defaultProfitSeller}
-            name="sellerProfit"
-            step="0.01"
-            inline
-            width={"90px"}
-            required
-          >
-            Com.
-          </InputNumber>
-
-          {!parentProduct && (
-            <InputNumber
-              defaultValue={entryToEdit?.amount}
-              inline
-              name="amount"
-              required
-              step="0.01"
-              width="110px"
-            >
-              {entryToEdit ? (
-                <>Stock ({originalAmount})</>
-              ) : (
-                <>
-                  Ingresó{" "}
-                  {selectedProduct?.data()
-                    ? `${selectedProduct.data().units}`
-                    : ""}
-                </>
-              )}
-            </InputNumber>
-          )}
-        </FlexContainer>
-        <FlexContainer
-          styles={{
-            display: "inline-flex",
-            justifyContent: "space-between",
-          }}
-        >
-          <Container>
-            <Button style={{ marginRight: "10px" }}>
-              {parentProduct
-                ? "Editar precio"
-                : entryToEdit
-                ? "Editar entrada"
-                : "Agregar entrada"}
-            </Button>
-            <Button onClick={disableProductManager}>
-              {!product.data?.disabled ? "Deshabilitar" : "habilitar"}
-            </Button>
-          </Container>
-          {entryToEdit && (
-            <Button
-              $warn
-              $hold
-              onClick={(e) => e.preventDefault()}
-              onPointerDown={handlerRemoveStock}
-              onPointerUp={handlerCancelRemoveStock}
-              onPointerLeave={handlerCancelRemoveStock}
-            >
-              {entryToEdit.amount === originalAmount
-                ? "Eliminar entrada"
-                : "Eliminar existencias"}
-            </Button>
+            <>
+              <InputNumber
+                ref={costRef}
+                defaultValue={defaultCost}
+                min={0}
+                step={0.01}
+                onChange={handlerOnChangeOwnerMin}
+                name="productCostPrice"
+                inline
+                required
+                width="90px"
+              >
+                Costó
+              </InputNumber>
+              <InputNumber
+                ref={ownerRef}
+                min={dynamicMinCost ?? defaultCost}
+                defaultValue={defaultProfitOwner}
+                name="productSalePrice"
+                step="0.01"
+                inline
+                required
+                width="90px"
+              >
+                Precio
+              </InputNumber>
+              <InputNumber
+                defaultValue={defaultProfitSeller}
+                name="sellerProfit"
+                step="0.01"
+                inline
+                width={"90px"}
+                required
+              >
+                Com.
+              </InputNumber>
+              <InputNumber
+                defaultValue={entryToEdit?.amount}
+                inline
+                name="amount"
+                required
+                step="0.01"
+                width="110px"
+              >
+                {entryToEdit ? (
+                  <>Stock ({originalAmount})</>
+                ) : (
+                  <>
+                    Ingresó{" "}
+                    {selectedProduct?.data()
+                      ? `${selectedProduct.data().units}`
+                      : ""}
+                  </>
+                )}
+              </InputNumber>
+            </>
           )}
         </FlexContainer>
+        {!parentProduct && (
+          <FlexContainer
+            styles={{
+              display: "inline-flex",
+              justifyContent: "space-between",
+            }}
+          >
+            <Container>
+              <Button style={{ marginRight: "10px" }}>
+                {parentProduct
+                  ? "Editar precio"
+                  : entryToEdit
+                  ? "Editar entrada"
+                  : "Agregar entrada"}
+              </Button>
+            </Container>
+            {entryToEdit && (
+              <Button
+                $warn
+                $hold
+                onClick={(e) => e.preventDefault()}
+                onPointerDown={handlerRemoveStock}
+                onPointerUp={handlerCancelRemoveStock}
+                onPointerLeave={handlerCancelRemoveStock}
+              >
+                {entryToEdit.amount === originalAmount
+                  ? "Eliminar entrada"
+                  : "Eliminar existencias"}
+              </Button>
+            )}
+          </FlexContainer>
+        )}
       </Form>
     </>
   );

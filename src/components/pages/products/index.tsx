@@ -20,7 +20,7 @@ import styled, { css } from "styled-components";
 
 const ProductsContainer = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 350px;
   grid-auto-rows: auto;
   gap: 10px;
   align-items: start;
@@ -70,21 +70,10 @@ const RemoveOnPrint = styled(Container)`
   }
 `;
 
-const ShowOnPrint = styled(Container)`
-  display: none;
-
-  @media print {
-    display: block;
-  }
-`;
-
 export function Products() {
   const { setSelectedProduct } = useContext(ProductContext);
   const products = useGetProducts();
   const [tags, setTags] = useState<Tag>();
-  const [productToPrint, setProductToPrint] = useState<
-    QueryDocumentSnapshot<productDoc, DocumentData>[]
-  >([]);
 
   function handlerOnClik(
     product: QueryDocumentSnapshot<productDoc, DocumentData>
@@ -115,22 +104,6 @@ export function Products() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!products.docs) return;
-
-    const productWithStock = products.docs.filter((el) => {
-      const data = el.data();
-      const stock = data.stock;
-      const stockAmount = stock.reduce((before, now) => {
-        return before + now.amount;
-      }, 0);
-
-      return stockAmount > 0;
-    });
-
-    setProductToPrint(productWithStock);
-  }, [products.docs]);
-
   return (
     <Container styles={{ marginBottom: "100px" }}>
       <RemoveOnPrint>
@@ -140,20 +113,6 @@ export function Products() {
               ? "Productos"
               : "No hay productos"}
           </h2>
-          {/* {tags && (
-            <Select
-              onChange={(e) => {
-                setTagSelected(e.target.value);
-              }}
-              options={[
-                { name: "Sin filtro", value: "", selected: true },
-                ...Object.values(tags).map((el) => ({
-                  name: el.name,
-                  value: el.name,
-                })),
-              ]}
-            />
-          )} */}
         </FlexContainer>
         <ProductsContainer>
           {products.docs?.map((_, i) => {
@@ -229,51 +188,6 @@ export function Products() {
           </>
         )}
       </RemoveOnPrint>
-      <ShowOnPrint>
-        <h2 style={{ textAlign: "center" }}>Inventario de productos</h2>
-
-        <ProductsContainer>
-          {productToPrint.map((_, i) => {
-            const data = _.data();
-            const bottomPadding = data.tags.filter((el) => tags && tags[el]);
-            const stock = data.stock.reduce((before, now) => {
-              return before + now.amount;
-            }, 0);
-
-            return (
-              <Product
-                key={i}
-                onClick={() => handlerOnClik(_)}
-                $removeBottomPadding={bottomPadding.length > 0}
-              >
-                <span>{data.name}</span>{" "}
-                <span
-                  style={{
-                    textAlign: "end",
-                    whiteSpace: "nowrap",
-                    display: "inline-block",
-                  }}
-                >
-                  {numberParser(stock)} {data.units}
-                </span>
-                <RemoveOnPrint>
-                  {tags &&
-                    data.tags.map((el, i) => {
-                      const data = tags[el];
-
-                      if (data)
-                        return (
-                          <TagSimple $bg={data.color} key={i}>
-                            {data.name}
-                          </TagSimple>
-                        );
-                    })}
-                </RemoveOnPrint>
-              </Product>
-            );
-          })}
-        </ProductsContainer>
-      </ShowOnPrint>
     </Container>
   );
 }

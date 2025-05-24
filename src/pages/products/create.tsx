@@ -3,21 +3,30 @@ import {
   ProductsLayout,
 } from "@/components/layouts/Products.layout";
 import { CreateProduct } from "@/components/pages/products/Create";
+import { ManageStock } from "@/components/pages/products/ManageStock";
 // import { TagManager } from "@/components/pages/products/TagManager";
 import { NextPageWithLayout } from "@/pages/_app";
 import { Button } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { disableProduct } from "@/tools/products/disable";
-import { FormEvent, ReactElement, useContext, useState } from "react";
+import { updateDoc } from "firebase/firestore";
+import { FormEvent, ReactElement, useContext, useMemo, useState } from "react";
 
 const Page: NextPageWithLayout = () => {
   const { selectedProduct, setSelectedProduct } = useContext(ProductContext);
+  const productData = useMemo(() => selectedProduct?.data(), [selectedProduct]);
   const [timeOut, setTimeOut] = useState<NodeJS.Timeout>();
 
   function handlerDisableProduct(e: FormEvent) {
     e.preventDefault();
     const timeout = setTimeout(async () => {
-      if (selectedProduct) await disableProduct(selectedProduct.ref);
+      if (selectedProduct && !productData?.disabled)
+        await disableProduct(selectedProduct.ref);
+      else if (selectedProduct && productData?.disabled) {
+        await updateDoc(selectedProduct.ref, {
+          disabled: false,
+        });
+      }
 
       if (setSelectedProduct) setSelectedProduct(undefined);
     }, 5000);
@@ -28,9 +37,21 @@ const Page: NextPageWithLayout = () => {
   return (
     <Container>
       <CreateProduct />
+      <ManageStock />
       <FlexContainer
         styles={{ gap: "10px", alignItems: "center", marginTop: "10px" }}
       >
+        {selectedProduct && (
+          <>
+            <Button
+              onClick={() =>
+                setSelectedProduct && setSelectedProduct(undefined)
+              }
+            >
+              Eliminar selección
+            </Button>
+          </>
+        )}
         {selectedProduct && (
           <Button
             onPointerDown={handlerDisableProduct}
@@ -40,14 +61,9 @@ const Page: NextPageWithLayout = () => {
             $warn
             $hold
           >
-            Eliminar producto
-          </Button>
-        )}
-        {selectedProduct && (
-          <Button
-            onClick={() => setSelectedProduct && setSelectedProduct(undefined)}
-          >
-            Eliminar selección
+            {productData?.disabled
+              ? "Habilitar producto"
+              : "Deshabilitar producto"}
           </Button>
         )}
       </FlexContainer>

@@ -6,11 +6,11 @@ import { Form, Button } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { productUnits, createProduct } from "@/tools/products/create"; // TagType and getTags removed
 import { getUnits } from "@/tools/products/getUnits"; // TagType and getTags removed
-import { useState, FormEvent, useEffect, useContext } from "react"; // useRef removed
+import { useState, FormEvent, useEffect, useContext, useMemo } from "react"; // useRef removed
 
 export function CreateProduct() {
   const { selectedProduct, setSelectedProduct } = useContext(ProductContext);
-  const units = getUnits();
+  const units = useMemo(() => getUnits(), []);
   const products = useGetProducts();
 
   // States for controlled inputs

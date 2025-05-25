@@ -46,6 +46,11 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
   const [client, setClient] = useState<QueryDocumentSnapshot<client> | null>(
     null
   );
+  const [formData, setFormData] = useState({
+    name: "",
+    phone_number: "",
+    address: "",
+  });
   const [clients, setClients] = useState<QueryDocumentSnapshot<client>[]>();
   const [selectedClient, setSelectedClient] = useState<
     QueryDocumentSnapshot<client> | undefined
@@ -62,43 +67,60 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
     const value = typeof e === "string" ? e : e.target.value;
 
     if (!clients) return;
-
-    const theClient = clients.find((el) => el.id === value);
-    setSelectedClient(theClient);
-    setClient(theClient || null);
+    if (value === "create") {
+      setSelectedClient(undefined);
+      setClient(null); // También limpiar el 'client' para la lógica de invoice
+    } else {
+      const theClient = clients.find((el) => el.id === value);
+      setSelectedClient(theClient);
+      setClient(theClient || null); // Sincronizar 'client' para la lógica de invoice
+    }
   }
+
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   async function hanlderOnSubmit(e: FormEvent) {
     e.preventDefault();
 
     if (!sellerDoc) return;
 
-    const { clientName, phoneNumber, address } = e.target as typeof e.target & {
-      clientName: HTMLInputElement;
-      phoneNumber: HTMLInputElement;
-      address: HTMLTextAreaElement;
+    const clientDataToSave = {
+      name: formData.name,
+      phone_number: formData.phone_number,
+      address: formData.address,
     };
+
     if (selectedClient) {
-      await updateClient(selectedClient.ref, {
-        name: clientName.value,
-        phone_number: phoneNumber.value,
-        address: address.value,
-      });
-
-      setSuccessfully(`${clientName.value} se actualizó correctamente`);
+      await updateClient(selectedClient.ref, clientDataToSave);
+      setSuccessfully(`${formData.name} se actualizó correctamente`);
     } else {
-      const ref = await createClient(sellerDoc?.id, {
-        name: clientName.value,
-        phone_number: phoneNumber.value,
-        address: address.value,
-      });
+      if (!formData.name) {
+        alert("El nombre del cliente es obligatorio.");
+        return;
+      }
+      const ref = await createClient(sellerDoc?.id, clientDataToSave);
 
-      setSuccessfully(`${clientName.value} se creó correctamente`);
+      setSuccessfully(`${formData.name} se creó correctamente`);
       setCreatedClientAsDefault(ref.id);
       setCreatedClient(ref.id);
     }
-
-    formRef.current?.reset();
+    // No es necesario formRef.current?.reset() en formularios controlados;
+    // el estado se maneja a través de selectedClient y formData.
+    // Si se crea un nuevo cliente, selectedClient se actualizará y formData también.
+    // Si se actualiza, formData ya refleja los cambios.
+    // Si se quiere limpiar el formulario después de crear uno nuevo y antes de que
+    // el onSnapshot actualice selectedClient, se podría hacer aquí:
+    // if (!selectedClient) {
+    //   setFormData({ name: "", phone_number: "", address: "" });
+    // }
   }
 
   //effect to crete a timeout for remove the successfully mesage
@@ -109,6 +131,31 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
       }, 3000);
     }
   }, [successfully]);
+
+  // Effect to populate formData when selectedClient changes
+  useEffect(() => {
+    if (selectedClient) {
+      const data = selectedClient.data();
+      setFormData({
+        name: data.name,
+        phone_number: data.phone_number || "",
+        address: data.address || "",
+      });
+      // Clear createdClientAsDefault once selectedClient is set from it
+      if (
+        createdClientAsDefault &&
+        selectedClient.id === createdClientAsDefault
+      ) {
+        setCreatedClientAsDefault(undefined);
+      }
+    } else {
+      setFormData({
+        name: "",
+        phone_number: "",
+        address: "",
+      });
+    }
+  }, [selectedClient, createdClientAsDefault]);
 
   // efffect to manage the clients
   useEffect(() => {
@@ -125,8 +172,13 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
       const docs = snap.docs;
 
       if (createdClient) {
+        // Si un cliente fue recién creado
         const newClient = docs.find((el) => el.id === createdClient);
         setSelectedClient(newClient);
+        if (newClient) {
+          // Limpiar createdClient después de que se haya usado
+          setCreatedClient(undefined);
+        }
       }
 
       setClients(snap.docs);
@@ -136,17 +188,22 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
       unsubcribe();
       setClient(null);
     };
-  }, [createdClient, sellerDoc, setClient]);
+  }, [createdClient, sellerDoc]); // Removido setClient de dependencias, ya que se maneja en selectTheClient o via invoice
 
   // ====== effects to manage the edit mode ======= //
 
-  // effecto to set the seller data
+  // Efecto para sincronizar selectedClient (y por ende el formulario) si 'client'
+  // (que puede ser cargado desde la factura) cambia.
   useEffect(() => {
-    if (!clients || !client) return;
-
-    const theClient = clients.find((el) => el.id === client.id);
-    setSelectedClient(theClient);
-    setClient(theClient || null);
+    if (client) {
+      // Si hay un 'client' (posiblemente de la factura)
+      if (!selectedClient || selectedClient.id !== client.id) {
+        setSelectedClient(client); // Actualiza selectedClient para reflejarlo en el form
+      }
+    } else if (selectedClient && !createdClientAsDefault) {
+      // Si no hay 'client' pero sí 'selectedClient' (y no es uno recién creado por defecto)
+      setSelectedClient(undefined); // Limpiar el formulario si 'client' se vuelve null (ej. factura sin cliente)
+    }
   }, [clients, client, setClient]);
 
   // effect to save the client in the invoice() {
@@ -189,7 +246,12 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
               <Select
                 onChange={selectTheClient}
                 options={[
-                  { name: "Crear nuevo cliente", value: "create" },
+                  {
+                    name: "Crear nuevo cliente",
+                    value: "create",
+                    selected:
+                      !selectedClient && !createdClientAsDefault && !client, // Más preciso para "Crear nuevo"
+                  },
                   ...clients.map((el) => {
                     const data = el.data();
                     return {
@@ -197,7 +259,8 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
                       value: el.id,
                       selected:
                         client?.id === el.id ||
-                        createdClientAsDefault === el.id,
+                        createdClientAsDefault === el.id ||
+                        selectedClient?.id === el.id, // Asegurar que selectedClient también controle esto
                     };
                   }),
                 ]}
@@ -225,18 +288,20 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
                   styles={{ marginRight: "20px", marginBottom: "10px" }}
                 >
                   <InputText
-                    name="clientName"
+                    name="name"
                     marginBottom="0px"
                     required
-                    defaultValue={selectedClient?.data().name}
+                    value={formData.name}
+                    onChange={handleInputChange}
                   >
                     Nombre
                   </InputText>
                 </Container>
                 <InputText
-                  name="phoneNumber"
+                  name="phone_number"
                   marginBottom="0px"
-                  defaultValue={selectedClient?.data().phone_number}
+                  value={formData.phone_number}
+                  onChange={handleInputChange}
                 >
                   Número de telefono
                 </InputText>
@@ -244,9 +309,15 @@ export function SelectClient({ sellerData, sellerDoc }: props) {
               <p>Dirección</p>
               <textarea
                 name="address"
+                style={{ width: "100%", padding: "5px", minHeight: "60px" }}
+                value={formData.address}
+                onChange={handleInputChange}
+              />
+              {/* <textarea
+                name="address"
                 style={{ width: "100%", padding: "5px" }}
                 defaultValue={selectedClient?.data().address}
-              />
+              /> */}
               <FlexContainer
                 styles={{ justifyContent: "flex-end", marginTop: "10px" }}
               >

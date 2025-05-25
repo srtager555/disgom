@@ -77,6 +77,10 @@ export function SelectSeller({
   const [isCreating, setIsCreating] = useState(false); // Estado para prevenir doble creación
 
   const seller_id = useMemo(() => invoice?.data().seller_ref.id, [invoice]);
+  const hasNextInvoice = useMemo(
+    () => (invoice?.data().next_invoice_ref ? true : false),
+    [invoice]
+  );
 
   const sellers = useGetSellers();
   const allSellers = useGetAllSellers();
@@ -319,7 +323,9 @@ export function SelectSeller({
               onChange={selectSeller}
               // Deshabilitado si se está creando, O si hay factura Y el tipo NO es normal
               disabled={
-                isCreating || (!!invoice && selectedInvoiceType !== "normal")
+                hasNextInvoice ||
+                isCreating ||
+                (!!invoice && selectedInvoiceType !== "normal")
               }
               options={
                 !sellers

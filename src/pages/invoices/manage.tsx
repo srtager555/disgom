@@ -14,9 +14,14 @@ import {
   CollectionReference,
   doc,
   DocumentReference,
+  getDocs,
+  limit,
+  orderBy,
   PartialWithFieldValue,
+  query,
   QueryDocumentSnapshot,
   updateDoc,
+  where,
 } from "firebase/firestore";
 import { useRouter } from "next/router";
 import {
@@ -38,7 +43,10 @@ import { ClientCredit } from "@/components/pages/invoice/manage/ClientCredit";
 import { Preliminar } from "@/components/pages/invoice/manage/Preliminar";
 import { Button } from "@/styles/Form.styles";
 import { Firestore } from "@/tools/firestore";
-import { SellersCollection } from "@/tools/firestore/CollectionTyping";
+import {
+  InvoiceCollection,
+  SellersCollection,
+} from "@/tools/firestore/CollectionTyping";
 import { productDoc } from "@/tools/products/create";
 import { CreateNewDefaultCustomPrices } from "@/components/pages/invoice/manage/CreateNewDefaultCustomPrices";
 import { RefreshData } from "@/components/pages/invoice/RefreshData";
@@ -193,8 +201,32 @@ function InvoiceManager() {
     async function updateSeller() {
       if (!id || !selectedSeller) return;
 
+      let prev_invoice_ref = null;
+
+      // update the prev invoice
+      if (selectedSeller.data().hasInventory) {
+        const coll = collection(
+          Firestore(),
+          InvoiceCollection.root
+        ) as CollectionReference<invoiceType>;
+
+        const q = query(
+          coll,
+          where("seller_ref", "==", selectedSeller.ref),
+          where("disabled", "==", false),
+          limit(1),
+          orderBy("created_at", "desc")
+        );
+
+        const docs = await getDocs(q);
+        if (docs.size > 0) {
+          prev_invoice_ref = docs.docs[0].ref;
+        }
+      }
+
       updateInvoice(id, {
         seller_ref: selectedSeller.ref,
+        prev_invoice_ref,
       });
     }
 

@@ -94,7 +94,9 @@ const TotalInventory = ({
 
   return (
     <GridContainer $gridTemplateColumns="200px">
-      <Column gridColumn="span 4">TOTAL</Column>
+      <Column gridColumn="span 4" $textAlign="end">
+        TOTAL LPS
+      </Column>
       <Column gridColumn="span 2">{numberParser(total)}</Column>
     </GridContainer>
   );

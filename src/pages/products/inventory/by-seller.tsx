@@ -230,7 +230,7 @@ export default function Page() {
         {/* Total Row */}
         <GridContainer $gridTemplateColumns={gridTemplate}>
           <Column gridColumn="span 3">
-            <strong style={{ float: "right" }}>TOTAL INVENTARIO:</strong>
+            <strong style={{ float: "right" }}>TOTAL LPS</strong>
           </Column>
           <Column $textAlign="center">
             <strong>

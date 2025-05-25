@@ -193,7 +193,7 @@ export default function Page() {
           <Column gridColumn={`span ${2 + activeSellers.length + 1 + 1}`}>
             {" "}
             {/* 2 (Inv, Prod) + N sellers + Total Stock + Precio U. */}
-            <strong style={{ float: "right" }}>GRAN TOTAL:</strong>
+            <strong style={{ float: "right" }}>TOTAL LPS</strong>
           </Column>
           <Column $textAlign="center">
             <strong>

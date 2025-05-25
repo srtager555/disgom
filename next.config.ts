@@ -5,42 +5,85 @@ import pwa from "next-pwa";
 const withPWA = pwa({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  disableDevLogs: process.env.NODE_ENV === "development",
+  disableDevLogs: true,
+  register: true,
+  skipWaiting: true,
   runtimeCaching: [
+    // Next static files
     {
-      urlPattern: /^https:\/\/.*\/_next\/static\//,
+      urlPattern: /^\/_next\/static\//,
       handler: "CacheFirst",
       options: {
         cacheName: "static-resources",
         expiration: {
-          maxAgeSeconds: 60 * 60 * 24 * 365, // 1 año
+          maxAgeSeconds: 60 * 60 * 24 * 365,
         },
       },
     },
+    // Next image optimizer
     {
-      // Precaching para imágenes
-      urlPattern: /^https:\/\/.*\/_next\/image\//, // Imágenes optimizadas de Next.js
+      urlPattern: /^\/_next\/image\//,
       handler: "CacheFirst",
       options: {
         cacheName: "next-images",
         expiration: {
           maxEntries: 100,
-          maxAgeSeconds: 60 * 60 * 24 * 30, // 30 días
+          maxAgeSeconds: 60 * 60 * 24 * 30,
         },
       },
     },
+    // Google Fonts
     {
-      // Cacheo para todas las demás rutas
-      urlPattern: /^https:\/\/.*/, // Todas las demás rutas
+      urlPattern: /^https:\/\/fonts\.(gstatic|googleapis)\.com\/.*/i,
+      handler: "CacheFirst",
+      options: {
+        cacheName: "google-fonts",
+        expiration: {
+          maxAgeSeconds: 60 * 60 * 24 * 365,
+          maxEntries: 30,
+        },
+      },
+    },
+    // Firestore API (solo lectura)
+    {
+      urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
       handler: "NetworkFirst",
       options: {
-        cacheName: "dynamic-content",
+        cacheName: "firestore-api",
+        networkTimeoutSeconds: 10,
         expiration: {
           maxEntries: 100,
+          maxAgeSeconds: 60 * 60 * 24 * 7,
+        },
+      },
+    },
+    // HTML/SSR pages
+    {
+      urlPattern: /^\/$/, // raíz
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "html-cache",
+        expiration: {
+          maxAgeSeconds: 60 * 60 * 24 * 7,
+        },
+      },
+    },
+    // Tu dominio general
+    {
+      urlPattern: /^https:\/\/disgom-app\.web\.app\/.*/i,
+      handler: "NetworkFirst",
+      options: {
+        cacheName: "app-pages",
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 60 * 60 * 24 * 7,
         },
       },
     },
   ],
+  // fallbacks: {
+  //   document: "/offline.html", // crea este archivo en /public
+  // },
 });
 
 const nextConfig = withPWA({

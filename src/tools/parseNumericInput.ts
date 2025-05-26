@@ -3,18 +3,19 @@ type InputEvent = React.ChangeEvent<HTMLInputElement>;
 interface ParseOptions {
   min?: number;
   max?: number;
+  returnRaw?: boolean;
 }
 
 export function parseNumberInput(
-  setState: (val: string) => void,
+  setState: (val: number) => void,
   event: InputEvent,
   options?: ParseOptions
 ) {
-  let raw = event.target.value;
+  let raw: string | number = event.target.value;
 
   // Permitir borrar todo
   if (raw === "") {
-    setState("");
+    setState(0);
     return;
   }
 
@@ -32,16 +33,26 @@ export function parseNumberInput(
 
     if (!isNaN(numericValue)) {
       if (options.max !== undefined && numericValue > options.max) {
-        setState(String(options.max));
+        if (options?.returnRaw) {
+          return Number(options.max);
+        }
+        setState(Number(options.max));
         return;
       }
 
       if (options.min !== undefined && numericValue < options.min) {
-        setState(String(options.min));
+        if (options?.returnRaw) {
+          return Number(options.min);
+        }
+        setState(Number(options.min));
         return;
       }
     }
   }
 
-  setState(raw);
+  if (options?.returnRaw) {
+    return Number(raw);
+  }
+
+  setState(Number(raw));
 }

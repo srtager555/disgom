@@ -183,7 +183,11 @@ export function AddOutputBase({
 
       if (currentStock < amountToSave) {
         console.log(
-          "Addoutput: Not enough stock. Skipping save and showing warning."
+          "Addoutput: Not enough stock. Skipping save and showing warning.",
+          currentStock,
+          "<",
+          amountToSave,
+          "."
         );
         humanInteractionDetectedRef.current = false;
         setOverflowWarning(true);
@@ -211,6 +215,11 @@ export function AddOutputBase({
       if (!invoice) {
         console.error("AddOutput: Invoice not found, aborting save.");
         isCurrentlySavingRef.current = false;
+        return;
+      }
+
+      if (priceToSave === undefined || priceToSave === 0) {
+        console.error("No se puede añadir un output sin precio");
         return;
       }
 

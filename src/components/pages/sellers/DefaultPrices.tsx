@@ -5,6 +5,7 @@ import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { numberParser } from "@/tools/numberPaser";
 import { productDoc } from "@/tools/products/create";
 import { SellersDoc } from "@/tools/sellers/create";
+import { client } from "@/tools/sellers/createClient";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 import {
   collection,
@@ -22,9 +23,10 @@ import { useCallback, useEffect, useState } from "react";
 
 interface props {
   sellerDoc: DocumentSnapshot<SellersDoc> | undefined;
+  clientDoc: DocumentSnapshot<client> | undefined;
 }
 
-export function SellerDefaultPrices({ sellerDoc }: props) {
+export function SellerDefaultPrices({ sellerDoc, clientDoc }: props) {
   const [prices, setPrices] = useState<
     QueryDocumentSnapshot<defaultCustomPrice>[]
   >([]);
@@ -33,10 +35,18 @@ export function SellerDefaultPrices({ sellerDoc }: props) {
   useEffect(() => {
     if (!sellerDoc) return;
 
-    const coll = collection(
-      sellerDoc.ref,
-      SellersCollection.defaulCustomPrices
-    ) as CollectionReference<defaultCustomPrice>;
+    let coll;
+    if (clientDoc) {
+      coll = collection(
+        clientDoc.ref,
+        SellersCollection.defaulCustomPrices
+      ) as CollectionReference<defaultCustomPrice>;
+    } else {
+      coll = collection(
+        sellerDoc.ref,
+        SellersCollection.defaulCustomPrices
+      ) as CollectionReference<defaultCustomPrice>;
+    }
 
     const q = query(coll, where("disabled", "==", false));
 
@@ -48,10 +58,10 @@ export function SellerDefaultPrices({ sellerDoc }: props) {
       unsubcribe();
       setPrices([]);
     };
-  }, [sellerDoc]);
+  }, [sellerDoc, clientDoc]);
 
   return (
-    <Container styles={{ flex: "1" }}>
+    <Container styles={{ flex: "1", maxWidth: "500px" }}>
       <h2 style={{ marginBottom: "0px" }}>Precios personalizados</h2>
       <p>Precio actual {"=>"} Precio personalizado</p>
       <Container styles={{ marginTop: "20px" }}>

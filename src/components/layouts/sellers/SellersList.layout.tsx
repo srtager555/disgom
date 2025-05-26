@@ -5,7 +5,7 @@ import { SellerListPrinter } from "@/components/sellers/sellerListPrinter";
 export function SellersList() {
   const params = useQueryParams();
 
-  if (params.id) return <></>;
+  if (params.id || params.clientID) return <></>;
 
   return (
     <Container

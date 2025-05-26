@@ -134,7 +134,7 @@ export async function createInvoice(
     invoice_type,
   });
 
-  if (lastInvoice)
+  if (lastInvoice?.docs[0])
     await updateDoc(lastInvoice.docs[0].ref, {
       next_invoice_ref: newInvoice,
     });

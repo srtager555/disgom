@@ -49,7 +49,7 @@ export function SellersNavSection({ sellers, clients }: props) {
       // Usa el ID del vendedor como clave para el Record
       clientsChildrenRecord[clientId] = {
         name: clientData?.name ?? `Vendedor ${clientId}`,
-        href: `/sellers?id=${clientId}`,
+        href: `/sellers?clientID=${clientId}`,
       };
     });
 

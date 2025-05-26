@@ -16,10 +16,14 @@ import { ReactElement, useEffect, useState } from "react";
 import { SellerChart } from "@/components/pages/sellers/SellerChart";
 import { SellerCreditPreviewMapper } from "@/components/pages/sellers/SellerCreditPreview";
 import { SellerDefaultPrices } from "@/components/pages/sellers/DefaultPrices";
+import { useGetSellers } from "@/hooks/sellers/getSellers";
+import { client } from "@/tools/sellers/createClient";
 
 const Page: NextPageWithLayout = () => {
-  const { id } = useQueryParams();
+  const { id, clientID } = useQueryParams();
   const [sellerDoc, setSellerDoc] = useState<DocumentSnapshot<SellersDoc>>();
+  const [clientDoc, setClientDoc] = useState<DocumentSnapshot<client>>();
+  const sellers = useGetSellers();
 
   // effect to get the seller
   useEffect(() => {
@@ -40,14 +44,32 @@ const Page: NextPageWithLayout = () => {
     getSeller();
   }, [id]);
 
+  useEffect(() => {
+    async function getClient() {
+      if (!clientID) return setClientDoc(undefined);
+
+      const office = sellers?.docs.find((s) => !s.data().hasInventory);
+      if (!office) return setClientDoc(undefined);
+
+      const r = doc(office.ref, SellersCollection.clients, clientID);
+
+      const s = await getDoc(r);
+      setClientDoc(s as DocumentSnapshot<client>);
+    }
+
+    getClient();
+  }, [clientID, sellers]);
+
   if (!id) return <></>;
 
   return (
     <Container>
-      <SellerChart sellerDoc={sellerDoc} />
+      <SellerChart sellerDoc={sellerDoc} clientDoc={clientDoc} />
       <FlexContainer styles={{ gap: "20px" }}>
-        <SellerCreditPreviewMapper sellerDoc={sellerDoc} />
-        <SellerDefaultPrices sellerDoc={sellerDoc} />
+        {sellerDoc?.data()?.hasInventory && (
+          <SellerCreditPreviewMapper sellerDoc={sellerDoc} />
+        )}
+        <SellerDefaultPrices sellerDoc={sellerDoc} clientDoc={clientDoc} />
       </FlexContainer>
     </Container>
   );

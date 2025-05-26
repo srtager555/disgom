@@ -7,9 +7,15 @@ import {
   useState,
 } from "react";
 import { SellersDoc } from "@/tools/sellers/create";
-import { DocumentSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
+import {
+  doc,
+  DocumentSnapshot,
+  getDoc,
+  QueryDocumentSnapshot,
+} from "firebase/firestore";
 import useQueryParams from "@/hooks/getQueryParams";
-import { getSeller } from "@/tools/sellers/getSeller";
+import { useGetSellers } from "@/hooks/sellers/getSellers";
+import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 
 type props = {
   children: children;
@@ -30,18 +36,35 @@ export function SellersLayout({ children }: props) {
   const [sellerSelected, setSellerSelected] =
     useState<sellerSelected>(undefined);
   const [seller, setSeller] = useState<DocumentSnapshot<SellersDoc>>();
-  const params = useQueryParams();
+  const { id, clientID } = useQueryParams();
+  const sellers = useGetSellers();
 
   useEffect(() => {
     async function getTheSeller() {
-      if (!params.id) return setSeller(undefined);
+      if (!id) return setSeller(undefined);
 
-      const s = await getSeller(params.id);
+      const s = sellers?.docs.find((s) => s.id === id);
       setSeller(s);
     }
 
     getTheSeller();
-  }, [params]);
+  }, [id, sellers]);
+
+  useEffect(() => {
+    async function getClient() {
+      if (!clientID) return setSeller(undefined);
+
+      const office = sellers?.docs.find((s) => !s.data().hasInventory);
+      if (!office) return setSeller(undefined);
+
+      const r = doc(office.ref, SellersCollection.clients, clientID);
+
+      const s = await getDoc(r);
+      setSeller(s as DocumentSnapshot<SellersDoc>);
+    }
+
+    getClient();
+  }, [clientID, sellers]);
 
   return (
     <SellerContext.Provider value={{ sellerSelected, setSellerSelected }}>

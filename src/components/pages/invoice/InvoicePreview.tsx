@@ -10,13 +10,32 @@ import {
   QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { useEffect, useMemo, useState } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
-export const InvoiceContainer = styled.div<{ small?: boolean }>`
+export const InvoiceContainer = styled.div<{
+  small?: boolean;
+  unlimited?: boolean;
+}>`
   display: grid;
-  grid-template-columns: repeat(
-    ${(props) => (props.small ? "2, 1fr" : "3, 350px")}
-  );
+
+  ${(props) => {
+    if (props.small) {
+      return css`
+        grid-template-columns: 1fr 1fr;
+      `;
+    }
+
+    if (props.unlimited) {
+      return css`
+        width: 100%;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      `;
+    }
+
+    return css`
+      grid-template-columns: repeat(3, 350px);
+    `;
+  }}
   grid-auto-rows: 50px;
   gap: 10px;
 `;

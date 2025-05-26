@@ -40,14 +40,10 @@ export function SellersLayout({ children }: props) {
   const sellers = useGetSellers();
 
   useEffect(() => {
-    async function getTheSeller() {
-      if (!id) return setSeller(undefined);
+    if (!id) return setSeller(undefined);
 
-      const s = sellers?.docs.find((s) => s.id === id);
-      setSeller(s);
-    }
-
-    getTheSeller();
+    const s = sellers?.docs.find((s) => s.id === id);
+    setSeller(s);
   }, [id, sellers]);
 
   useEffect(() => {

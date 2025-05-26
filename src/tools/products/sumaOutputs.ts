@@ -58,7 +58,7 @@ export async function sumaOutputs(
       .map((el) => {
         return {
           ...el,
-          sale_price: data?.stock[0].sale_price || el.sale_price,
+          sale_price: data?.stock[0]?.sale_price || el?.sale_price || 0,
         };
       })
       .map(async (output) => {

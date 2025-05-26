@@ -142,6 +142,7 @@ export function useInvoiceStatusRealtime(
             href: invoiceId // ¿Existe ID de factura para este vendedor?
               ? `/invoices/manage?id=${invoiceId}` // Sí: usa el ID de la factura
               : `/invoices/manage?sellerId=${sellerId}`, // No: usa el ID del vendedor
+            mustBeAnchor: true,
           };
 
           // 4. Añadir el elemento a la lista correspondiente basado en si había invoiceId

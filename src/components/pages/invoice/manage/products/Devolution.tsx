@@ -25,6 +25,7 @@ import { invoiceType } from "@/tools/invoices/createInvoice";
 import { useGetCurrentDevolutionByProduct } from "@/hooks/invoice/getCurrentDevolution";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
+import { parseNumberInput } from "@/tools/parseNumericInput";
 
 // --- Tipos ---
 
@@ -299,17 +300,10 @@ function DevolutionBase({
         <Input
           value={devo} // El valor siempre refleja el estado 'devo' del input
           onChange={(e) => {
-            const value = Number(e.target.value);
-            // Solo actualiza si el valor es numérico y no negativo
-            if (!isNaN(value) && value >= 0) {
-              setDevo(value); // Actualiza el estado del input directamente
-              humanAmountChanged.current = true; // Marca como cambio humano
-              someHumanChangesDetected.current.devolution = true; // Notifica al componente padre
-              // console.log("Input changed 'devo' to:", value, "Marking human change.");
-            }
+            parseNumberInput(setDevo, e, { min: 0 });
+            humanAmountChanged.current = true; // Marca como cambio humano
+            someHumanChangesDetected.current.devolution = true; // Notifica al componente padre
           }}
-          type="number"
-          min={0} // Asegura que no se puedan ingresar negativos directamente
         />
       </Column>
     );

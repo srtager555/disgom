@@ -19,6 +19,7 @@ import { updatePrice } from "@/tools/products/updatePrice";
 import { someHumanChangesDetected } from "./Product";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
+import { parseNumberInput } from "@/tools/parseNumericInput";
 
 type props = {
   outputs: DocumentSnapshot<outputType>[];
@@ -218,10 +219,10 @@ export function AddOutputBase({
         return;
       }
 
-      if (priceToSave === undefined || priceToSave === 0) {
-        console.error("No se puede añadir un output sin precio");
-        return;
-      }
+      // if (priceToSave === undefined || priceToSave === 0) {
+      //   console.error("No se puede añadir un output sin precio");
+      //   return;
+      // }
 
       let success = false;
       try {
@@ -338,32 +339,22 @@ export function AddOutputBase({
   }, [amount, customPrice, debouncedSaveChanges]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    // Allow empty string for clearing, or valid non-negative numbers
-    if (
-      inputValue === "" ||
-      (!isNaN(Number(inputValue)) && Number(inputValue) >= 0)
-    ) {
-      const numericValue = inputValue === "" ? 0 : Number(inputValue); // Treat empty as 0 for state
-      setAmount(numericValue);
-      humanInteractionDetectedRef.current = true;
-      if (someHumanChangesDetected?.current) {
-        someHumanChangesDetected.current.addOutput = true;
-      }
+    parseNumberInput(setAmount, e, { min: 0 });
+
+    humanInteractionDetectedRef.current = true;
+    if (someHumanChangesDetected?.current) {
+      someHumanChangesDetected.current.addOutput = true;
     }
   };
 
   return (
     <Column>
-      <form onSubmit={(e) => e.preventDefault()}>
-        <Input
-          type="number"
-          value={amount} // Controlled component
-          min={0}
-          // max={currentStock + serverCurrentAmount}
-          onChange={handleInputChange}
-        />
-      </form>
+      <Input
+        value={amount} // Controlled component
+        // min={0}
+        // max={currentStock + serverCurrentAmount}
+        onChange={handleInputChange}
+      />
     </Column>
   );
 }

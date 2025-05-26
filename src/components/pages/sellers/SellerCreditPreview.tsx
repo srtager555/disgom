@@ -71,23 +71,24 @@ export function SellerCreditPreviewMapper({ sellerDoc }: props) {
   }, [sellerDoc, route]);
 
   return (
-    <Container styles={{ marginBottom: "100px", width: "820px" }}>
-      <Select
-        onChange={(e) => setRoute(Number(e.target.value))}
-        options={new Array(6).fill(0).map((_, i) => {
-          return {
-            name: "Ruta " + (i + 1),
-            value: "" + (i + 1),
-          };
-        })}
-      />
+    <Container styles={{ marginBottom: "100px", width: "50%" }}>
       <FlexContainer
-        styles={{ justifyContent: "space-between", marginTop: "10px" }}
+        styles={{
+          justifyContent: "flex-start",
+          gap: "20px",
+          marginTop: "10px",
+        }}
       >
-        <h2>Creditos</h2>
-        <h2>
-          Total <span>{numberParser(creditTotal)}</span>
-        </h2>
+        <Select
+          onChange={(e) => setRoute(Number(e.target.value))}
+          options={new Array(6).fill(0).map((_, i) => {
+            return {
+              name: "Ruta " + (i + 1),
+              value: "" + (i + 1),
+            };
+          })}
+        />
+        <h2>Creditos {numberParser(creditTotal)}</h2>
       </FlexContainer>
       <FlexContainer
         styles={{
@@ -128,7 +129,7 @@ function CreditPreview({
 }) {
   const initialData = useMemo(() => doc.data(), [doc]);
   const [clientName, setClientName] = useState(initialData.name);
-  const [clientAddress, setClientAddress] = useState(initialData.address);
+  const [clientAddress] = useState(initialData.address);
   const [lastCredit, setLastCredit] = useState<credit>();
 
   useEffect(() => {
@@ -200,9 +201,9 @@ function CreditPreview({
     doc.ref,
   ]);
 
-  const handleAddressChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setClientAddress(e.target.value);
-  };
+  // const handleAddressChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  //   setClientAddress(e.target.value);
+  // };
 
   const handleDeleteClientCredit = useCallback(async () => {
     try {
@@ -228,15 +229,14 @@ function CreditPreview({
     <FlexContainer
       styles={{
         justifyContent: "space-between",
-        width: "400px",
+        gap: "20px",
+        width: "300px",
         paddingBottom: "10px",
         marginBottom: "10px",
         borderBottom: "1px solid " + globalCSSVars["--detail"],
       }}
     >
-      <FlexContainer
-        styles={{ width: "100%", maxWidth: "300px", flexDirection: "column" }}
-      >
+      <FlexContainer styles={{ width: "100%", flexDirection: "column" }}>
         <Container>
           <Input
             type="text"
@@ -246,7 +246,7 @@ function CreditPreview({
           />
         </Container>
 
-        <textarea
+        {/* <textarea
           value={clientAddress === "not provided" ? "" : clientAddress} // Handle "not provided" for placeholder effect
           onChange={handleAddressChange}
           placeholder="Dirección"
@@ -257,7 +257,7 @@ function CreditPreview({
             width: "100%",
             padding: "5px",
           }} // Style to look like small
-        />
+        /> */}
         <FlexContainer
           styles={{ justifyContent: "space-between", marginTop: "10px" }}
         >

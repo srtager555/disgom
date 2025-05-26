@@ -94,7 +94,7 @@ export async function createInvoice(
   if (!seller_ref) return;
   let lastInvoice = null;
 
-  if (invoice_type === "normal") {
+  if (invoice_type === "normal" && !data.client_ref) {
     const queryLastInvoice = query(
       coll,
       orderBy("created_at", "desc"),

@@ -48,7 +48,7 @@ export async function createProduct({
   units = null,
   tags = null,
   stepRaw = null,
-  followed,
+  followed = false,
 }: props) {
   const db = Firestore();
   const productColl = collection(db, ProductsCollection.root);
@@ -83,7 +83,7 @@ export async function createProduct({
     exclude: false,
     step: parseStep(Number(stepRaw)),
     position: null,
-    followed: false, // Added default value for followed
+    followed, // Added default value for followed
   });
 }
 

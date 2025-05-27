@@ -110,14 +110,14 @@ const Page: NextPageWithLayout = () => {
             inline
             options={[
               {
-                name: "No manejará inventario",
-                value: "0",
-                selected: defaultSelected === "0",
-              },
-              {
                 name: "Manejará inventario",
                 value: "1",
                 selected: defaultSelected === "1",
+              },
+              {
+                name: "No manejará inventario",
+                value: "0",
+                selected: defaultSelected === "0",
               },
             ]}
           >

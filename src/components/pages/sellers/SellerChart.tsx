@@ -8,7 +8,7 @@ import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 // import { numberParser } from "@/tools/numberPaser";
 import { SellersDoc } from "@/tools/sellers/create";
-import { getCurrentTwoWeekRange } from "@/tools/time/current";
+// import { getCurrentTwoWeekRange } from "@/tools/time/current";
 import {
   collection,
   CollectionReference,
@@ -18,6 +18,8 @@ import {
   orderBy,
   DocumentSnapshot,
   QueryDocumentSnapshot,
+  Query,
+  limit,
 } from "firebase/firestore";
 import { useState, useEffect } from "react";
 import { InvoiceContainer, InvoicePreview } from "../invoice/InvoicePreview";
@@ -45,26 +47,41 @@ export function SellerChart({ sellerDoc, clientDoc }: props) {
   // effecto to get the invoice
   useEffect(() => {
     async function getInvoices() {
-      if (!sellerDoc) return;
-
+      if (!sellerDoc && !clientDoc) return;
       const db = Firestore();
       const coll = collection(
         db,
         InvoiceCollection.root
       ) as CollectionReference<invoiceType>;
-      const range = getCurrentTwoWeekRange(new Date());
+      // const range = getCurrentTwoWeekRange(new Date());
+      let q;
 
-      const q = query(
-        coll,
-        orderBy("created_at", "desc"),
-        where("created_at", ">=", range.start),
-        where("created_at", "<=", range.end),
-        where("disabled", "==", false),
-        !clientDoc
-          ? where("seller_ref", "==", sellerDoc.ref)
-          : where("client_ref", "==", clientDoc.ref)
-      );
-      const invoices = await getDocs(q);
+      if (sellerDoc && !clientDoc) {
+        q = query(
+          coll,
+          orderBy("created_at", "desc"),
+          // where("created_at", ">=", range.start),
+          // where("created_at", "<=", range.end),
+          where("disabled", "==", false),
+          where("seller_ref", "==", sellerDoc.ref),
+          limit(15)
+        );
+      } else if (clientDoc && sellerDoc) {
+        q = query(
+          coll,
+          orderBy("created_at", "desc"),
+          // where("created_at", ">=", range.start),
+          // where("created_at", "<=", range.end),
+          where("disabled", "==", false),
+          where("seller_ref", "==", sellerDoc.ref),
+          where("client_ref", "==", clientDoc.ref),
+          limit(15)
+        );
+      }
+
+      console.log("client ready?", clientDoc);
+
+      const invoices = await getDocs(q as Query<invoiceType>);
 
       setInvoicesDocs(invoices.docs);
       // const data: ChartData = invoices.docs.map((el) => {
@@ -110,7 +127,11 @@ export function SellerChart({ sellerDoc, clientDoc }: props) {
       // }
     }
     getInvoices();
-  }, [sellerDoc]);
+
+    return () => {
+      setInvoicesDocs(undefined);
+    };
+  }, [sellerDoc, clientDoc]);
 
   return (
     <FlexContainer
@@ -159,7 +180,7 @@ export function SellerChart({ sellerDoc, clientDoc }: props) {
       <Container styles={{ marginBottom: "100px", width: "100%" }}>
         <h2 style={{ textAlign: "center" }}>Facturas</h2>
         {invoicesDocs && invoicesDocs?.length > 0 ? (
-          <InvoiceContainer small>
+          <InvoiceContainer unlimited>
             {invoicesDocs?.map((el, i) => {
               return <InvoicePreview key={i} doc={el} inSeller />;
             })}

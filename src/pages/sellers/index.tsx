@@ -3,15 +3,9 @@ import { SellersList } from "@/components/layouts/sellers/SellersList.layout";
 import useQueryParams from "@/hooks/getQueryParams";
 import { NextPageWithLayout } from "@/pages/_app";
 import { Container, FlexContainer } from "@/styles/index.styles";
-import { Firestore } from "@/tools/firestore";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { SellersDoc } from "@/tools/sellers/create";
-import {
-  doc,
-  DocumentReference,
-  DocumentSnapshot,
-  getDoc,
-} from "firebase/firestore";
+import { doc, DocumentSnapshot, getDoc } from "firebase/firestore";
 import { ReactElement, useEffect, useState } from "react";
 import { SellerChart } from "@/components/pages/sellers/SellerChart";
 import { SellerCreditPreviewMapper } from "@/components/pages/sellers/SellerCreditPreview";
@@ -25,30 +19,26 @@ const Page: NextPageWithLayout = () => {
   const [clientDoc, setClientDoc] = useState<DocumentSnapshot<client>>();
   const sellers = useGetSellers();
 
-  // effect to get the seller
   useEffect(() => {
-    async function getSeller() {
-      if (!id) return;
-
-      const db = Firestore();
-      const docRef = doc(
-        db,
-        SellersCollection.root,
-        id
-      ) as DocumentReference<SellersDoc>;
-
-      const sellerDoc = await getDoc(docRef);
-      setSellerDoc(sellerDoc);
+    // first get the seller
+    let seller: DocumentSnapshot<SellersDoc> | undefined;
+    if (clientID) {
+      seller = sellers?.docs.find((s) => !s.data().hasInventory);
+    } else if (id) {
+      seller = sellers?.docs.find((s) => s.id === id);
+    } else {
+      console.log("no seller found");
+      return;
     }
+    setSellerDoc(seller);
 
-    getSeller();
-  }, [id]);
+    // now if the clientID is real we must be get the client to
+    getClient();
 
-  useEffect(() => {
     async function getClient() {
+      const office = seller;
       if (!clientID) return setClientDoc(undefined);
 
-      const office = sellers?.docs.find((s) => !s.data().hasInventory);
       if (!office) return setClientDoc(undefined);
 
       const r = doc(office.ref, SellersCollection.clients, clientID);
@@ -57,10 +47,12 @@ const Page: NextPageWithLayout = () => {
       setClientDoc(s as DocumentSnapshot<client>);
     }
 
-    getClient();
-  }, [clientID, sellers]);
+    return () => {
+      setClientDoc(undefined);
+    };
+  }, [clientID, sellers, id]);
 
-  if (!id) return <></>;
+  if (!id && !clientID) return <></>;
 
   return (
     <Container>

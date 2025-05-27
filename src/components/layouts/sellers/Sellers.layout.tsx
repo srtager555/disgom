@@ -40,6 +40,7 @@ export function SellersLayout({ children }: props) {
   const sellers = useGetSellers();
 
   useEffect(() => {
+    if (clientID) return;
     if (!id) return setSeller(undefined);
 
     const s = sellers?.docs.find((s) => s.id === id);
@@ -48,6 +49,7 @@ export function SellersLayout({ children }: props) {
 
   useEffect(() => {
     async function getClient() {
+      if (id) return;
       if (!clientID) return setSeller(undefined);
 
       const office = sellers?.docs.find((s) => !s.data().hasInventory);

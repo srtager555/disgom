@@ -236,30 +236,33 @@ function InvoiceManager() {
   // Debounced function to process results and update the invoice
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedProcessResults = useCallback(
-    debounce(async (currentProductsResults: Record<string, productResult>) => {
-      if (!invoice) return; // Check for invoice inside the debounced function as well
+    debounce(
+      async (currentProductsResults: Record<string, productResult>) => {
+        if (!invoice) return; // Check for invoice inside the debounced function as well
 
-      // Compare with the *latest* previous results stored in the ref
-      if (isEqual(prevProductsResultsRef.current, currentProductsResults)) {
-        console.log("Skipping update, results haven't changed.");
-        return;
-      }
+        // Compare with the *latest* previous results stored in the ref
+        if (isEqual(prevProductsResultsRef.current, currentProductsResults)) {
+          console.log("Skipping update, results haven't changed.");
+          return;
+        }
 
-      console.log("Processing results and updating invoice...");
-      const results = calculateResults(currentProductsResults);
-      prevProductsResultsRef.current = currentProductsResults; // Update ref *after* calculation
+        console.log("Processing results and updating invoice...");
+        const results = calculateResults(currentProductsResults);
+        prevProductsResultsRef.current = currentProductsResults; // Update ref *after* calculation
 
-      try {
-        await updateDoc(invoice.ref, {
-          total_sold: results.totalSold,
-          total_proft: results.totalProfit, // Typo: should be total_profit? Check invoiceType
-          total_cost: results.totalCost,
-        } as unknown as PartialWithFieldValue<invoiceType>); // Consider using a more specific type assertion if possible
-        console.log("Invoice updated successfully.");
-      } catch (error) {
-        console.error("Error updating invoice:", error);
-      }
-    }, 1000), // Debounce time in milliseconds (e.g., 1000ms = 1 second)
+        try {
+          await updateDoc(invoice.ref, {
+            total_sold: results.totalSold,
+            total_proft: results.totalProfit, // Typo: should be total_profit? Check invoiceType
+            total_cost: results.totalCost,
+          } as unknown as PartialWithFieldValue<invoiceType>); // Consider using a more specific type assertion if possible
+          console.log("Invoice updated successfully.");
+        } catch (error) {
+          console.error("Error updating invoice:", error);
+        }
+      },
+      process.env.NODE_ENV === "development" ? 0 : 1000
+    ), // Debounce time in milliseconds (e.g., 1000ms = 1 second)
     [invoice, calculateResults] // Dependencies for useCallback
   );
 

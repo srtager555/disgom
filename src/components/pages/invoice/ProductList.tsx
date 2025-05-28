@@ -51,7 +51,6 @@ export const ProductContainer = styled.div<{
   $fold?: boolean;
   $children?: boolean;
   $closing?: boolean;
-  $warn?: boolean;
   $hide?: boolean;
   $after?: string;
   $highlight?: boolean;
@@ -146,14 +145,6 @@ export const ProductContainer = styled.div<{
     `}
 
   ${(props) =>
-    props.$warn &&
-    css`
-      animation: warning 1.5s steps(1, end) infinite;
-      color: red;
-      font-weight: bold;
-    `}
-
-  ${(props) =>
     !props.$children
       ? css`
           /* padding-left: 10px; */
@@ -171,18 +162,6 @@ export const ProductContainer = styled.div<{
       opacity: 0.5;
       pointer-events: none;
     `}
-
-  @keyframes warning {
-    0% {
-      color: red;
-    }
-    50% {
-      color: yellow;
-    }
-    100% {
-      color: red;
-    }
-  }
 `;
 
 type props = {

@@ -18,6 +18,7 @@ import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 import { isEqual } from "lodash";
+import { parseNumberInput } from "@/tools/parseNumericInput";
 
 type props = {
   product_ref: DocumentReference<productDoc>;
@@ -181,7 +182,9 @@ function PriceInputBase({
     <>
       <Input
         onChange={(e) => {
-          const value = Number(e.target.value);
+          const value = parseNumberInput(() => {}, e, { returnRaw: true });
+          if (value === undefined) return;
+
           checkHasNextInvoice(() => setNewPrice(value), true, product_ref.id);
 
           if (normalPrice != value && !isDefaultCustomPrice.areTheSame) {

@@ -121,7 +121,7 @@ export function Money({ setMoneyAmount, moneyAmount }: props) {
               const amount = parseNumberInput(() => {}, e, {
                 returnRaw: true,
               });
-              if (!amount) return;
+              if (amount === undefined) return;
 
               setMoney((prev) => ({
                 ...prev,
@@ -187,7 +187,7 @@ const MoneyInput = ({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newAmount = parseNumberInput(() => {}, e, { returnRaw: true });
-    if (!newAmount) return;
+    if (newAmount === undefined) return;
 
     setAmount(newAmount); // Actualiza estado local
     setMoney((prev) => ({

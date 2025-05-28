@@ -6,6 +6,7 @@ import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { useDebounce } from "@/hooks/debounce";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { updateDoc } from "firebase/firestore";
+import { parseNumberInput } from "@/tools/parseNumericInput";
 
 const gridTemplateColumns = "repeat(4, 100px)";
 
@@ -49,7 +50,9 @@ export function Bills({ totals, setBillsAmount }: props) {
         <Input
           value={currentBillsAmount}
           onChange={(e) => {
-            const amount = Number(e.target.value);
+            const amount = parseNumberInput(() => {}, e, { returnRaw: true });
+            if (amount === undefined) return;
+
             setBillsAmount(amount);
             setCurrentBillsAmount(amount);
           }}

@@ -67,21 +67,14 @@ export function Data({ totals, credits, moneyAmount }: props) {
           <Column />
         </GridContainer>
         <GridContainer $gridTemplateColumns={gridTemplateColumns}>
-          <Column gridColumn="1 / 2">
+          <Column
+            gridColumn="1 / 2"
+            className={diff < 0 || diff > 0 ? "alert" : ""}
+          >
             {diff < 0 ? "Faltan" : diff === 0 ? "¡Perfecto!" : "Sobran"}
           </Column>
-          <Column>
-            <p
-              style={
-                diff < 0
-                  ? { color: "red", fontWeight: "bold" }
-                  : diff >= 0
-                  ? { fontStyle: "italic" }
-                  : { color: "green", fontWeight: "bold" }
-              }
-            >
-              {numberParser(diff)}
-            </p>
+          <Column className={diff < 0 || diff > 0 ? "alert" : ""}>
+            {numberParser(diff)}
           </Column>
           <Column />
         </GridContainer>

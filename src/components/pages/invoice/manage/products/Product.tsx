@@ -213,7 +213,7 @@ export function Product({
       $hasInventory={selectedSellerData?.hasInventory}
       $withoutStock={currentStock || outputs.length}
       $fold={!isFolded}
-      $warn={warn || stockOverflowWarning}
+      className={warn || stockOverflowWarning ? "alert" : ""}
       $highlight={
         isPlainObject(invoice?.data().refresh_data)
           ? typeof (invoice?.data().refresh_data as Record<string, boolean>)[

@@ -67,6 +67,30 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
       amount: formAmount,
     } = formValues;
 
+    if (formAmount === 0) {
+      alert("El ingreso del producto no puede ser 0");
+
+      return;
+    }
+
+    if (formProductCostPrice === 0) {
+      alert("El precio del costo del producto no puede ser 0");
+
+      return;
+    }
+
+    if (formProductCostPrice > formProductSalePrice) {
+      alert(
+        "El precio del costo del producto no puede ser mayor al precio de venta"
+      );
+
+      return;
+    }
+
+    if (formSellerProfit === 0) {
+      if (!confirm("¿Esta seguro que la comision del vendedor es 0?")) return;
+    }
+
     const purchase_price = parentProduct
       ? parentProduct.data()?.stock[0]?.purchase_price ?? 0
       : formProductCostPrice;
@@ -150,7 +174,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
     parseNumberInput(
       (newPrice) => handleFormValueChange("productSalePrice", newPrice),
       event,
-      { min: dynamicMinCost ?? formValues.productCostPrice ?? 0 }
+      { min: 0 }
     );
   };
 
@@ -278,7 +302,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
               <InputNumber
                 value={formValues.productCostPrice}
                 onChange={handleCostPriceChange}
-                step={0.01}
+                typeText
                 inline
                 required
                 width="90px"
@@ -286,11 +310,10 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
                 Costó
               </InputNumber>
               <InputNumber
+                typeText
                 value={formValues.productSalePrice}
                 onChange={handleSalePriceChange}
                 name="productSalePrice"
-                min={dynamicMinCost ?? formValues.productCostPrice ?? 0}
-                step="0.01"
                 inline
                 required
                 width="90px"
@@ -298,10 +321,10 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
                 Precio
               </InputNumber>
               <InputNumber
+                typeText
                 value={formValues.sellerProfit}
                 onChange={handleSellerProfitChange}
                 name="sellerProfit"
-                step="0.01"
                 inline
                 width={"90px"}
                 required
@@ -309,12 +332,12 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
                 Com.
               </InputNumber>
               <InputNumber
+                typeText
                 value={formValues.amount}
                 onChange={handleAmountChange}
                 inline
                 name="amount"
                 required
-                step="0.01"
                 width="110px"
               >
                 {entryToEdit ? (

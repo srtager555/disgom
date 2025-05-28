@@ -4,6 +4,22 @@
   }
 }
 
+*.alert {
+  animation: alert 1.5s steps(1, end) infinite;
+}
+
+@keyframes alert {
+  0% {
+    color: red;
+  }
+  50% {
+    color: yellow;
+  }
+  100% {
+    color: red;
+  }
+}
+
 *.show-print {
   display: none !important;
 

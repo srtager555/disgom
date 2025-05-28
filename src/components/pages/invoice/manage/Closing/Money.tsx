@@ -11,6 +11,7 @@ import { useInvoice } from "@/contexts/InvoiceContext";
 import { updateDoc } from "firebase/firestore";
 import { isEqual, debounce } from "lodash";
 import { numberParser } from "@/tools/numberPaser";
+import { parseNumberInput } from "@/tools/parseNumericInput";
 
 type props = {
   setMoneyAmount: Dispatch<SetStateAction<number>>;
@@ -114,10 +115,14 @@ export function Money({ setMoneyAmount, moneyAmount }: props) {
         <Column>Depositos</Column>
         <Column>
           <Input
-            type="number"
+            type="text"
             value={String(money["deposits"]?.amount ?? 0)}
             onChange={(e) => {
-              const amount = Number(e.target.value) || 0;
+              const amount = parseNumberInput(() => {}, e, {
+                returnRaw: true,
+              });
+              if (!amount) return;
+
               setMoney((prev) => ({
                 ...prev,
                 ["deposits"]: {
@@ -181,7 +186,9 @@ const MoneyInput = ({
   }, [initialAmount, initialLoadComplete, amount, moneyAmount]); // Se mantiene amount aquí para re-evaluar si cambia externamente
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newAmount = Number(e.target.value) || 0;
+    const newAmount = parseNumberInput(() => {}, e, { returnRaw: true });
+    if (!newAmount) return;
+
     setAmount(newAmount); // Actualiza estado local
     setMoney((prev) => ({
       ...prev,
@@ -198,7 +205,7 @@ const MoneyInput = ({
       <Column>{moneyAmount}</Column>
       <Column>
         <Input
-          type="number"
+          type="text"
           value={String(amount)}
           onChange={handleInputChange}
         />

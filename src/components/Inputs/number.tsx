@@ -15,6 +15,7 @@ interface props
   children?: children;
   inline?: boolean;
   marginBottom?: string;
+  typeText?: boolean;
 }
 
 export function InputNumber({
@@ -22,6 +23,7 @@ export function InputNumber({
   width,
   marginBottom,
   inline,
+  typeText,
   ...props
 }: props) {
   return (
@@ -37,7 +39,11 @@ export function InputNumber({
         {children}
         {props.required && "*"}
       </p>
-      <Input style={{ width: "100%" }} {...props} type="number" />
+      <Input
+        style={{ width: "100%" }}
+        {...props}
+        type={typeText ? "text" : "number"}
+      />
     </Container>
   );
 }

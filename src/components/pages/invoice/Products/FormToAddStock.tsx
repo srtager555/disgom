@@ -4,6 +4,7 @@ import { useGetProduct } from "@/hooks/products/getProduct";
 import { Form, Button } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { numberParser } from "@/tools/numberPaser";
+import { parseNumberInput } from "@/tools/parseNumericInput"; // Asegúrate que la ruta sea correcta
 import { addEntry } from "@/tools/products/addEntry";
 import { stockType } from "@/tools/products/addToStock";
 import { productDoc } from "@/tools/products/create";
@@ -12,13 +13,12 @@ import { removeEntry } from "@/tools/products/removeEntry";
 import { getDoc, DocumentSnapshot } from "firebase/firestore";
 import {
   FormEvent,
-  ChangeEvent,
-  useRef,
   useState,
   useContext,
   useEffect,
   Dispatch,
   SetStateAction,
+  ChangeEvent,
 } from "react";
 
 type props = {
@@ -27,45 +27,52 @@ type props = {
   setEntryToEdit: Dispatch<SetStateAction<stockType | undefined>>;
 };
 
+interface FormState {
+  productCostPrice: number;
+  productSalePrice: number;
+  sellerProfit: number;
+  amount: number;
+}
+
+const initialFormState: FormState = {
+  productCostPrice: 0,
+  productSalePrice: 0,
+  sellerProfit: 0,
+  amount: 0,
+};
+
+// Tipo para el evento de input, compatible con parseNumberInput
+type InputChangeEvent = React.ChangeEvent<HTMLInputElement>;
+
 export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
   const product = useGetProduct();
   const { selectedProduct } = useContext(ProductContext);
   const [timeoutSaved, setTimeoutSaved] = useState<NodeJS.Timeout>();
   const [parentProduct, setParentProduct] =
     useState<DocumentSnapshot<productDoc>>();
-  const [defaultCost, setDefaultCost] = useState(0);
   const [dynamicMinCost, setDynamicMinCost] = useState<number | undefined>(
     undefined
   );
-  const [defaultProfitOwner, setDefaultProfitOwner] = useState(0);
-  const [defaultProfitSeller, setDefaultProfitSeller] = useState(0);
   const [originalAmount, setOriginalAmount] = useState(0);
-  const formRef = useRef<HTMLFormElement>(null);
-  const costRef = useRef<HTMLInputElement>(null);
-  const ownerRef = useRef<HTMLInputElement>(null);
+  const [formValues, setFormValues] = useState<FormState>(initialFormState);
 
   const handlerOnSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!selectedProduct) return;
 
     const {
-      productCostPrice,
-      productSalePrice,
-      sellerProfit,
-      amount: a,
-    } = e.target as EventTarget & {
-      sellerProfit: HTMLInputElement;
-      productCostPrice: HTMLInputElement;
-      productSalePrice: HTMLInputElement;
-      amount: HTMLInputElement;
-    };
+      productCostPrice: formProductCostPrice, // Renombrado para evitar conflicto de scope si es necesario
+      productSalePrice: formProductSalePrice,
+      sellerProfit: formSellerProfit,
+      amount: formAmount,
+    } = formValues;
 
     const purchase_price = parentProduct
       ? parentProduct.data()?.stock[0]?.purchase_price ?? 0
-      : Number(productCostPrice.value);
-    const sale_price = Number(productSalePrice.value);
-    const seller_commission = Number(sellerProfit.value);
-    const amount = parentProduct ? 0 : Number(a.value);
+      : formProductCostPrice;
+    const sale_price = formProductSalePrice;
+    const seller_commission = formSellerProfit;
+    const amount = parentProduct ? 0 : formAmount;
 
     const entryToManege = parentProduct ? product.data?.stock[0] : entryToEdit;
     console.log("theEntry", entryToManege);
@@ -96,25 +103,22 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
       });
     }
 
-    formRef.current?.reset();
+    setFormValues(initialFormState);
+    setDynamicMinCost(initialFormState.productCostPrice);
   };
 
   // functions to remove a stock
   async function handlerRemoveStock() {
-    if (process.env.NODE_ENV === "development") {
-      if (!entryToEdit || !selectedProduct?.ref) return;
-      await removeEntry(entryToEdit, selectedProduct?.ref, false);
-      setEntryToEdit(undefined);
-      return;
-    }
-
     setTimeoutSaved(
-      setTimeout(async () => {
-        if (!entryToEdit || !selectedProduct?.ref) return;
-        await removeEntry(entryToEdit, selectedProduct?.ref, false);
+      setTimeout(
+        async () => {
+          if (!entryToEdit || !selectedProduct?.ref) return;
+          await removeEntry(entryToEdit, selectedProduct?.ref, false);
 
-        setEntryToEdit(undefined);
-      }, 5000)
+          setEntryToEdit(undefined);
+        },
+        process.env.NODE_ENV === "development" ? 0 : 5000
+      )
     );
   }
 
@@ -122,11 +126,49 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
     clearTimeout(timeoutSaved);
   }
 
-  // functions to manage the min input value
-  function handlerOnChangeOwnerMin(e: ChangeEvent<HTMLInputElement>) {
-    const newMin = e.target.value;
-    setDynamicMinCost(Number(newMin));
-  }
+  // Generic handler to update formValues
+  const handleFormValueChange = (fieldName: keyof FormState, value: number) => {
+    setFormValues((prev) => ({ ...prev, [fieldName]: value }));
+  };
+
+  console.log("formValues", formValues);
+
+  // Specific handlers for each numeric input using parseNumberInput
+  const handleCostPriceChange = (event: InputChangeEvent) => {
+    parseNumberInput(
+      (newCost) => {
+        console.log("newCost", newCost);
+        handleFormValueChange("productCostPrice", newCost);
+        setDynamicMinCost(newCost); // Update min for sale price
+      },
+      event,
+      { min: 0 }
+    );
+  };
+
+  const handleSalePriceChange = (event: InputChangeEvent) => {
+    parseNumberInput(
+      (newPrice) => handleFormValueChange("productSalePrice", newPrice),
+      event,
+      { min: dynamicMinCost ?? formValues.productCostPrice ?? 0 }
+    );
+  };
+
+  const handleSellerProfitChange = (event: InputChangeEvent) => {
+    parseNumberInput(
+      (newProfit) => handleFormValueChange("sellerProfit", newProfit),
+      event,
+      { min: 0 }
+    );
+  };
+
+  const handleAmountChange = (event: InputChangeEvent) => {
+    parseNumberInput(
+      (newAmount) => handleFormValueChange("amount", newAmount),
+      event,
+      { min: 0 }
+    );
+  };
 
   // effect to get the parent
   useEffect(() => {
@@ -149,24 +191,32 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
   // in the default input values
   useEffect(() => {
     if (!stock || stock?.length === 0) {
-      setDefaultCost(0);
-      setDefaultProfitOwner(0);
-      setDefaultProfitSeller(0);
-
+      // Reset to initial if no stock, unless an entry is being edited
+      if (!entryToEdit) {
+        setFormValues((prev) => ({
+          ...prev, // Keep amount if it was set by entryToEdit effect
+          productCostPrice: initialFormState.productCostPrice,
+          productSalePrice: initialFormState.productSalePrice,
+          sellerProfit: initialFormState.sellerProfit,
+        }));
+        setDynamicMinCost(initialFormState.productCostPrice);
+      }
       return;
     }
 
     const currentPriceData = stock[0];
+    const cost = entryToEdit?.purchase_price ?? currentPriceData.purchase_price;
+    const salePrice = entryToEdit?.sale_price ?? currentPriceData.sale_price;
+    const sellerCommission =
+      entryToEdit?.seller_commission ?? currentPriceData.seller_commission;
 
-    setDefaultCost(
-      entryToEdit?.purchase_price ?? currentPriceData.purchase_price
-    );
-    setDefaultProfitOwner(
-      entryToEdit?.sale_price ?? currentPriceData.sale_price
-    );
-    setDefaultProfitSeller(
-      entryToEdit?.seller_commission ?? currentPriceData.seller_commission
-    );
+    setFormValues((prev) => ({
+      ...prev, // Keep amount if it was set by entryToEdit effect
+      productCostPrice: cost,
+      productSalePrice: salePrice,
+      sellerProfit: sellerCommission,
+    }));
+    setDynamicMinCost(cost);
   }, [stock, entryToEdit]);
 
   // effect to get the original entry amount
@@ -174,29 +224,32 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
     async function getEntry() {
       if (!entryToEdit) {
         setOriginalAmount(0);
+        // If not editing, amount should be initial (e.g., 0 for new entry)
+        // This might be redundant if selectedProduct effect already reset formValues
+        setFormValues((prev) => ({ ...prev, amount: initialFormState.amount }));
         return;
       }
 
+      setFormValues((prev) => ({ ...prev, amount: entryToEdit.amount }));
       const query = await getDoc(entryToEdit.entry_ref);
       const originalAmount = query.data()?.amount;
-
       if (originalAmount) setOriginalAmount(originalAmount);
+      else setOriginalAmount(entryToEdit.amount); // Fallback
     }
     getEntry();
   }, [entryToEdit]);
 
   // effect to reset the form when the selected product changes
   useEffect(() => {
-    if (!formRef.current) return;
-
-    formRef.current.reset();
+    setFormValues(initialFormState);
     setParentProduct(undefined);
     setEntryToEdit(undefined);
-  }, [selectedProduct]);
+    setDynamicMinCost(initialFormState.productCostPrice);
+  }, [selectedProduct, setEntryToEdit]);
 
   return (
     <>
-      <Form name="FormEditEntry" ref={formRef} onSubmit={handlerOnSubmit}>
+      <Form name="FormEditEntry" onSubmit={handlerOnSubmit}>
         <h3>
           {parentProduct ? "Actualizar precios" : "Crear una nueva entrada"}
         </h3>
@@ -223,12 +276,9 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
           ) : (
             <>
               <InputNumber
-                ref={costRef}
-                defaultValue={defaultCost}
-                min={0}
+                value={formValues.productCostPrice}
+                onChange={handleCostPriceChange}
                 step={0.01}
-                onChange={handlerOnChangeOwnerMin}
-                name="productCostPrice"
                 inline
                 required
                 width="90px"
@@ -236,10 +286,10 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
                 Costó
               </InputNumber>
               <InputNumber
-                ref={ownerRef}
-                min={dynamicMinCost ?? defaultCost}
-                defaultValue={defaultProfitOwner}
+                value={formValues.productSalePrice}
+                onChange={handleSalePriceChange}
                 name="productSalePrice"
+                min={dynamicMinCost ?? formValues.productCostPrice ?? 0}
                 step="0.01"
                 inline
                 required
@@ -248,7 +298,8 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
                 Precio
               </InputNumber>
               <InputNumber
-                defaultValue={defaultProfitSeller}
+                value={formValues.sellerProfit}
+                onChange={handleSellerProfitChange}
                 name="sellerProfit"
                 step="0.01"
                 inline
@@ -258,7 +309,8 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
                 Com.
               </InputNumber>
               <InputNumber
-                defaultValue={entryToEdit?.amount}
+                value={formValues.amount}
+                onChange={handleAmountChange}
                 inline
                 name="amount"
                 required
@@ -279,7 +331,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
             </>
           )}
         </FlexContainer>
-        {!parentProduct && (
+        {(!parentProduct || (parentProduct && product.data?.stock[0])) && ( // Show buttons if not parent OR if parent and has stock to edit prices
           <FlexContainer
             styles={{
               display: "inline-flex",
@@ -288,7 +340,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
           >
             <Container>
               <Button style={{ marginRight: "10px" }}>
-                {parentProduct
+                {parentProduct && product.data?.stock[0] // Check if parentProduct has stock data to determine button text
                   ? "Editar precio"
                   : entryToEdit
                   ? "Editar entrada"
@@ -296,7 +348,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
               </Button>
             </Container>
             {entryToEdit && (
-              <Button
+              <Button // This button is for deleting an entry, should only show if entryToEdit exists
                 $warn
                 $hold
                 onClick={(e) => e.preventDefault()}

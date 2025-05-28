@@ -16,7 +16,7 @@ export function parseNumberInput(
   // Permitir borrar todo
   if (raw === "") {
     setState(0);
-    return;
+    return 0;
   }
 
   // Validar formato: solo dígitos con máximo un punto decimal

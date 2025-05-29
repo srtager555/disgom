@@ -6,6 +6,10 @@ import {
   where,
   getDocs,
   updateDoc,
+  orderBy,
+  limit,
+  DocumentReference,
+  CollectionReference,
 } from "firebase/firestore";
 import { invoiceType } from "../invoices/createInvoice";
 import { SellersDoc } from "../sellers/create";
@@ -13,12 +17,13 @@ import {
   addInventoryProduct,
   inventory_output,
 } from "../sellers/invetory/addProduct";
-import { createInventory } from "../sellers/invetory/create";
+import { createInventory, inventory } from "../sellers/invetory/create";
 import { outputType } from "./addOutputs";
 import { createStockFromOutputType, amountListener } from "./ManageSaves";
 import { productDoc } from "./create";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
-import { Dispatch, RefObject, SetStateAction } from "react";
+import { Dispatch, MutableRefObject, SetStateAction } from "react";
+import { SellersCollection } from "../firestore/CollectionTyping";
 
 export async function saveDevolution(
   invoiceDoc: DocumentSnapshot<invoiceType>,
@@ -29,7 +34,7 @@ export async function saveDevolution(
   devoDebounce: number,
   customPrice: number | undefined,
   setRemainStock: Dispatch<SetStateAction<rawOutput[]>>,
-  humanAmountChanged: RefObject<boolean>,
+  humanAmountChanged: MutableRefObject<boolean>,
   currentDevolution: number
 ) {
   const allOutputs = [...inventory_outputs, ...[...outputs].reverse()];
@@ -74,9 +79,34 @@ export async function saveDevolution(
 
   humanAmountChanged.current = false;
 
-  let inventoryRef = invoiceDoc.data()?.devolution;
-  if (!inventoryRef) {
-    inventoryRef = await createInventory(invoiceDoc.ref, seletedSeller?.ref);
+  let inventoryRef: DocumentReference<inventory>;
+
+  const devoFromInvo = invoiceDoc.data()?.devolution;
+
+  // first check in the invoices
+  if (devoFromInvo) {
+    inventoryRef = devoFromInvo;
+  } else {
+    // search in the seller coll
+    const coll = collection(
+      seletedSeller.ref,
+      SellersCollection.inventories.root
+    ) as CollectionReference<inventory>;
+    const q = query(
+      coll,
+      where("invoice_ref", "==", invoiceDoc.ref),
+      where("disabled", "==", false),
+      orderBy("created_at", "desc"),
+      limit(1)
+    );
+
+    const devo = await getDocs(q);
+
+    if (devo.size > 0) {
+      inventoryRef = devo.docs[0].ref;
+    } else {
+      inventoryRef = await createInventory(invoiceDoc.ref, seletedSeller?.ref);
+    }
   }
 
   const q = query(

@@ -5,10 +5,10 @@ import {
   collection,
   CollectionReference,
   doc,
-  getDocs,
   query,
   where,
   QueryDocumentSnapshot,
+  onSnapshot,
 } from "firebase/firestore";
 import { Firestore } from "@/tools/firestore";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
@@ -20,34 +20,36 @@ export function useGetCurrentDevolutionByProduct(product_id: string) {
   const [amount, setAmount] = useState(0);
 
   useEffect(() => {
-    async function getDevolutionOutputs() {
-      const db = Firestore();
-      const data = invoice?.data();
-      const inventoryRef = data?.devolution;
-      const productRef = doc(db, ProductsCollection.root, product_id);
+    const db = Firestore();
+    const data = invoice?.data();
+    const inventoryRef = data?.devolution;
+    const productRef = doc(db, ProductsCollection.root, product_id);
 
-      if (!inventoryRef) return;
-      const coll = collection(
-        inventoryRef,
-        "products"
-      ) as CollectionReference<inventory_output>;
+    console.log("inventory ref in the server", inventoryRef);
 
-      const q = query(
-        coll,
-        where("product_ref", "==", productRef),
-        where("disabled", "==", false)
-      );
+    if (!inventoryRef) return;
+    const coll = collection(
+      inventoryRef,
+      "products"
+    ) as CollectionReference<inventory_output>;
 
-      const invent_products = await getDocs(q);
+    const q = query(
+      coll,
+      where("product_ref", "==", productRef),
+      where("disabled", "==", false)
+    );
 
-      const outputs = invent_products.docs.map((el) => el.data());
+    const unsubcribe = onSnapshot(q, (snap) => {
+      const outputs = snap.docs.map((el) => el.data());
       const amount = outputs.reduce((acc, next) => acc + next.amount, 0);
 
       setAmount(amount || 0);
-      setDevolutionOutputs(invent_products.docs);
-    }
+      setDevolutionOutputs(snap.docs);
+    });
 
-    getDevolutionOutputs();
+    return () => {
+      unsubcribe();
+    };
   }, [invoice, product_id]);
 
   return { amount, outputs: devolutionOutputs };

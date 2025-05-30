@@ -16,6 +16,8 @@ export async function restaOutputs(
   currentAmount: number,
   customPrice?: number
 ) {
+  // debugger;
+
   const data = productDoc.data();
   const parentStock = data?.product_parent
     ? await getParentStock(data?.product_parent)
@@ -47,9 +49,7 @@ export async function restaOutputs(
 
   // return;
   // 7. Consolidar los stocks basados en entry_ref y precio de venta
-  const currentProductStock = data?.product_parent
-    ? await getParentStock(data?.product_parent)
-    : productDoc.data()?.stock || [];
+  const currentProductStock = parentStock || productDoc.data()?.stock || [];
   const consolidatedStocks = [...currentProductStock];
 
   for (const newStock of outputsToCreate) {

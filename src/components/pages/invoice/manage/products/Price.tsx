@@ -4,8 +4,8 @@ import {
   SetStateAction,
   useEffect,
   useRef,
-  RefObject,
   useState,
+  MutableRefObject,
 } from "react";
 import { Column, Input } from "../../Product";
 import { Container } from "@/styles/index.styles";
@@ -19,21 +19,23 @@ import { productDoc } from "@/tools/products/create";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 import { isEqual } from "lodash";
 import { parseNumberInput } from "@/tools/parseNumericInput";
+import { getParentStock } from "@/tools/products/getParentStock";
 
 type props = {
+  product_doc: DocumentSnapshot<productDoc>;
   product_ref: DocumentReference<productDoc>;
   defaultCustomPrice: number | undefined;
   outputs: DocumentSnapshot<outputType>[];
-  normalPrice: number;
+  // normalPrice: number;
   setCustomPrice: Dispatch<SetStateAction<number | undefined>>;
-  someHumanChangesDetected: RefObject<someHumanChangesDetected>;
+  someHumanChangesDetected: MutableRefObject<someHumanChangesDetected>;
 };
 
 // サラマンダー
 export const Price = memo(BasePrice, (prev, next) => {
   if (prev.product_ref.id !== next.product_ref.id) return false;
   if (prev.defaultCustomPrice !== next.defaultCustomPrice) return false;
-  if (prev.normalPrice !== next.normalPrice) return false;
+  // if (prev.normalPrice !== next.normalPrice) return false;
   if (isEqual(prev.outputs, next.outputs)) return false;
 
   return true;
@@ -41,8 +43,9 @@ export const Price = memo(BasePrice, (prev, next) => {
 
 export function BasePrice({
   product_ref,
+  product_doc,
   defaultCustomPrice,
-  normalPrice,
+  // normalPrice,
   outputs,
   setCustomPrice,
   someHumanChangesDetected,
@@ -55,10 +58,30 @@ export function BasePrice({
   const invoiceType = invoice?.data()?.invoice_type;
   const priceMultiplier = invoiceType !== "normal" ? -1 : 1; // Determine multiplier
 
+  const [normalPrice, setNormalPrice] = useState(0);
   // Initialize state considering the multiplier
-  const [newPrice, setNewPrice] = useState(normalPrice * priceMultiplier);
+  const [newPrice, setNewPrice] = useState(0);
   const humanAmountChanged = useRef(false);
   const debounceNewPrice = useDebounce(newPrice, 1000);
+
+  // get the normalPrice
+  useEffect(() => {
+    async function getNormalPrice() {
+      const parent = product_doc.data()?.product_parent;
+      const productData = product_doc.data();
+
+      if (parent) {
+        const parentDoc = await getParentStock(parent);
+        const price = parentDoc[0]?.sale_price || 0;
+        setNormalPrice(price * priceMultiplier);
+      } else {
+        const price = productData?.stock[0].sale_price || 0;
+        setNormalPrice(price * priceMultiplier);
+      }
+    }
+
+    getNormalPrice();
+  }, [priceMultiplier, product_doc]);
 
   // Effect to update custom price based on debounced input
   useEffect(() => {
@@ -143,8 +166,8 @@ type inputProps = {
   newPrice: number;
   normalPrice: number;
   setNewPrice: Dispatch<SetStateAction<number>>;
-  humanAmountChanged: RefObject<boolean>;
-  someHumanChangesDetected: RefObject<someHumanChangesDetected>;
+  humanAmountChanged: MutableRefObject<boolean>;
+  someHumanChangesDetected: MutableRefObject<someHumanChangesDetected>;
   isDefaultCustomPrice: {
     isThat: boolean;
     areTheSame: boolean;

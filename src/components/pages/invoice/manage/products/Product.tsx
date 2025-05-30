@@ -262,9 +262,10 @@ export function Product({
         someHumanChangesDetected={someHumanChangesDetected}
       />
       <Price
+        product_doc={doc}
         product_ref={doc.ref}
         defaultCustomPrice={defaultPriceData?.price}
-        normalPrice={rtDocData?.stock[0]?.sale_price || 0}
+        // normalPrice={rtDocData?.stock[0]?.sale_price || 0}
         outputs={outputs}
         setCustomPrice={setCustomPrice}
         someHumanChangesDetected={someHumanChangesDetected}

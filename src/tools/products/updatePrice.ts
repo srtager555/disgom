@@ -43,7 +43,7 @@ export async function updatePrice(
     createStockFromOutputType(doc.data() as outputType)
   );
 
-  const newPrice = customPrice || currentProductStocks[0].sale_price;
+  const newPrice = customPrice || currentProductStocks[0]?.sale_price || 0;
 
   // Crear nuevos outputs con el nuevo precio
   const { outputsToCreate } = amountListener(

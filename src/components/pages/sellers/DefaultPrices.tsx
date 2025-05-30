@@ -70,7 +70,7 @@ export function SellerDefaultPrices({ sellerDoc, clientDoc }: props) {
             return <DefaultPrice key={i} defaultPriceDoc={el} />;
           })
         ) : (
-          <p style={{ textAlign: "center" }}>No hay precios por defecto</p>
+          <p>No hay precios por defecto</p>
         )}
       </Container>
     </Container>

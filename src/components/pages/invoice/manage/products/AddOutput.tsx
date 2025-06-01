@@ -86,7 +86,6 @@ export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   if (prev.currentStock !== next.currentStock) return false;
 
   if (!isEqual(prev.outputs, next.outputs)) return false;
-  if (!isEqual(prev.currentStock, next.currentStock)) return false;
   if (isEqual(prev.productDoc, next.productDoc)) return false;
 
   return true;
@@ -292,7 +291,14 @@ export function AddOutputBase({
         console.log("AddOutput: -------- Debounced save finished --------");
       }
     },
-    [outputs, productDoc, localCurrentAmount]
+    [
+      setOverflowWarning,
+      localCurrentAmount,
+      currentStock,
+      productDoc,
+      defaultCustomPrices,
+      outputs,
+    ]
   );
 
   const debouncedSaveChanges = useCallback(

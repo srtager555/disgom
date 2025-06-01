@@ -20,6 +20,7 @@ import { SellersDoc } from "@/tools/sellers/create"; // Tipo para SellersDoc
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { Button } from "@/styles/Form.styles";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
+import { Days } from "../Closing/Data";
 // Asumimos que invoice.data().seller_ref es DocumentReference<SellersDoc>
 // y que los credit_bundles son una subcolección de 'sellers' o se pueden consultar globalmente con filtro de seller_ref.
 // Por ahora, asumiremos una subcolección "credit_bundles" bajo el vendedor.
@@ -181,10 +182,16 @@ export function Route() {
 
   const selectOptions = useMemo(() => {
     if (isSelectDisabled && lockedBundleSnapshot) {
-      const displayName = `Bundle actual: ${lockedBundleSnapshot.id.substring(
-        0,
-        5
-      )} - Enlazado. Selección bloqueada.`;
+      const bundleData = lockedBundleSnapshot.data();
+      const bundleDate = bundleData?.created_at.toDate().toLocaleDateString();
+      const bundleDay =
+        Days[bundleData?.created_at.toDate().getDay() as number];
+
+      const displayName = `Lista del ${bundleDay} ${bundleDate} - Enlazado. Selección bloqueada. ${
+        process.env.NODE_ENV === "development"
+          ? ` (${lockedBundleSnapshot.id.substring(0, 5)})`
+          : ""
+      }`;
       return [
         {
           name: displayName,
@@ -196,7 +203,15 @@ export function Route() {
     }
 
     const bundleOptions = availableBundles.map((bundleDoc) => {
-      const displayName = `Bundle ${bundleDoc.id.substring(0, 5)}`;
+      const bundleData = bundleDoc.data();
+      const bundleDate = bundleData.created_at.toDate().toLocaleDateString();
+      const bundleDay = Days[bundleData.created_at.toDate().getDay()];
+
+      const displayName = `Lista del ${bundleDay} ${bundleDate}${
+        process.env.NODE_ENV === "development"
+          ? ` (${bundleDoc.id.substring(0, 5)})`
+          : ""
+      }`;
       return {
         name: displayName,
         value: bundleDoc.id,
@@ -206,13 +221,13 @@ export function Route() {
 
     return [
       {
-        name: "Crear bundle nuevo",
+        name: "Crear nueva Lista",
         value: CREATE_NEW_BUNDLE_VALUE,
         selected: pendingPreviousBundleId === CREATE_NEW_BUNDLE_VALUE,
         disabled: isSelectDisabled,
       },
       {
-        name: "Ningún bundle previo",
+        name: "Ninguna lista previa",
         value: NO_PREVIOUS_BUNDLE_VALUE,
         selected: pendingPreviousBundleId === null, // Usar pending
         disabled: isSelectDisabled, // Si el select está deshabilitado, esta opción también.
@@ -373,8 +388,9 @@ export function Route() {
             <Button onClick={handleCancelChange}>Cancelar Cambio</Button>
           </FlexContainer>
           <p>
-            Al cambiar el Bundle se perderá la información ya escrita en el
-            nuevo Bundle, esta accion es <b>INRREVERSIBLE</b>, tenga precaución.
+            Al cambiar la lista de creditos referenciada se perderá la
+            información ya escrita en ella, esta accion es <b>INRREVERSIBLE</b>,
+            tenga precaución.
           </p>
         </Container>
       )}

@@ -75,7 +75,7 @@ export function BasePrice({
         const price = parentDoc[0]?.sale_price || 0;
         setNormalPrice(price * priceMultiplier);
       } else {
-        const price = productData?.stock[0].sale_price || 0;
+        const price = productData?.stock[0]?.sale_price || 0;
         setNormalPrice(price * priceMultiplier);
       }
     }

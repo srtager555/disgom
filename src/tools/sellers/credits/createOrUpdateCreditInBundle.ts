@@ -21,6 +21,7 @@ export type CreditInBundle = {
   client_ref: DocumentReference<client>;
   bundle_ref: DocumentReference<creditBundle>; // Referencia al bundle padre
   amount: number;
+  create_previus_amount: number;
   created_at: Timestamp;
   updated_at: Timestamp;
 };
@@ -29,12 +30,14 @@ interface CreateOrUpdateCreditProps {
   bundle_ref: DocumentReference<creditBundle>;
   client_ref: DocumentReference<client>;
   amount: number;
+  create_previus_amount?: number; // parametro para
 }
 
 export async function createOrUpdateCreditInBundle({
   bundle_ref,
   client_ref,
   amount,
+  create_previus_amount = 0,
 }: CreateOrUpdateCreditProps): Promise<DocumentReference<CreditInBundle>> {
   const creditsColRef = collection(
     bundle_ref,
@@ -65,6 +68,7 @@ export async function createOrUpdateCreditInBundle({
       client_ref,
       bundle_ref, // Guardamos una referencia al bundle padre
       amount,
+      create_previus_amount,
       created_at: now,
       updated_at: now,
     };

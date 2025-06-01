@@ -1,6 +1,12 @@
 import { numberParser } from "@/tools/numberPaser";
 import { Column } from "../../Product";
-import { Dispatch, memo, RefObject, SetStateAction, useEffect } from "react";
+import {
+  Dispatch,
+  memo,
+  MutableRefObject,
+  SetStateAction,
+  useEffect,
+} from "react";
 import { addOutputs, outputType } from "@/tools/products/addOutputs";
 import {
   collection,
@@ -21,7 +27,7 @@ import { useInvoice } from "@/contexts/InvoiceContext";
 
 type props = {
   product_doc: QueryDocumentSnapshot<productDoc>;
-  someHumanChangesDetected: RefObject<someHumanChangesDetected>;
+  someHumanChangesDetected: MutableRefObject<someHumanChangesDetected>;
   remainStock: rawOutput[];
   remainStockTotals: productResult;
   setWarn: Dispatch<SetStateAction<boolean>>;

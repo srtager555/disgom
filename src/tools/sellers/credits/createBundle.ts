@@ -58,6 +58,11 @@ export async function createCreditBundle({
 
   const newBundleRef = await addDoc(coll, newBundleData);
 
+  // add the bundle to the invoice
+  await updateDoc(invoice_ref, {
+    credit_bundle_ref: newBundleRef,
+  });
+
   // If there was a previous bundle, update its next_bundle field
   if (last_bundle_ref) {
     await updateDoc(last_bundle_ref, {

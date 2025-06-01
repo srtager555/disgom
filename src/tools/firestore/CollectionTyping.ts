@@ -15,6 +15,7 @@ export const SellersCollection = {
   root: "Sellers",
   clients: "clients",
   credits: "credits",
+  creditBundles: "creditBundles",
   defaulCustomPrices: "defaultCustomPrices",
   inventories: {
     root: "inventories",

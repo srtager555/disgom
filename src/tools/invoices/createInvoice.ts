@@ -21,9 +21,9 @@ import { SellersDoc } from "../sellers/create";
 import { client } from "../sellers/createClient";
 import { outputType } from "../products/addOutputs";
 import { inventory } from "../sellers/invetory/create";
-import { credit } from "../sellers/credits/create";
 import { rawMoneyType } from "@/components/pages/invoice/manage/Closing/Money";
 import { createAnormalInvoice } from "./createAnormalInvoice";
+import { creditBundle } from "../sellers/credits/createBundle";
 
 export type invoiceType = {
   created_at?: Timestamp;
@@ -53,7 +53,7 @@ export type invoiceType = {
     paid_at: Timestamp | null;
     due_date: Timestamp;
   } | null;
-  newCredits: Record<string, Record<string, DocumentReference<credit>>>;
+  credit_bundle_ref: DocumentReference<creditBundle> | null;
   disabled: boolean;
   delete_at: Timestamp | null;
 };
@@ -124,7 +124,7 @@ export async function createInvoice(
       paid_at: null,
     },
     credit: null,
-    newCredits: {},
+    credit_bundle_ref: null,
     disabled: false,
     delete_at: null,
     last_inventory_ref: last_inventory?.ref || null,

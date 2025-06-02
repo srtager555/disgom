@@ -56,10 +56,11 @@ export function Credit({ setRawCreditResult, creditResult }: props) {
   return (
     <Container styles={{ width: "50%", marginBottom: "20px" }}>
       <h2 style={{ textAlign: "center" }}>Creditos</h2>
+
+      <Route />
       <FlexContainer
-        styles={{ justifyContent: "space-between", marginBottom: "20px" }}
+        styles={{ justifyContent: "center", marginBottom: "10px" }}
       >
-        <Route />
         <Button onClick={() => setShowForm(!showForm)}>
           {showForm ? "Ocultar" : "Agregar nuevo"}
         </Button>

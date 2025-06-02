@@ -1,8 +1,11 @@
+import { InputNumber } from "@/components/Inputs/number";
 import { InputText } from "@/components/Inputs/text";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { Form, Button } from "@/styles/Form.styles";
 import { FlexContainer } from "@/styles/index.styles";
-import { createClientCredit } from "@/tools/sellers/credits/create";
+// import { createClientCredit } from "@/tools/sellers/credits/create";
+import { createAClientForABundle } from "@/tools/sellers/credits/createClientForABundle";
+import { createOrUpdateCreditInBundle } from "@/tools/sellers/credits/createOrUpdateCreditInBundle";
 import { Dispatch, SetStateAction, useRef } from "react";
 
 export const CreditForm = ({
@@ -15,10 +18,9 @@ export const CreditForm = ({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const route = invoice?.data()?.route;
     const seller_ref = invoice?.data()?.seller_ref;
 
-    if (!route || !seller_ref) return;
+    if (!seller_ref) return;
 
     const target = e.target as HTMLFormElement & {
       creditName: HTMLInputElement;
@@ -26,23 +28,37 @@ export const CreditForm = ({
     };
     const creditName = target.creditName.value;
     const amount = 0;
-    //  target.amount.value;
+    const bundle_ref = invoice.data().credit_bundle_ref;
 
-    await createClientCredit(
-      route,
-      seller_ref,
-      creditName,
-      Number(amount),
-      "not provided",
-      invoice.ref
-    );
+    if (!bundle_ref) return;
+
+    const client_ref = await createAClientForABundle(bundle_ref, {
+      name: creditName,
+      address: "not provided",
+    });
+
+    await createOrUpdateCreditInBundle({
+      bundle_ref,
+      client_ref,
+      amount: 0,
+      create_previus_amount: Number(amount),
+    });
+
+    // await createClientCredit(
+    //   route,
+    //   seller_ref,
+    //   creditName,
+    //   Number(amount),
+    //   "not provided",
+    //   invoice.ref
+    // );
 
     formRef.current?.reset();
     setShowForm(false);
   };
 
-  if (!invoice?.data().route) {
-    return <p>Agregue una ruta primero</p>;
+  if (!invoice?.data().credit_bundle_ref) {
+    return <p>Seleccione o cree una lista de creditos</p>;
   }
 
   return (
@@ -60,12 +76,12 @@ export const CreditForm = ({
           marginBottom="0px"
           name="creditName"
         />
-        {/* <InputNumber
-          type="number"
-          placeholder="Monto"
+        <InputNumber
+          typeText
+          placeholder="Credito previo"
           marginBottom="0px"
           name="amount"
-        /> */}
+        />
       </FlexContainer>
       <Button>Agregar</Button>
     </Form>

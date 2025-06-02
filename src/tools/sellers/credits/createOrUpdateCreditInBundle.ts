@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { creditBundle } from "./createBundle";
 import { client } from "../createClient";
+import { clientCreditBundleDocType } from "./createClientForABundle";
 
 export const CREDIT_BUNDLE_SUBCOLLECTIONS = {
   CREDITS: "credits",
@@ -28,7 +29,7 @@ export type CreditInBundle = {
 
 interface CreateOrUpdateCreditProps {
   bundle_ref: DocumentReference<creditBundle>;
-  client_ref: DocumentReference<client>;
+  client_ref: DocumentReference<clientCreditBundleDocType>;
   amount: number;
   create_previus_amount?: number; // parametro para
 }

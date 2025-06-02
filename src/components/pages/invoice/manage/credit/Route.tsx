@@ -362,13 +362,15 @@ export function Route() {
   };
 
   return (
-    <Container>
-      <Select
-        name="previous_bundle_selector" // Nombre actualizado para reflejar el propósito
-        options={selectOptions}
-        onChange={handlePreviousBundleChange}
-        disabled={isSelectDisabled || isReplacing} // Deshabilitar también si está en proceso de reemplazo
-      />
+    <Container styles={{ marginBottom: "20px" }}>
+      <FlexContainer styles={{ width: "100%", justifyContent: "center" }}>
+        <Select
+          name="previous_bundle_selector" // Nombre actualizado para reflejar el propósito
+          options={selectOptions}
+          onChange={handlePreviousBundleChange}
+          disabled={isSelectDisabled || isReplacing} // Deshabilitar también si está en proceso de reemplazo
+        />
+      </FlexContainer>
       {showConfirmation && !isReplacing && (
         <Container>
           <FlexContainer

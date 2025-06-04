@@ -13,10 +13,7 @@ import {
 import { creditBundle } from "./createBundle";
 import { client } from "../createClient";
 import { clientCreditBundleDocType } from "./createClientForABundle";
-
-export const CREDIT_BUNDLE_SUBCOLLECTIONS = {
-  CREDITS: "credits",
-} as const;
+import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 
 export type CreditInBundle = {
   client_ref: DocumentReference<client>;
@@ -42,7 +39,7 @@ export async function createOrUpdateCreditInBundle({
 }: CreateOrUpdateCreditProps): Promise<DocumentReference<CreditInBundle>> {
   const creditsColRef = collection(
     bundle_ref,
-    CREDIT_BUNDLE_SUBCOLLECTIONS.CREDITS
+    SellersCollection.creditBundles.bundles.credits
   ) as CollectionReference<CreditInBundle>;
 
   const q = query(

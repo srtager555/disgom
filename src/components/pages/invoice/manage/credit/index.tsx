@@ -19,39 +19,43 @@ import { Column } from "../../Product";
 import { numberParser } from "@/tools/numberPaser";
 import { rawCreditResult } from "@/pages/invoices/manage";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
+import { analyzeCreditSnapshots } from "@/tools/sellers/credits/analyzeCreditSnapshots";
+import { clientCreditBundleDocType } from "@/tools/sellers/credits/createClientForABundle";
+import { creditBundle } from "@/tools/sellers/credits/createBundle";
+import { useGetCreditBundleBasicData } from "@/hooks/sellers/getCreditBundleBasicData";
 
 interface props {
-  setRawCreditResult: Dispatch<SetStateAction<rawCreditResult>>;
+  setCreditResult: Dispatch<SetStateAction<number>>;
   creditResult: number;
 }
 
-export function Credit({ setRawCreditResult, creditResult }: props) {
+export function Credit({ setCreditResult, creditResult }: props) {
   const { invoice } = useInvoice();
+  const {
+    clients,
+    creditBundle,
+    bundleContainer,
+    previusCreditBundle,
+    currentBundleCredits,
+    previusBundleCredits,
+  } = useGetCreditBundleBasicData();
   const [showForm, setShowForm] = useState(false);
   const [credits, setCredits] = useState<QueryDocumentSnapshot<clientCredit>[]>(
     []
   );
 
+  // effect to get analize the credits
   useEffect(() => {
-    const route = invoice?.data()?.route;
-    const seller_ref = invoice?.data()?.seller_ref;
+    const results = analyzeCreditSnapshots(
+      currentBundleCredits,
+      previusBundleCredits,
+      clients
+    );
 
-    if (!route || !seller_ref) return;
-    let unsubcribe = () => {};
-
-    const creditColl = collection(
-      seller_ref,
-      SellersCollection.credits
-    ) as CollectionReference<clientCredit>;
-
-    const q = query(creditColl, where("route", "==", route));
-
-    unsubcribe = onSnapshot(q, (snap) => {
-      setCredits(snap.docs);
-    });
-
-    return () => unsubcribe();
-  }, [invoice]);
+    setCreditResult(
+      results.total_current_bundle_credit - results.total_previous_bundle_credit
+    );
+  }, [clients, currentBundleCredits, previusBundleCredits, setCreditResult]);
 
   return (
     <Container styles={{ width: "50%", marginBottom: "20px" }}>
@@ -65,7 +69,12 @@ export function Credit({ setRawCreditResult, creditResult }: props) {
           {showForm ? "Ocultar" : "Agregar nuevo"}
         </Button>
       </FlexContainer>
-      {showForm && <CreditForm setShowForm={setShowForm} />}
+      {showForm && bundleContainer && (
+        <CreditForm
+          bundleContainerRef={bundleContainer.ref}
+          setShowForm={setShowForm}
+        />
+      )}
       <Container>
         <CreditHeader />
         {credits.map((credit) => (
@@ -75,7 +84,7 @@ export function Credit({ setRawCreditResult, creditResult }: props) {
           >
             <CreditClient
               clientCredit={credit}
-              setRawCreditResult={setRawCreditResult}
+              setRawCreditResult={setCreditResult}
             />
           </GridContainer>
         ))}

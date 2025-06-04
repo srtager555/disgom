@@ -28,7 +28,6 @@ import {
   useEffect,
   useState,
   useRef,
-  useMemo,
   useCallback,
   createContext,
   Dispatch,
@@ -114,13 +113,7 @@ function InvoiceManager() {
     Record<string, productResult>
   >({});
   const prevProductsResultsRef = useRef<Record<string, productResult>>({});
-  const [rawCreditResult, setRawCreditResult] = useState<rawCreditResult>({});
-  const creditResult = useMemo(() => {
-    return Object.values(rawCreditResult).reduce(
-      (before, now) => before + now,
-      0
-    );
-  }, [rawCreditResult]);
+  const [creditResult, setCreditResult] = useState<number>(0);
   const { totalResults, calculateResults } = useProductResults();
 
   // Función que se ejecutará después del debounce
@@ -336,7 +329,7 @@ function InvoiceManager() {
                     {selectedSeller?.data()?.hasInventory ? (
                       <>
                         <Credit
-                          setRawCreditResult={setRawCreditResult}
+                          setCreditResult={setCreditResult}
                           creditResult={creditResult}
                         />
 

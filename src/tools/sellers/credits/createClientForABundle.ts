@@ -5,19 +5,20 @@ import {
   DocumentReference,
   Timestamp,
 } from "firebase/firestore";
-import { creditBundle } from "./createBundle";
+import { creditBundleContainerDoc } from "./createBundle";
 import { clientCredit } from "./create";
+import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 
 type clientCreditBundleType = Omit<clientCredit, "route" | "created_at">;
 export type clientCreditBundleDocType = Omit<clientCredit, "route">;
 
 export async function createAClientForABundle(
-  bundle_ref: DocumentReference<creditBundle>,
+  bundle_container_ref: DocumentReference<creditBundleContainerDoc>,
   data: clientCreditBundleType
 ) {
   const coll = collection(
-    bundle_ref,
-    "clients"
+    bundle_container_ref,
+    SellersCollection.creditBundles.clients
   ) as CollectionReference<clientCreditBundleDocType>;
 
   const dataToAdd: clientCreditBundleDocType = {

@@ -1,6 +1,6 @@
 import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 // Firestore() es llamado internamente por disableBundle y createCreditBundle si es necesario.
-import { creditBundle } from "./createBundle"; // Asume que exporta el tipo creditBundle
+import { creditBundle, creditBundleContainerDoc } from "./createBundle"; // Asume que exporta el tipo creditBundle
 import { SellersDoc } from "../create"; // Asume que exporta el tipo SellersDoc
 import { invoiceType } from "@/tools/invoices/createInvoice"; // Asume que exporta el tipo invoiceType
 import { disableBundle } from "./disableBundle";
@@ -9,7 +9,7 @@ import { createCreditBundle } from "./createBundle";
 interface ReplaceInvoiceBundleProps {
   invoice_snapshot: DocumentSnapshot<invoiceType>; // El snapshot del documento de la factura
   seller_ref: DocumentReference<SellersDoc>; // Necesario para createCreditBundle
-  previous_bundle_to_link_ref: DocumentReference<creditBundle> | null; // Para enlazar el nuevo bundle
+  bundle_container_ref: DocumentReference<creditBundleContainerDoc> | null;
 }
 
 /**
@@ -33,7 +33,7 @@ interface ReplaceInvoiceBundleProps {
 export async function replaceInvoiceBundle({
   invoice_snapshot,
   seller_ref,
-  previous_bundle_to_link_ref,
+  bundle_container_ref,
 }: ReplaceInvoiceBundleProps): Promise<DocumentReference<creditBundle>> {
   console.log(
     `Starting replacement of credit bundle for invoice ${invoice_snapshot.id}`
@@ -56,11 +56,10 @@ export async function replaceInvoiceBundle({
   // 1. Get the reference to the current (old) credit bundle from the invoice data.
   // We assume invoiceType might have 'credit_bundle_ref'.
   // It's better if invoiceType explicitly defines this field.
-  const old_bundle_ref = (
-    invoice_data as invoiceType & {
-      credit_bundle_ref?: DocumentReference<creditBundle> | null;
-    }
-  ).credit_bundle_ref as DocumentReference<creditBundle> | null | undefined;
+  const old_bundle_ref = invoice_data.credit_bundle_ref as
+    | DocumentReference<creditBundle>
+    | null
+    | undefined;
 
   // 2. Disable the old bundle if it exists
   if (old_bundle_ref) {
@@ -100,7 +99,7 @@ export async function replaceInvoiceBundle({
     const new_bundle_ref = await createCreditBundle({
       seller_ref: seller_ref,
       invoice_ref: invoice_ref, // createCreditBundle uses this to update the invoice
-      previus_bundle_ref: previous_bundle_to_link_ref, // Pass the new parameter here
+      bundle_container_ref,
     });
     console.log(
       `New bundle ${new_bundle_ref.id} created successfully and associated with invoice ${invoice_snapshot.id}.`

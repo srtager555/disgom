@@ -31,7 +31,7 @@ export const CreditForm = ({
       amount: HTMLInputElement;
     };
     const creditName = target.creditName.value;
-    const amount = 0;
+    const amount = target.amount.value;
     const bundle_ref = invoice.data().credit_bundle_ref;
 
     if (!bundle_ref) return;

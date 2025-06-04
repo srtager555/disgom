@@ -3,15 +3,19 @@ import { InputText } from "@/components/Inputs/text";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { Form, Button } from "@/styles/Form.styles";
 import { FlexContainer } from "@/styles/index.styles";
+import { creditBundleContainerDoc } from "@/tools/sellers/credits/createBundle";
 // import { createClientCredit } from "@/tools/sellers/credits/create";
 import { createAClientForABundle } from "@/tools/sellers/credits/createClientForABundle";
 import { createOrUpdateCreditInBundle } from "@/tools/sellers/credits/createOrUpdateCreditInBundle";
+import { DocumentReference } from "firebase/firestore";
 import { Dispatch, SetStateAction, useRef } from "react";
 
 export const CreditForm = ({
   setShowForm,
+  bundleContainerRef,
 }: {
   setShowForm: Dispatch<SetStateAction<boolean>>;
+  bundleContainerRef: DocumentReference<creditBundleContainerDoc>;
 }) => {
   const { invoice } = useInvoice();
   const formRef = useRef<HTMLFormElement>(null);
@@ -32,7 +36,7 @@ export const CreditForm = ({
 
     if (!bundle_ref) return;
 
-    const client_ref = await createAClientForABundle(bundle_ref, {
+    const client_ref = await createAClientForABundle(bundleContainerRef, {
       name: creditName,
       address: "not provided",
     });

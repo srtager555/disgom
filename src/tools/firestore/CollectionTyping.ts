@@ -16,7 +16,7 @@ export const SellersCollection = {
   clients: "clients",
   credits: "credits",
   creditBundles: {
-    root: "credits",
+    root: "bundle-containers",
     clients: "clients",
     bundles: {
       root: "bundles",

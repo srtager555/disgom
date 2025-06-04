@@ -135,7 +135,7 @@ export function Route() {
       // Asumiendo que 'credit_bundles' es una subcolección de 'sellers'
       const bundlesCollectionRef = collection(
         sellerRef,
-        SellersCollection.creditBundles
+        SellersCollection.creditBundles.root
       ) as CollectionReference<creditBundle>;
 
       const q = query(

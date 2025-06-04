@@ -31,7 +31,14 @@ import { Days } from "../Closing/Data";
 const NO_PREVIOUS_BUNDLE_VALUE = "__NULL_PREVIOUS_BUNDLE__";
 const CREATE_NEW_BUNDLE_VALUE = "__CREATE_NEW_BUNDLE__";
 
-export function Route() {
+export function Route({
+  bundle_container_ref,
+}: {
+  bundle_container_ref:
+    | DocumentReference<creditBundleContainerDoc>
+    | null
+    | undefined;
+}) {
   const { invoice } = useInvoice();
 
   const [availableBundles, setAvailableBundles] = useState<
@@ -297,6 +304,7 @@ export function Route() {
     let bundleContainerRef: DocumentReference<creditBundleContainerDoc> | null =
       null;
     if (
+      bundle_container_ref &&
       pendingPreviousBundleId &&
       pendingPreviousBundleId !== CREATE_NEW_BUNDLE_VALUE && // Si es "Crear nuevo", no hay previo
       pendingPreviousBundleId !== NO_PREVIOUS_BUNDLE_VALUE // Ya manejado por el null inicial
@@ -306,7 +314,7 @@ export function Route() {
       bundleContainerRef = doc(
         sellerRef, // La referencia al documento del vendedor
         SellersCollection.creditBundles.root, // El nombre de la subcolección
-        pendingPreviousBundleId // El ID del documento del bundle
+        bundle_container_ref.id
       ) as DocumentReference<creditBundleContainerDoc>;
     }
 

@@ -9,12 +9,14 @@ import {
   doc,
   getDoc,
   DocumentReference,
-  QueryDocumentSnapshot,
   DocumentSnapshot,
   CollectionReference,
 } from "firebase/firestore";
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { creditBundle } from "@/tools/sellers/credits/createBundle";
+import {
+  creditBundle,
+  creditBundleContainerDoc,
+} from "@/tools/sellers/credits/createBundle";
 import { replaceInvoiceBundle } from "@/tools/sellers/credits/replaceInvoiceBundle";
 import { SellersDoc } from "@/tools/sellers/create"; // Tipo para SellersDoc
 import { Container, FlexContainer } from "@/styles/index.styles";
@@ -33,7 +35,7 @@ export function Route() {
   const { invoice } = useInvoice();
 
   const [availableBundles, setAvailableBundles] = useState<
-    QueryDocumentSnapshot<creditBundle>[]
+    DocumentSnapshot<creditBundle>[]
   >([]);
   // selectedPreviousBundleId: El bundle que está *actualmente aplicado* o el último confirmado.
   const [selectedPreviousBundleId, setSelectedPreviousBundleId] = useState<
@@ -51,6 +53,7 @@ export function Route() {
   const confirmTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
 
+  // effect to manage the bundles listre
   useEffect(() => {
     if (!invoice || !invoice.exists()) {
       setIsSelectDisabled(true);
@@ -132,31 +135,27 @@ export function Route() {
       setIsSelectDisabled(false);
       setLockedBundleSnapshot(null);
 
-      // Asumiendo que 'credit_bundles' es una subcolección de 'sellers'
-      const bundlesCollectionRef = collection(
+      // Asumiendo que 'creditBundles' es una subcolección de 'sellers'
+      const bundlesContainerCollRef = collection(
         sellerRef,
         SellersCollection.creditBundles.root
-      ) as CollectionReference<creditBundle>;
+      ) as CollectionReference<creditBundleContainerDoc>;
 
       const q = query(
-        bundlesCollectionRef,
-        where("next_bundle", "==", null),
+        bundlesContainerCollRef,
+        where("current_free_bundle", "!=", null),
         where("disabled", "==", false)
       );
 
-      unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          setAvailableBundles(
-            snapshot.docs as QueryDocumentSnapshot<creditBundle>[]
+      unsubscribe = onSnapshot(q, async (querySnapshot) => {
+        const availableBundles = querySnapshot.docs.map(async (doc) => {
+          return await getDoc(
+            doc.data().current_free_bundle as DocumentReference<creditBundle>
           );
-        },
-        (error) => {
-          console.error("Error fetching available bundles:", error);
-          setAvailableBundles([]);
-          setIsSelectDisabled(true); // Deshabilitar en caso de error de carga
-        }
-      );
+        });
+
+        setAvailableBundles(await Promise.all(availableBundles));
+      });
     };
 
     작업();
@@ -203,7 +202,7 @@ export function Route() {
     }
 
     const bundleOptions = availableBundles.map((bundleDoc) => {
-      const bundleData = bundleDoc.data();
+      const bundleData = bundleDoc.data() as creditBundle;
       const bundleDate = bundleData.created_at.toDate().toLocaleDateString();
       const bundleDay = Days[bundleData.created_at.toDate().getDay()];
 
@@ -295,7 +294,8 @@ export function Route() {
     }
 
     // Construir la referencia al bundle previo seleccionado
-    let previousBundleToLinkRef: DocumentReference<creditBundle> | null = null;
+    let bundleContainerRef: DocumentReference<creditBundleContainerDoc> | null =
+      null;
     if (
       pendingPreviousBundleId &&
       pendingPreviousBundleId !== CREATE_NEW_BUNDLE_VALUE && // Si es "Crear nuevo", no hay previo
@@ -303,11 +303,11 @@ export function Route() {
     ) {
       // Usar pendingPreviousBundleId para la acción
       // Asumiendo que 'credit_bundles' es una subcolección de 'sellers'
-      previousBundleToLinkRef = doc(
+      bundleContainerRef = doc(
         sellerRef, // La referencia al documento del vendedor
-        "credit_bundles", // El nombre de la subcolección
+        SellersCollection.creditBundles.root, // El nombre de la subcolección
         pendingPreviousBundleId // El ID del documento del bundle
-      ) as DocumentReference<creditBundle>;
+      ) as DocumentReference<creditBundleContainerDoc>;
     }
 
     setIsReplacing(true);
@@ -322,7 +322,7 @@ export function Route() {
       await replaceInvoiceBundle({
         invoice_snapshot: invoice, // invoice es QueryDocumentSnapshot<invoiceType>
         seller_ref: sellerRef,
-        previous_bundle_to_link_ref: previousBundleToLinkRef,
+        bundle_container_ref: bundleContainerRef,
       });
       // Si tiene éxito, el bundle pendiente se convierte en el aplicado
       setSelectedPreviousBundleId(pendingPreviousBundleId);

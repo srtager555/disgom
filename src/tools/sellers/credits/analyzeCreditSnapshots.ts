@@ -1,10 +1,10 @@
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { CreditInBundle } from "./createOrUpdateCreditInBundle";
-import { client as ClientDocType } from "../createClient"; // Asegúrate que la ruta sea correcta
+import { clientCreditBundleDocType } from "./createClientForABundle";
 
 // Define la estructura para los ítems en credits_list
 export interface AnalyzedCreditItem {
-  client: QueryDocumentSnapshot<ClientDocType>; // El documento del cliente
+  client: QueryDocumentSnapshot<clientCreditBundleDocType>; // El documento del cliente
   last_credit: number | null;
   current_credit: number | null;
   difference: number;
@@ -29,7 +29,7 @@ export interface CreditAnalysisResult {
 export function analyzeCreditSnapshots(
   currentBundleCreditsSnap: QueryDocumentSnapshot<CreditInBundle>[],
   previousBundleCreditsSnap: QueryDocumentSnapshot<CreditInBundle>[] | null,
-  clientDocsSnap: QueryDocumentSnapshot<ClientDocType>[]
+  clientDocsSnap: QueryDocumentSnapshot<clientCreditBundleDocType>[]
 ): CreditAnalysisResult {
   const previousCreditsMap = new Map<string, number>();
 

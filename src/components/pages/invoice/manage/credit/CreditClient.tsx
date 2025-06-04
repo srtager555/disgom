@@ -1,181 +1,80 @@
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { numberParser } from "@/tools/numberPaser";
-import {
-  credit,
-  createCredit,
-  clientCredit,
-} from "@/tools/sellers/credits/create";
-import { getClientCredits } from "@/tools/sellers/credits/get";
-import {
-  DocumentSnapshot,
-  DocumentReference,
-  getDoc,
-} from "firebase/firestore";
-import {
-  useState,
-  useEffect,
-  useCallback,
-  Dispatch,
-  SetStateAction,
-} from "react";
+import { DocumentReference } from "firebase/firestore";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Column, Input } from "../../Product";
 import { debounce } from "lodash";
-import { updateCredits } from "@/tools/sellers/credits/update";
-import { rawCreditResult } from "@/pages/invoices/manage";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
-
-type SavedCreditsMap = Record<string, DocumentReference<credit>>;
+import { AnalyzedCreditItem } from "@/tools/sellers/credits/analyzeCreditSnapshots";
+import { createOrUpdateCreditInBundle } from "@/tools/sellers/credits/createOrUpdateCreditInBundle";
+import { creditBundle } from "@/tools/sellers/credits/createBundle";
+import { parseNumberInput } from "@/tools/parseNumericInput";
 
 interface CreditClientProps {
-  clientCredit: DocumentSnapshot<clientCredit>;
-  setRawCreditResult: Dispatch<SetStateAction<rawCreditResult>>;
+  credit: AnalyzedCreditItem;
+  bundle_ref: DocumentReference<creditBundle>;
 }
 
-export const CreditClient = ({
-  clientCredit,
-  setRawCreditResult,
-}: CreditClientProps) => {
-  const [currentCredit, setCurrentCredit] = useState<
-    DocumentSnapshot<credit> | undefined
-  >(undefined);
+export const CreditClient = ({ credit, bundle_ref }: CreditClientProps) => {
+  const [currentCredit, setCurrentCredit] = useState<number | undefined>(
+    undefined
+  );
   const [amount, setAmount] = useState<number | string>(0);
-  const [lastAmount, setLastAmount] = useState(0);
-  const [diff, setDiff] = useState(0);
   const { invoice } = useInvoice();
   const { checkHasNextInvoice } = useHasNextInvoice();
-
-  // Efecto para obtener o crear el crédito inicial para este cliente en esta factura
-  useEffect(() => {
-    const getOrCreateCredit = async () => {
-      if (!invoice || !invoice.exists()) {
-        console.warn("Factura no disponible o no existe.");
-        setCurrentCredit(undefined); // Asegura limpiar estado si la factura desaparece
-        setAmount(0);
-        return;
-      }
-
-      // 2. Obtener el mapa de créditos desde la factura actual
-      const newCreditsMap =
-        (invoice.data()?.newCredits[invoice.data()?.route ?? 0] as
-          | SavedCreditsMap
-          | undefined) ?? {};
-      const creditInfoForClient = newCreditsMap[clientCredit.id];
-
-      let existingCreditSnapshot: DocumentSnapshot<credit> | undefined =
-        undefined;
-
-      // 3. Intentar obtener el Snapshot si la info existe en newCredits
-      if (creditInfoForClient) {
-        const creditDoc = await getDoc(creditInfoForClient);
-        if (creditDoc.exists()) {
-          existingCreditSnapshot = creditDoc;
-        } else {
-          console.warn(
-            `Referencia de crédito en newCredits para ${clientCredit.id} apunta a un documento inexistente. Se creará uno nuevo.`
-          );
-        }
-      }
-
-      // 4. Si se encontró y obtuvo el snapshot desde invoice.data().newCredits
-      if (existingCreditSnapshot) {
-        setCurrentCredit(existingCreditSnapshot);
-        setAmount(existingCreditSnapshot.data()?.amount ?? 0);
-      } else {
-        // 5. Si NO está en `invoice.data().newCredits` (o la referencia era inválida), crearlo.
-        console.log(
-          `Crédito NO encontrado en invoice.data().newCredits para cliente ${clientCredit.id}, creando nuevo...`
-        );
-
-        const lastCredit = await getClientCredits(clientCredit.ref);
-
-        const newCurrentRef = await createCredit({
-          route: invoice.data().route ?? 0,
-          amount: 0, // Iniciar en 0 para la nueva factura
-          client_ref: clientCredit.ref,
-          // last_amount: lastCredit?.data()?.amount ?? null,
-          last_credit: lastCredit?.ref ?? null,
-          next_credit: null,
-          invoice_ref: invoice.ref,
-          seller_ref: invoice.data().seller_ref, // Asegúrate que seller_ref exista
-          disabled: false,
-        });
-
-        if (lastCredit)
-          await updateCredits(lastCredit.ref, {
-            next_credit: lastCredit,
-          });
-
-        const newCurrent = await getDoc(newCurrentRef);
-
-        setCurrentCredit(newCurrent as DocumentSnapshot<credit>);
-        setAmount(0);
-      }
-    };
-
-    getOrCreateCredit();
-    // Dependencias: invoice y clientCredit.id/ref
-  }, [invoice]);
-
-  // Efecto para calcular la diferencia (sin cambios)
-  useEffect(() => {
-    async function calculateDiff() {
-      const currentCreditData = currentCredit?.data();
-
-      let last_credit;
-      if (currentCreditData?.last_credit) {
-        last_credit = await getDoc(currentCreditData.last_credit);
-        setLastAmount(last_credit?.data()?.amount ?? 0);
-      } else {
-        setLastAmount(0);
-      }
-
-      const lastAmount = last_credit?.data()?.amount ?? 0;
-      const currentAmount = Number(amount) || 0;
-      const diff = lastAmount - currentAmount;
-
-      setDiff(diff);
-      setRawCreditResult((prev) => ({ ...prev, [clientCredit.id]: diff }));
-    }
-
-    calculateDiff();
-
-    return () => {
-      setRawCreditResult((prev) => {
-        const newObj = { ...prev };
-        delete newObj[clientCredit.id];
-        return newObj;
-      });
-    };
-  }, [currentCredit, amount]);
+  const humanDetected = useRef(false);
 
   // --- Lógica para guardar el crédito con Debounce (sin cambios) ---
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSaveCredit = useCallback(
     debounce(async (newAmount: number) => {
-      if (!invoice || !currentCredit || !currentCredit.exists()) {
-        console.log("Guardado omitido: Faltan datos (invoice, currentCredit)");
+      if (!humanDetected.current) {
+        console.log("Guardado omitido: No es humano");
         return;
       }
 
-      const currentAmountInDb = currentCredit.data()?.amount ?? 0;
+      if (!invoice) {
+        console.log("Guardado omitido: Faltan datos (invoice)");
+        humanDetected.current = false;
+        return;
+      }
 
-      if (newAmount === currentAmountInDb) return;
+      const currentAmountInDb = currentCredit ?? 0;
 
-      console.log(`Guardando crédito para ${clientCredit.id}: ${newAmount}`);
+      if (newAmount === currentAmountInDb) {
+        humanDetected.current = false;
+        console.log("Guardado omitido: No hay cambios");
+        return;
+      }
+
+      console.log(`Guardando crédito para ${credit.client.id}: ${newAmount}`);
       try {
-        await updateCredits(currentCredit.ref, { amount: newAmount });
+        createOrUpdateCreditInBundle({
+          bundle_ref,
+          client_ref: credit.client.ref,
+          amount: newAmount,
+        });
+        // await updateCredits(currentCredit.ref, { amount: newAmount });
         console.log(
-          `Crédito actualizado correctamente para ${clientCredit.id}`
+          `Crédito actualizado correctamente para ${credit.client.id}`
         );
       } catch (error) {
         console.error(
-          `Error al actualizar el crédito para ${clientCredit.id}:`,
+          `Error al actualizar el crédito para ${credit.client.id}:`,
           error
         );
+      } finally {
+        humanDetected.current = false;
       }
     }, 1000),
-    [invoice, currentCredit, clientCredit.id]
+    [invoice, currentCredit, credit.client.id]
   );
+
+  // Efecto para actualizar el currentCredit
+  useEffect(() => {
+    setCurrentCredit(credit.current_credit ?? 0);
+    setAmount(credit.current_credit ?? 0);
+  }, [credit.current_credit]);
 
   // Efecto que llama a la función debounced
   useEffect(() => {
@@ -189,25 +88,32 @@ export const CreditClient = ({
 
   // Handler para el input
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    checkHasNextInvoice(() => setAmount(e.target.value), true);
+    checkHasNextInvoice(
+      () => {
+        humanDetected.current = true;
+        parseNumberInput(setAmount, e);
+      },
+      true,
+      credit.client.ref.id
+    );
   };
 
   // Renderizado
   return (
     <>
       <Column gridColumn="1 / 3">
-        {clientCredit.data()?.name ?? "Nombre no disponible"}
+        {credit.client.data()?.name ?? "Nombre no disponible"}
       </Column>
-      <Column>{numberParser(lastAmount)}</Column>
+      <Column>{numberParser(credit.last_credit ?? 0)}</Column>
       <Column>
         <Input
-          type="number"
+          type="text"
           value={amount}
           name="amount"
           onChange={handleAmountChange}
         />
       </Column>
-      <Column>{numberParser(diff)}</Column>
+      <Column>{numberParser(credit.difference)}</Column>
     </>
   );
 };

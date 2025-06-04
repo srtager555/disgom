@@ -58,8 +58,12 @@ export async function createCreditBundle({
   bundle_container_ref,
 }: creditBundleprops): Promise<DocumentReference<creditBundle>> {
   return await runTransaction(Firestore(), async (transaction) => {
+    console.log(
+      "Creating credit bundle, bundle container: " + bundle_container_ref?.path
+    );
     if (!bundle_container_ref) {
       try {
+        console.log("Creating credit bundle container");
         bundle_container_ref = await createCreditBundleContainer(seller_ref);
       } catch (error) {
         console.log(error);
@@ -76,6 +80,7 @@ export async function createCreditBundle({
     const bundleContainerData = bundlesContainer.data();
 
     if (!bundleContainerData) {
+      console.log("Bundle container data not found", bundlesContainer);
       throw new Error("Bundle container data not found");
     }
 

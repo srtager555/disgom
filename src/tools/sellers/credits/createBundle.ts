@@ -3,12 +3,14 @@ import {
   addDoc,
   collection,
   CollectionReference,
+  doc,
   DocumentReference,
+  runTransaction,
   Timestamp,
-  updateDoc,
 } from "firebase/firestore";
 import { SellersDoc } from "../create";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
+import { Firestore } from "@/tools/firestore";
 
 export type creditBundle = {
   created_at: Timestamp;
@@ -23,14 +25,14 @@ export type creditBundle = {
 interface creditBundleprops {
   seller_ref: DocumentReference<SellersDoc>;
   invoice_ref: DocumentReference<invoiceType>;
-  previus_bundle_ref: DocumentReference<creditBundle> | null;
-  bundle_container_ref: DocumentReference<creditBundleContainerDoc>;
+  bundle_container_ref?: DocumentReference<creditBundleContainerDoc> | null;
 }
 
 export interface creditBundleContainerDoc {
   disabled: boolean;
   created_at: Timestamp;
   seller_ref: DocumentReference<SellersDoc>;
+  current_free_bundle: DocumentReference<creditBundle> | null;
 }
 
 export async function createCreditBundleContainer(
@@ -45,6 +47,7 @@ export async function createCreditBundleContainer(
       disabled: false,
       created_at: Timestamp.fromDate(new Date()),
       seller_ref,
+      current_free_bundle: null,
     }
   );
 }
@@ -52,37 +55,62 @@ export async function createCreditBundleContainer(
 export async function createCreditBundle({
   seller_ref,
   invoice_ref,
-  previus_bundle_ref,
   bundle_container_ref,
 }: creditBundleprops): Promise<DocumentReference<creditBundle>> {
-  const coll = collection(
-    bundle_container_ref,
-    SellersCollection.creditBundles.bundles.root
-  ) as CollectionReference<creditBundle>;
+  return await runTransaction(Firestore(), async (transaction) => {
+    if (!bundle_container_ref) {
+      try {
+        bundle_container_ref = await createCreditBundleContainer(seller_ref);
+      } catch (error) {
+        console.log(error);
+        throw new Error("Failed to create credit bundle container");
+      }
+    }
 
-  const newBundleData: creditBundle = {
-    created_at: Timestamp.fromDate(new Date()),
-    seller_ref,
-    invoice_ref,
-    bundle_container_ref,
-    last_bundle: previus_bundle_ref,
-    next_bundle: null,
-    disabled: false,
-  };
+    const coll = collection(
+      bundle_container_ref,
+      SellersCollection.creditBundles.bundles.root
+    ) as CollectionReference<creditBundle>;
 
-  const newBundleRef = await addDoc(coll, newBundleData);
+    const bundlesContainer = await transaction.get(bundle_container_ref);
+    const bundleContainerData = bundlesContainer.data();
 
-  // add the bundle to the invoice
-  await updateDoc(invoice_ref, {
-    credit_bundle_ref: newBundleRef,
-  });
+    if (!bundleContainerData) {
+      throw new Error("Bundle container data not found");
+    }
 
-  // If there was a previous bundle, update its next_bundle field
-  if (previus_bundle_ref) {
-    await updateDoc(previus_bundle_ref, {
-      next_bundle: newBundleRef,
+    const previus_bundle_ref = bundleContainerData.current_free_bundle;
+
+    const newBundleData: creditBundle = {
+      created_at: Timestamp.fromDate(new Date()),
+      seller_ref,
+      invoice_ref,
+      bundle_container_ref,
+      last_bundle: previus_bundle_ref,
+      next_bundle: null,
+      disabled: false,
+    };
+
+    // create the new bundle
+    const newBundleRef = doc(coll);
+    transaction.set(newBundleRef, newBundleData);
+
+    // update the current free bundle
+    transaction.update(bundle_container_ref, {
+      current_free_bundle: newBundleRef,
     });
-  }
 
-  return newBundleRef;
+    // add the bundle to the invoice
+    transaction.update(invoice_ref, {
+      credit_bundle_ref: newBundleRef,
+    });
+
+    // If there was a previous bundle, update its next_bundle field
+    if (previus_bundle_ref) {
+      transaction.update(previus_bundle_ref, {
+        next_bundle: newBundleRef,
+      });
+    }
+    return newBundleRef;
+  });
 }

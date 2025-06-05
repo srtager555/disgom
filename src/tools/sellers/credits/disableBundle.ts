@@ -70,6 +70,12 @@ export async function disableBundle({ bundle_ref }: props): Promise<void> {
       // al 'last_bundle' del bundle que se está deshabilitando (que podría ser null).
       if (nextBundleRef) {
         transaction.update(nextBundleRef, { last_bundle: prevBundleRef });
+      } else {
+        // Si no existe next bundle significa que es el actual, entonces hay que
+        // actualizar el bundle libre en el contener con el prevBundleRef
+        transaction.update(bundleToDisableData.bundle_container_ref, {
+          current_free_bundle: prevBundleRef,
+        });
       }
     });
 

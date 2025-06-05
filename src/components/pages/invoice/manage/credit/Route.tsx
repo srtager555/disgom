@@ -6,7 +6,6 @@ import {
   query,
   where,
   onSnapshot,
-  doc,
   getDoc,
   DocumentReference,
   DocumentSnapshot,
@@ -44,6 +43,9 @@ export function Route({
   const [availableBundles, setAvailableBundles] = useState<
     DocumentSnapshot<creditBundle>[]
   >([]);
+  const [bundleContainerRefList, setBundleContainerRefList] = useState<
+    Record<string, DocumentReference<creditBundleContainerDoc>>
+  >({});
   // selectedPreviousBundleId: El bundle que está *actualmente aplicado* o el último confirmado.
   const [selectedPreviousBundleId, setSelectedPreviousBundleId] = useState<
     string | null
@@ -156,9 +158,16 @@ export function Route({
 
       unsubscribe = onSnapshot(q, async (querySnapshot) => {
         const availableBundles = querySnapshot.docs.map(async (doc) => {
-          return await getDoc(
+          const freeBundle = await getDoc(
             doc.data().current_free_bundle as DocumentReference<creditBundle>
           );
+
+          setBundleContainerRefList((prev) => ({
+            ...prev,
+            [freeBundle.id]: doc.ref,
+          }));
+
+          return freeBundle;
         });
 
         setAvailableBundles(await Promise.all(availableBundles));
@@ -227,16 +236,16 @@ export function Route({
 
     return [
       {
-        name: "Crear nueva Lista",
-        value: CREATE_NEW_BUNDLE_VALUE,
-        selected: pendingPreviousBundleId === CREATE_NEW_BUNDLE_VALUE,
-        disabled: isSelectDisabled,
-      },
-      {
         name: "Ninguna lista previa",
         value: NO_PREVIOUS_BUNDLE_VALUE,
         selected: pendingPreviousBundleId === null, // Usar pending
         disabled: isSelectDisabled, // Si el select está deshabilitado, esta opción también.
+      },
+      {
+        name: "Crear nueva Lista",
+        value: CREATE_NEW_BUNDLE_VALUE,
+        selected: pendingPreviousBundleId === CREATE_NEW_BUNDLE_VALUE,
+        disabled: isSelectDisabled,
       },
       ...bundleOptions,
     ];
@@ -311,11 +320,11 @@ export function Route({
     ) {
       // Usar pendingPreviousBundleId para la acción
       // Asumiendo que 'credit_bundles' es una subcolección de 'sellers'
-      bundleContainerRef = doc(
-        sellerRef, // La referencia al documento del vendedor
-        SellersCollection.creditBundles.root, // El nombre de la subcolección
-        bundle_container_ref.id
-      ) as DocumentReference<creditBundleContainerDoc>;
+      bundleContainerRef = bundleContainerRefList[pendingPreviousBundleId];
+      // doc(
+      //   sellerRef, // La referencia al documento del vendedor
+      //   SellersCollection.creditBundles.root, // El nombre de la subcolección
+      // ) as DocumentReference<creditBundleContainerDoc>;
     }
 
     setIsReplacing(true);

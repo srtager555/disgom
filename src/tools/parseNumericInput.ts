@@ -33,26 +33,25 @@ export function parseNumberInput(
 
     if (!isNaN(numericValue)) {
       if (options.max !== undefined && numericValue > options.max) {
+        setState(Number(options.max));
         if (options?.returnRaw) {
           return Number(options.max);
         }
-        setState(Number(options.max));
         return;
       }
 
       if (options.min !== undefined && numericValue < options.min) {
+        setState(Number(options.min));
         if (options?.returnRaw) {
           return Number(options.min);
         }
-        setState(Number(options.min));
         return;
       }
     }
   }
 
+  setState(Number(raw));
   if (options?.returnRaw) {
     return Number(raw);
   }
-
-  setState(Number(raw));
 }

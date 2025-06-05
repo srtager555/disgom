@@ -63,23 +63,21 @@ export function useGetCreditBundleBasicData() {
     };
   }, [invoice]);
 
-  // effect to get the clients from the current bundle container
+  // effect to get the clients from the current bundle container in real time
   useEffect(() => {
-    async function getClients() {
-      if (!bundleContainer) return;
+    if (!bundleContainer) return;
 
-      const coll = collection(
-        bundleContainer.ref,
-        SellersCollection.creditBundles.clients
-      ) as CollectionReference<clientCreditBundleDocType>;
+    const coll = collection(
+      bundleContainer.ref,
+      SellersCollection.creditBundles.clients
+    ) as CollectionReference<clientCreditBundleDocType>;
 
-      const querySnapshot = await getDocs(coll);
-      setClients(querySnapshot.docs);
-    }
-
-    getClients();
+    const unsubcribe = onSnapshot(coll, (snap) => {
+      setClients(snap.docs);
+    });
 
     return () => {
+      unsubcribe();
       setClients([]);
     };
   }, [bundleContainer]);

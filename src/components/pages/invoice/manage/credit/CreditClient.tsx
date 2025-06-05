@@ -87,15 +87,12 @@ export const CreditClient = ({ credit, bundle_ref }: CreditClientProps) => {
   }, [amount, currentCredit, debouncedSaveCredit]);
 
   // Handler para el input
-  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    checkHasNextInvoice(
-      () => {
-        humanDetected.current = true;
-        parseNumberInput(setAmount, e);
-      },
-      true,
-      credit.client.ref.id
-    );
+  const handleAmountChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    humanDetected.current = true;
+    const amount = parseNumberInput(setAmount, e, { returnRaw: true });
+    debouncedSaveCredit(Number(amount));
+
+    await checkHasNextInvoice(() => {}, true, credit.client.ref.id);
   };
 
   // Renderizado

@@ -2,7 +2,12 @@
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { HasInvoice } from "@/pages/invoices/manage";
 import { invoiceType } from "@/tools/invoices/createInvoice";
-import { PartialWithFieldValue, updateDoc } from "firebase/firestore";
+import { creditBundle } from "@/tools/sellers/credits/createBundle";
+import {
+  DocumentSnapshot,
+  PartialWithFieldValue,
+  updateDoc,
+} from "firebase/firestore";
 import { useCallback, useContext, useState } from "react";
 
 export function useHasNextInvoice() {
@@ -30,5 +35,17 @@ export function useHasNextInvoice() {
     [invoice, map, setHasInvoice]
   );
 
-  return { checkHasNextInvoice };
+  const checkHasNextInvoiceCreditSection = useCallback(
+    async (
+      creditBundle: DocumentSnapshot<creditBundle>,
+      callback: () => any
+    ) => {
+      if (creditBundle.data()?.next_bundle) {
+        await checkHasNextInvoice(callback, true, creditBundle.id);
+      }
+    },
+    [checkHasNextInvoice]
+  );
+
+  return { checkHasNextInvoice, checkHasNextInvoiceCreditSection };
 }

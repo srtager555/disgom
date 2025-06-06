@@ -56,10 +56,11 @@ export function Credit({ setCreditResult, creditResult }: props) {
           {showForm ? "Ocultar" : "Agregar nuevo"}
         </Button>
       </FlexContainer>
-      {showForm && bundleContainer && (
+      {showForm && bundleContainer && creditBundle && (
         <CreditForm
           bundleContainerRef={bundleContainer.ref}
           setShowForm={setShowForm}
+          bundleSnap={creditBundle}
         />
       )}
       <Container>
@@ -67,7 +68,7 @@ export function Credit({ setCreditResult, creditResult }: props) {
         {creditBundle &&
           credits.map((credit, i) => (
             <GridContainer key={i} $gridTemplateColumns="repeat(4, 75px) 1fr">
-              <CreditClient credit={credit} bundle_ref={creditBundle.ref} />
+              <CreditClient credit={credit} bundleSnap={creditBundle} />
             </GridContainer>
           ))}
         <GridContainer $gridTemplateColumns="repeat(4, 75px) 1fr">

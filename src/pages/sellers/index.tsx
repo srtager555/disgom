@@ -8,10 +8,11 @@ import { SellersDoc } from "@/tools/sellers/create";
 import { doc, DocumentSnapshot, getDoc } from "firebase/firestore";
 import { ReactElement, useEffect, useState } from "react";
 import { SellerChart } from "@/components/pages/sellers/SellerChart";
-import { SellerCreditPreviewMapper } from "@/components/pages/sellers/SellerCreditPreview";
+// import { SellerCreditPreviewMapper } from "@/components/pages/sellers/SellerCreditPreview";
 import { SellerDefaultPrices } from "@/components/pages/sellers/DefaultPrices";
 import { useGetSellers } from "@/hooks/sellers/getSellers";
 import { client } from "@/tools/sellers/createClient";
+import { SellerCredit } from "@/components/pages/sellers/credits";
 
 const Page: NextPageWithLayout = () => {
   const { id, clientID } = useQueryParams();
@@ -59,7 +60,7 @@ const Page: NextPageWithLayout = () => {
       <SellerChart sellerDoc={sellerDoc} clientDoc={clientDoc} />
       <FlexContainer styles={{ gap: "20px" }}>
         {sellerDoc?.data()?.hasInventory && (
-          <SellerCreditPreviewMapper sellerDoc={sellerDoc} />
+          <SellerCredit seller_doc={sellerDoc} />
         )}
         <SellerDefaultPrices sellerDoc={sellerDoc} clientDoc={clientDoc} />
       </FlexContainer>

@@ -17,6 +17,9 @@ export function ClientCredit({ data }: props) {
   const initialData = useMemo(() => data.client.data(), [data]);
   const [clientName, setClientName] = useState(initialData.name);
   const [clientAddress] = useState(initialData.address);
+  const [succesufully, setSuccesufully] = useState(false);
+  const [error, setError] = useState(false);
+  const [noChanges, setNoChanges] = useState(false);
 
   const handleUpdateClientDetails = useCallback(async () => {
     const updatedFields: Partial<clientCreditBundleDocType> = {};
@@ -35,9 +38,23 @@ export function ClientCredit({ data }: props) {
       try {
         await updateDoc(data.client.ref, updatedFields);
         console.log("Client details updated successfully.");
+        setSuccesufully(true);
+
+        setTimeout(() => {
+          setSuccesufully(false);
+        }, 2000);
       } catch (error) {
+        setError(true);
+        setTimeout(() => {
+          setError(false);
+        }, 2000);
         console.error("Error updating client details:", error);
       }
+    } else {
+      setNoChanges(true);
+      setTimeout(() => {
+        setNoChanges(false);
+      }, 2000);
     }
   }, [
     clientName,
@@ -82,6 +99,10 @@ export function ClientCredit({ data }: props) {
       }}
     >
       <FlexContainer styles={{ width: "100%", flexDirection: "column" }}>
+        {succesufully && <p>*Se actualizo correctamente*</p>}
+        {error && <p>*Ocurrio un problema*</p>}
+        {noChanges && <p>*No se realizaron cambios*</p>}
+
         <Container>
           <Input
             type="text"
@@ -106,8 +127,8 @@ export function ClientCredit({ data }: props) {
         <FlexContainer
           styles={{ justifyContent: "space-between", marginTop: "10px" }}
         >
-          <Button onClick={handleUpdateClientDetails}>Actualizar</Button>
-          <Button
+          <Button onClick={handleUpdateClientDetails}>Actualizar Nombre</Button>
+          {/* <Button
             $warn
             $hold
             onPointerDown={debouncedDelete}
@@ -115,7 +136,7 @@ export function ClientCredit({ data }: props) {
             onMouseLeave={debouncedDelete.cancel} // Also cancel if mouse leaves while pressed
           >
             Eliminar
-          </Button>
+          </Button> */}
         </FlexContainer>
       </FlexContainer>
       <span>{numberParser(data.current_credit ?? 0)}</span>

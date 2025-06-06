@@ -1,6 +1,6 @@
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { numberParser } from "@/tools/numberPaser";
-import { DocumentReference } from "firebase/firestore";
+import { DocumentSnapshot } from "firebase/firestore";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Column, Input } from "../../Product";
 import { debounce } from "lodash";
@@ -12,16 +12,16 @@ import { parseNumberInput } from "@/tools/parseNumericInput";
 
 interface CreditClientProps {
   credit: AnalyzedCreditItem;
-  bundle_ref: DocumentReference<creditBundle>;
+  bundleSnap: DocumentSnapshot<creditBundle>;
 }
 
-export const CreditClient = ({ credit, bundle_ref }: CreditClientProps) => {
+export const CreditClient = ({ credit, bundleSnap }: CreditClientProps) => {
   const [currentCredit, setCurrentCredit] = useState<number | undefined>(
     undefined
   );
   const [amount, setAmount] = useState<number | string>(0);
   const { invoice } = useInvoice();
-  const { checkHasNextInvoice } = useHasNextInvoice();
+  const { checkHasNextInvoiceCreditSection } = useHasNextInvoice();
   const humanDetected = useRef(false);
 
   // --- Lógica para guardar el crédito con Debounce (sin cambios) ---
@@ -50,7 +50,7 @@ export const CreditClient = ({ credit, bundle_ref }: CreditClientProps) => {
       console.log(`Guardando crédito para ${credit.client.id}: ${newAmount}`);
       try {
         createOrUpdateCreditInBundle({
-          bundle_ref,
+          bundle_ref: bundleSnap.ref,
           client_ref: credit.client.ref,
           amount: newAmount,
         });
@@ -81,18 +81,26 @@ export const CreditClient = ({ credit, bundle_ref }: CreditClientProps) => {
     if (currentCredit !== undefined) {
       const numericAmount = Number(amount);
       if (!isNaN(numericAmount)) {
-        debouncedSaveCredit(numericAmount);
+        checkHasNextInvoiceCreditSection(
+          bundleSnap,
+
+          () => debouncedSaveCredit(numericAmount)
+        );
       }
     }
-  }, [amount, currentCredit, debouncedSaveCredit]);
+  }, [
+    amount,
+    currentCredit,
+    debouncedSaveCredit,
+    checkHasNextInvoiceCreditSection,
+    bundleSnap,
+  ]);
 
   // Handler para el input
   const handleAmountChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     humanDetected.current = true;
     const amount = parseNumberInput(setAmount, e, { returnRaw: true });
     debouncedSaveCredit(Number(amount));
-
-    await checkHasNextInvoice(() => {}, true, credit.client.ref.id);
   };
 
   // Renderizado

@@ -1,23 +1,30 @@
 import { InputNumber } from "@/components/Inputs/number";
 import { InputText } from "@/components/Inputs/text";
 import { useInvoice } from "@/contexts/InvoiceContext";
+import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 import { Form, Button } from "@/styles/Form.styles";
 import { FlexContainer } from "@/styles/index.styles";
-import { creditBundleContainerDoc } from "@/tools/sellers/credits/createBundle";
+import {
+  creditBundle,
+  creditBundleContainerDoc,
+} from "@/tools/sellers/credits/createBundle";
 // import { createClientCredit } from "@/tools/sellers/credits/create";
 import { createAClientForABundle } from "@/tools/sellers/credits/createClientForABundle";
 import { createOrUpdateCreditInBundle } from "@/tools/sellers/credits/createOrUpdateCreditInBundle";
-import { DocumentReference } from "firebase/firestore";
+import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { Dispatch, SetStateAction, useRef } from "react";
 
 export const CreditForm = ({
   setShowForm,
   bundleContainerRef,
+  bundleSnap,
 }: {
   setShowForm: Dispatch<SetStateAction<boolean>>;
   bundleContainerRef: DocumentReference<creditBundleContainerDoc>;
+  bundleSnap: DocumentSnapshot<creditBundle>;
 }) => {
   const { invoice } = useInvoice();
+  const { checkHasNextInvoiceCreditSection } = useHasNextInvoice();
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -41,12 +48,16 @@ export const CreditForm = ({
       address: "not provided",
     });
 
-    await createOrUpdateCreditInBundle({
-      bundle_ref,
-      client_ref,
-      amount: 0,
-      create_previus_amount: Number(amount),
-    });
+    await checkHasNextInvoiceCreditSection(
+      bundleSnap,
+      async () =>
+        await createOrUpdateCreditInBundle({
+          bundle_ref,
+          client_ref,
+          amount: 0,
+          create_previus_amount: Number(amount),
+        })
+    );
 
     // await createClientCredit(
     //   route,

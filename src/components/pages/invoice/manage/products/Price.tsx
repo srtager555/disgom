@@ -10,7 +10,7 @@ import {
 import { Column, Input } from "../../Product";
 import { Container } from "@/styles/index.styles";
 import { useDebounce } from "@/hooks/debounce";
-import { useInvoice } from "@/contexts/InvoiceContext"; // Import useInvoice
+import { useInvoice } from "@/contexts/InvoiceContext";
 import { someHumanChangesDetected } from "./Product";
 import { useNewDefaultCustomPricesContext } from "@/hooks/invoice/useNewDefaultCustomPricesContext";
 import { outputType } from "@/tools/products/addOutputs";
@@ -36,7 +36,6 @@ type props = {
 export const Price = memo(BasePrice, (prev, next) => {
   if (prev.product_ref.id !== next.product_ref.id) return false;
   if (prev.defaultCustomPrice !== next.defaultCustomPrice) return false;
-  // if (prev.normalPrice !== next.normalPrice) return false;
   if (isEqual(prev.outputs, next.outputs)) return false;
 
   return true;
@@ -47,7 +46,6 @@ export function BasePrice({
   product_doc,
   defaultCustomPrice,
   sellerHasInventory,
-  // normalPrice,
   outputs,
   setCustomPrice,
   someHumanChangesDetected,
@@ -59,9 +57,8 @@ export function BasePrice({
   const { invoice } = useInvoice(); // Get invoice context
   const invoiceType = invoice?.data()?.invoice_type;
   const priceMultiplier = invoiceType !== "normal" ? -1 : 1; // Determine multiplier
-
   const [normalPrice, setNormalPrice] = useState(0);
-  // Initialize state considering the multiplier
+  // Initialize state
   const [newPrice, setNewPrice] = useState(0);
   const humanAmountChanged = useRef(false);
   const debounceNewPrice = useDebounce(newPrice, 1000);
@@ -74,10 +71,18 @@ export function BasePrice({
 
       if (parent) {
         const parentDoc = await getParentStock(parent);
+        parentDoc.sort(
+          (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
+        );
+
         const price = parentDoc[0]?.sale_price || 0;
         setNormalPrice(price * priceMultiplier);
       } else {
-        const price = productData?.stock[0]?.sale_price || 0;
+        const productStock =
+          productData?.stock.sort(
+            (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
+          ) ?? [];
+        const price = productStock[0]?.sale_price || 0;
         setNormalPrice(price * priceMultiplier);
       }
     }

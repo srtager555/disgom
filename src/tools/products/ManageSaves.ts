@@ -1,7 +1,5 @@
 import {
-  QueryDocumentSnapshot,
   Timestamp,
-  updateDoc,
   DocumentSnapshot,
   DocumentReference,
 } from "firebase/firestore";
@@ -9,8 +7,6 @@ import { addOutputs, outputType } from "./addOutputs";
 import { productDoc } from "./create";
 import { stockType } from "./addToStock";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
-import { getInvoiceByQuery } from "../invoices/getInvoiceByQuery";
-import { getProductOutputsByID } from "./getOutputs";
 import { invoiceType } from "../invoices/createInvoice";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 
@@ -38,8 +34,12 @@ export const amountListener = function (
   let remainingAmount = n;
   const outputsToCreate: Array<rawOutput> = [];
   let remainingStocks: Array<rawOutput> = [];
-  const stocks = [...stocksRoot];
-  const priceToUse = customPrice || defaultCustomPrice?.data()?.price;
+  const stocks = [...stocksRoot].sort(
+    (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
+  );
+  const mostRecentStockPrice = stocks[0]?.sale_price;
+  const priceToUse =
+    customPrice || defaultCustomPrice?.data()?.price || mostRecentStockPrice;
 
   if (remainingAmount < 0) return { outputsToCreate, remainingStocks };
   if (stocks.length === 0) return { outputsToCreate, remainingStocks };
@@ -54,7 +54,7 @@ export const amountListener = function (
         amount: stock.amount,
         product_ref: productDoc.ref,
         entry_ref: stock.entry_ref,
-        sale_price: priceToUse || stock.sale_price,
+        sale_price: priceToUse,
         default_custom_price_ref: defaultCustomPrice?.ref || null,
         purchase_price: stock.purchase_price,
         commission: stock.seller_commission,
@@ -66,7 +66,7 @@ export const amountListener = function (
           amount: remainingAmount,
           product_ref: productDoc.ref,
           entry_ref: stock.entry_ref,
-          sale_price: priceToUse || stock.sale_price,
+          sale_price: priceToUse,
           default_custom_price_ref: defaultCustomPrice?.ref || null,
           purchase_price: stock.purchase_price,
           commission: stock.seller_commission,
@@ -128,64 +128,6 @@ export async function saveNewOutputs(
   await addOutputs(invoice, productDoc, outputs);
 }
 
-type props = {
-  productDoc: QueryDocumentSnapshot<productDoc>;
-  customPrice: number | undefined;
-  stocks: Array<stockType>;
-  outputs_amount_added: number | undefined;
-};
-
-export async function ManageProductOutputsSaves({
-  productDoc,
-  customPrice,
-  stocks,
-  outputs_amount_added,
-}: props) {
-  const invoice = await getInvoiceByQuery();
-
-  if (
-    !invoice ||
-    typeof outputs_amount_added != "number" ||
-    Number.isNaN(outputs_amount_added)
-  )
-    return;
-
-  const outputs = await getProductOutputsByID(productDoc.id);
-  const lastPrice = outputs?.outputs[0]?.data()?.sale_price;
-
-  if (outputs?.totalAmount === outputs_amount_added) {
-    console.log("same amount, checking prices");
-    if (!customPrice) {
-      return console.log("customPrice not provided");
-    } else if (customPrice === lastPrice) {
-      return console.log(
-        "custom price is equal to the current price, saving cancelled",
-        customPrice,
-        lastPrice
-      );
-    }
-    console.log("custom price is not equal", customPrice, lastPrice);
-  }
-
-  const outputsToCreate = amountListener(
-    outputs_amount_added,
-    stocks,
-    undefined,
-    productDoc,
-    customPrice
-  );
-
-  console.log("outputs to create", outputsToCreate);
-  console.log("remaining stocks", outputsToCreate.remainingStocks);
-
-  await updateDoc(productDoc.ref, {
-    stock: outputsToCreate.remainingStocks.map(rawOutputToStock),
-  });
-
-  await addOutputs(invoice, productDoc, outputsToCreate.outputsToCreate);
-  console.log("------- outputs saved");
-}
-
 export function rawOutputToStock(output: rawOutput): stockType {
   return {
     created_at: Timestamp.now(),
@@ -197,3 +139,61 @@ export function rawOutputToStock(output: rawOutput): stockType {
     seller_commission: output.commission,
   };
 }
+
+// type props = {
+//   productDoc: QueryDocumentSnapshot<productDoc>;
+//   customPrice: number | undefined;
+//   stocks: Array<stockType>;
+//   outputs_amount_added: number | undefined;
+// };
+
+// export async function ManageProductOutputsSaves({
+//   productDoc,
+//   customPrice,
+//   stocks,
+//   outputs_amount_added,
+// }: props) {
+//   const invoice = await getInvoiceByQuery();
+
+//   if (
+//     !invoice ||
+//     typeof outputs_amount_added != "number" ||
+//     Number.isNaN(outputs_amount_added)
+//   )
+//     return;
+
+//   const outputs = await getProductOutputsByID(productDoc.id);
+//   const lastPrice = outputs?.outputs[0]?.data()?.sale_price;
+
+//   if (outputs?.totalAmount === outputs_amount_added) {
+//     console.log("same amount, checking prices");
+//     if (!customPrice) {
+//       return console.log("customPrice not provided");
+//     } else if (customPrice === lastPrice) {
+//       return console.log(
+//         "custom price is equal to the current price, saving cancelled",
+//         customPrice,
+//         lastPrice
+//       );
+//     }
+//     console.log("custom price is not equal", customPrice, lastPrice);
+//   }
+
+//   const outputsToCreate = amountListener(
+//     outputs_amount_added,
+//     stocks,
+//     undefined,
+//     productDoc,
+//     customPrice
+//   );
+
+//   console.log("outputs to create", outputsToCreate);
+//   console.log("remaining stocks", outputsToCreate.remainingStocks);
+
+//   await updateDoc(productDoc.ref, {
+//     stock: outputsToCreate.remainingStocks.map(rawOutputToStock),
+//   });
+
+//   await addOutputs(invoice, productDoc, outputsToCreate.outputsToCreate);
+//   console.log("------- outputs saved");
+// }

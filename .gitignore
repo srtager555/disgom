@@ -48,3 +48,6 @@ disgom-app-firebase-adminsdk-*
 firebase-debug.log
 firestore-debug.log
 emulator-data/
+
+# sw
+sw.js

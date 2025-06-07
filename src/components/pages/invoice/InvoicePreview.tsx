@@ -1,9 +1,10 @@
 import { globalCSSVars } from "@/styles/colors";
-import { Container, FlexContainer } from "@/styles/index.styles";
+import { FlexContainer } from "@/styles/index.styles";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { numberParser } from "@/tools/numberPaser";
 import { SellersDoc } from "@/tools/sellers/create";
 import { client } from "@/tools/sellers/createClient";
+import { time12HrsParser } from "@/tools/time/time12hrsparser";
 import {
   DocumentSnapshot,
   getDoc,
@@ -28,7 +29,7 @@ export const InvoiceContainer = styled.div<{
     if (props.unlimited) {
       return css`
         width: 100%;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
       `;
     }
 
@@ -36,7 +37,7 @@ export const InvoiceContainer = styled.div<{
       grid-template-columns: repeat(3, 350px);
     `;
   }}
-  grid-auto-rows: 50px;
+  grid-auto-rows: 70px;
   gap: 10px;
 `;
 
@@ -71,7 +72,7 @@ type props = {
   inSeller?: boolean;
 };
 
-export function InvoicePreview({ doc, inSeller }: props) {
+export function InvoicePreview({ doc, inSeller, onlyTime }: props) {
   const [seller, setSeller] = useState<DocumentSnapshot<SellersDoc>>();
   const [client, setClient] = useState<DocumentSnapshot<client>>();
   const data = useMemo(() => doc.data(), [doc]);
@@ -100,39 +101,65 @@ export function InvoicePreview({ doc, inSeller }: props) {
 
   // Determine what to display based on invoice type and context
   const primaryDisplay = useMemo(() => {
-    if (!client) {
-      switch (data.invoice_type) {
-        case "donation":
-          return "Donación"; // Spanish for donation
-        case "damaged":
-          return "Dañado"; // Spanish for damaged
-        default:
-          // For 'normal' or any other type, show the seller name
-          return sellerData?.name;
-      }
-    } else {
-      return client?.data()?.name;
+    switch (data.invoice_type) {
+      case "donation":
+        return "Donación"; // Spanish for donation
+      case "damaged":
+        return "Dañado"; // Spanish for damaged
+      default:
+        // For 'normal' or any other type, show the seller name
+        return sellerData?.name;
     }
-  }, [data.invoice_type, sellerData?.name, client]);
+  }, [data.invoice_type, sellerData?.name]);
 
   return (
     <InvoiceComponent>
       {client ? (
-        <Container>
+        <FlexContainer
+          styles={{
+            height: "100%",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <small style={{ textOverflow: "ellipsis" }}>
+            {time12HrsParser(data.created_at?.toDate())}
+          </small>
           <small style={{ textOverflow: "ellipsis", textWrap: "nowrap" }}>
             {primaryDisplay} - {data.credit?.paid ? "pagado" : "en credito"}
           </small>
           <p>{client.data()?.name}</p>
-        </Container>
+        </FlexContainer>
       ) : inSeller ? (
         <p style={{ textOverflow: "ellipsis" }}>
           {data.created_at?.toDate().toLocaleDateString()}
         </p>
       ) : (
-        <p style={{ textOverflow: "ellipsis" }}>{primaryDisplay}</p> // Use the determined display value
+        <FlexContainer
+          styles={{
+            height: "100%",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <small style={{ textOverflow: "ellipsis" }}>
+            {time12HrsParser(data.created_at?.toDate())}
+          </small>
+          <p style={{ textOverflow: "ellipsis" }}>{primaryDisplay}</p>
+        </FlexContainer>
       )}
       <FlexContainer styles={{ height: "100%", alignItems: "center" }}>
-        {numberParser(data.total_sold)}
+        <FlexContainer
+          styles={{
+            flexDirection: "column",
+            alignItems: "flex-end",
+          }}
+        >
+          <span>{numberParser(data.total_sold)}</span>
+          <span style={{ color: "green" }}>
+            <b>{numberParser(data.total_proft)}</b>
+          </span>
+        </FlexContainer>
 
         <AnchorBro href={"/invoices/manage?id=" + doc.id}>Ver más</AnchorBro>
       </FlexContainer>

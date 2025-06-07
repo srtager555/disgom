@@ -15,6 +15,7 @@ export function Commission({ remainStockTotals, sellerHasInventory }: props) {
       hideOnPrint
       className="hide-print"
       title={numberParser(remainStockTotals.seller_profit)}
+      $textAlign="center"
     >
       {numberParser(remainStockTotals.seller_profit)}
     </Column>

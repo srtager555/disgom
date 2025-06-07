@@ -190,6 +190,7 @@ export const Input = styled.input`
   border: none;
   padding: 2px 5px;
   font-size: 1rem;
+  text-align: center;
 
   @media print {
     font-size: 0.8rem;

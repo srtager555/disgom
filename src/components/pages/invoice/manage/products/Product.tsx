@@ -282,13 +282,13 @@ export function Product({
         remainStockTotals={remainStockTotals}
         sellerHasInventory={selectedSellerData?.hasInventory}
       />
-      <Commission
-        remainStockTotals={remainStockTotals}
-        sellerHasInventory={selectedSellerData?.hasInventory}
-      />
       <Profit
         sellerHasInventory={selectedSellerData?.hasInventory}
         remainStockTotals={remainStockTotals}
+      />
+      <Commission
+        remainStockTotals={remainStockTotals}
+        sellerHasInventory={selectedSellerData?.hasInventory}
       />
       <Fold
         isFolded={isFolded}

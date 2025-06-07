@@ -280,10 +280,16 @@ export const Descriptions = ({
     >
       {hasInventory ? "Producto" : "DESCRIPCION"}
     </Column>
-    <Column hide={!hasInventory}>Guardo</Column>
+    <Column $textAlign="center" hide={!hasInventory}>
+      Guardo
+    </Column>
     <Column $textAlign="center">{hasInventory ? "Consig." : "CANT."}</Column>
-    <Column hide={!hasInventory}>Devol.</Column>
-    <Column hide={!hasInventory}>Venta</Column>
+    <Column $textAlign="center" hide={!hasInventory}>
+      Devol.
+    </Column>
+    <Column $textAlign="center" hide={!hasInventory}>
+      Venta
+    </Column>
     <Column
       gridColumn={hasInventory ? "" : "span 2"}
       printGridColumn={hasInventory ? "" : "span 3"}
@@ -298,9 +304,6 @@ export const Descriptions = ({
     >
       {hasInventory ? "Total" : "IMPORTE"}
     </Column>
-    <Column className="hide-print" hide={!hasInventory} hideOnPrint>
-      Comision
-    </Column>
     <Column
       className="hide-print"
       hideOnPrint
@@ -308,6 +311,9 @@ export const Descriptions = ({
       $textAlign="center"
     >
       Utilidad
+    </Column>
+    <Column className="hide-print" hide={!hasInventory} hideOnPrint>
+      Comision
     </Column>
     <Column className="hide-print" hideOnPrint>
       <Container styles={{ marginRight: "10px" }}>

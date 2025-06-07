@@ -24,7 +24,9 @@ export function Fold({
   return (
     <>
       <Column
+        hideOnPrint
         className="hide-print"
+        gridColumn="-1 / -2"
         style={{ cursor: "pointer" }}
         onClick={() => {
           setIsFolded(!isFolded);

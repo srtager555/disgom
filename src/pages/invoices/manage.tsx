@@ -281,7 +281,19 @@ function InvoiceManager() {
         >
           <RefreshData>
             <MainContainer>
-              <PrintInvoiceHeader />
+              {!selectedSeller?.data().hasInventory ? (
+                <PrintInvoiceHeader />
+              ) : (
+                <Container
+                  className="show-print"
+                  styles={{ textAlign: "center" }}
+                >
+                  <h2>{selectedSeller?.data().name}</h2>
+                  <p>
+                    {invoice?.data().created_at?.toDate().toLocaleDateString()}
+                  </p>
+                </Container>
+              )}
               <Container className="hide-print">
                 <SelectSeller
                   currentSeller={selectedSeller}
@@ -318,7 +330,6 @@ function InvoiceManager() {
                   />
 
                   <FlexContainer
-                    className="hide-print"
                     styles={{
                       width: "100%",
                       maxWidth: "1100px",
@@ -338,6 +349,7 @@ function InvoiceManager() {
                     ) : (
                       invoice?.data().invoice_type === "normal" && (
                         <Container
+                          className="hide-print"
                           styles={{ maxWidth: "1100px", marginBottom: "30px" }}
                         >
                           <ClientCredit />
@@ -345,14 +357,19 @@ function InvoiceManager() {
                         </Container>
                       )
                     )}
-                    <CreateNewDefaultCustomPrices />
+                    <Container className="hide-print">
+                      <CreateNewDefaultCustomPrices />
+                    </Container>
                     <FlexContainer styles={{ gap: "10px", marginTop: "60px" }}>
                       <Button onClick={() => window.print()}>Imprimir</Button>
                       <Button $primary onClick={() => router.push("/invoices")}>
                         Terminado
                       </Button>
                     </FlexContainer>
-                    <Container styles={{ marginTop: "20px" }}>
+                    <Container
+                      styles={{ marginTop: "20px" }}
+                      className="hide-print"
+                    >
                       <p>
                         Eleminar una factura es una acción <b>INRREVERSIBLE</b>,
                         tenga precaución

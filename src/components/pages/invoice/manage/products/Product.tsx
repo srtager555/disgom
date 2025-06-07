@@ -226,13 +226,20 @@ export function Product({
         {numberParser(currentStock)}
       </Column>
 
-      <Column gridColumn="2 / 5" printGridColumn="1 / 4">
+      <Column
+        gridColumn="2 / 5"
+        printGridColumn={
+          selectedSeller?.data()?.hasInventory ? "1 / 5" : "1 / 7"
+        }
+      >
         {rtDocData?.name}
       </Column>
 
       {/* ここから下は、src/components/pages/invoice/manage/products/Product.tsx のコード */}
       {selectedSellerData?.hasInventory && (
-        <Column>{inventory.totalAmount}</Column>
+        <Column $textAlign="center">
+          {numberParser(inventory.totalAmount)}
+        </Column>
       )}
       <AddOutput
         outputs={outputs}
@@ -262,6 +269,7 @@ export function Product({
         someHumanChangesDetected={someHumanChangesDetected}
       />
       <Price
+        sellerHasInventory={selectedSellerData?.hasInventory}
         product_doc={doc}
         product_ref={doc.ref}
         defaultCustomPrice={defaultPriceData?.price}

@@ -50,6 +50,7 @@ export function Credit({ setCreditResult, creditResult }: props) {
 
       <Route bundle_container_ref={bundleContainer?.ref} />
       <FlexContainer
+        className="hide-print"
         styles={{ justifyContent: "center", marginBottom: "10px" }}
       >
         <Button onClick={() => setShowForm(!showForm)}>

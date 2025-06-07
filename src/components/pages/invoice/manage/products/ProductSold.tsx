@@ -134,5 +134,9 @@ export function ProductSoldBase({
   }, [remainStock]);
 
   if (sellerHasInventory)
-    return <Column>{numberParser(remainStockTotals.amount)}</Column>;
+    return (
+      <Column $textAlign="center">
+        {numberParser(remainStockTotals.amount)}
+      </Column>
+    );
 }

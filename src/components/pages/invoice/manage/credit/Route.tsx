@@ -382,6 +382,7 @@ export function Route({
     <Container styles={{ marginBottom: "20px" }}>
       <FlexContainer styles={{ width: "100%", justifyContent: "center" }}>
         <Select
+          marginBottom="0px"
           name="previous_bundle_selector" // Nombre actualizado para reflejar el propósito
           options={selectOptions}
           onChange={handlePreviousBundleChange}
@@ -389,7 +390,7 @@ export function Route({
         />
       </FlexContainer>
       {showConfirmation && !isReplacing && (
-        <Container>
+        <Container styles={{ marginTop: "20px" }}>
           <FlexContainer
             styles={{ gap: "10px", alignItems: "center", marginBottom: "10px" }}
           >

@@ -51,6 +51,7 @@ const ColumnGrid = styled(Container)<{
   $printGridColumn?: string;
   $title?: string;
   $removeBorder?: boolean;
+  $hideOnPrint?: boolean;
 }>`
   grid-column: ${(props) => props.$gridColumn};
   width: 100%;
@@ -67,7 +68,7 @@ const ColumnGrid = styled(Container)<{
   }}
 
   @media print {
-    /* display: ${(props) => (props.$printGridColumn ? "block" : "none")}; */
+    display: ${(props) => (props.$hideOnPrint ? "none" : "block")};
     grid-column: ${(props) => props.$printGridColumn};
   }
 
@@ -110,6 +111,7 @@ interface ColumnBaseProps extends React.HtmlHTMLAttributes<HTMLDivElement> {
   title?: string;
   hide?: boolean;
   styles?: CSSProperties;
+  hideOnPrint?: boolean;
   ref?: unknown;
 }
 
@@ -130,6 +132,7 @@ function ColumnBase({
       $title={title}
       $gridColumn={$gridColumn}
       $printGridColumn={printGridColumn}
+      $hideOnPrint={props.hideOnPrint}
       styles={{ width: "100%", height: "100%", ...styles }}
       ref={ref}
       {...props}
@@ -190,10 +193,15 @@ export const Input = styled.input`
 
   @media print {
     font-size: 0.8rem;
+    background-color: transparent;
   }
 
   @media (prefers-color-scheme: light) {
     background-color: #a9faf6;
+
+    @media print {
+      background-color: transparent;
+    }
   }
 `;
 
@@ -541,7 +549,11 @@ export function Product({
       $hasInventory={false}
       $withoutStock={stockAmount}
       $after={`${stockAmount - amount} / ${data.stock.length}`}
-      $warn={amount > stockAmount || priceRequestCurrentAmount > stockAmount}
+      className={
+        amount > stockAmount || priceRequestCurrentAmount > stockAmount
+          ? "alert"
+          : ""
+      }
     >
       <>
         <Column gridColumn="1 / 4">

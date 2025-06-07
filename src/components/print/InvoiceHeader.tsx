@@ -8,7 +8,7 @@ import styled from "styled-components";
 const Divition = styled.p`
   text-align: center;
   padding: 10px;
-  background-color: ${globalCSSVars["--highlight"]};
+  background-color: ${globalCSSVars["--selected"]};
   color: #fff;
 `;
 
@@ -37,14 +37,14 @@ export function PrintInvoiceHeader() {
 
   return (
     <Container
-      styles={{ marginBottom: "50px", width: "100%", maxWidth: "1100px" }}
+      styles={{ marginBottom: "20px", width: "100%", maxWidth: "1100px" }}
       className="show-print"
     >
       <FlexContainer
         styles={{
           justifyContent: "space-between",
           alignItems: "center",
-          color: globalCSSVars["--highlight"],
+          color: globalCSSVars["--selected"],
         }}
       >
         <Container>
@@ -66,7 +66,9 @@ export function PrintInvoiceHeader() {
           <Container>
             {/* basic Info */}
             <Divition>FACTURAR A</Divition>
-            <p style={{ fontSize: "1.2rem" }}>{name}</p>
+            <p style={{ fontSize: "1.2rem" }}>
+              <b>{name}</b>
+            </p>
           </Container>
         </Container>
         <Container

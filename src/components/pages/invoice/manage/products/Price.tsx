@@ -20,13 +20,14 @@ import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 import { isEqual } from "lodash";
 import { parseNumberInput } from "@/tools/parseNumericInput";
 import { getParentStock } from "@/tools/products/getParentStock";
+import { numberParser } from "@/tools/numberPaser";
 
 type props = {
   product_doc: DocumentSnapshot<productDoc>;
   product_ref: DocumentReference<productDoc>;
   defaultCustomPrice: number | undefined;
   outputs: DocumentSnapshot<outputType>[];
-  // normalPrice: number;
+  sellerHasInventory: boolean | undefined;
   setCustomPrice: Dispatch<SetStateAction<number | undefined>>;
   someHumanChangesDetected: MutableRefObject<someHumanChangesDetected>;
 };
@@ -45,6 +46,7 @@ export function BasePrice({
   product_ref,
   product_doc,
   defaultCustomPrice,
+  sellerHasInventory,
   // normalPrice,
   outputs,
   setCustomPrice,
@@ -146,7 +148,13 @@ export function BasePrice({
   }, [outputs, normalPrice, priceMultiplier, defaultCustomPrice]); // Add dependencies
 
   return (
-    <Column>
+    <Column
+      gridColumn={sellerHasInventory ? "" : "span 2"}
+      printGridColumn={sellerHasInventory ? "" : "span 3"}
+    >
+      <Container className="show-print" styles={{ textAlign: "center" }}>
+        {numberParser(newPrice, true)}
+      </Container>
       <PriceInputMemo
         product_ref={product_ref}
         newPrice={newPrice}
@@ -202,7 +210,7 @@ function PriceInputBase({
   const { checkHasNextInvoice } = useHasNextInvoice();
 
   return (
-    <>
+    <Container className="hide-print">
       <Input
         onChange={(e) => {
           const value = parseNumberInput(() => {}, e, { returnRaw: true });
@@ -251,6 +259,6 @@ function PriceInputBase({
           zIndex: "0",
         }}
       ></Container>
-    </>
+    </Container>
   );
 }

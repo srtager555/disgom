@@ -20,6 +20,8 @@ import { someHumanChangesDetected } from "./Product";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 import { parseNumberInput } from "@/tools/parseNumericInput";
+import { Container } from "@/styles/index.styles";
+import { numberParser } from "@/tools/numberPaser";
 
 type props = {
   outputs: DocumentSnapshot<outputType>[];
@@ -355,12 +357,17 @@ export function AddOutputBase({
 
   return (
     <Column>
-      <Input
-        value={amount} // Controlled component
-        // min={0}
-        // max={currentStock + serverCurrentAmount}
-        onChange={handleInputChange}
-      />
+      <Container className="show-print" styles={{ textAlign: "center" }}>
+        {numberParser(amount)}
+      </Container>
+      <Container className="hide-print">
+        <Input
+          value={amount} // Controlled component
+          // min={0}
+          // max={currentStock + serverCurrentAmount}
+          onChange={handleInputChange}
+        />
+      </Container>
     </Column>
   );
 }

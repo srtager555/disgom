@@ -7,6 +7,15 @@ import { Bills } from "./Bills";
 import { Missing } from "./Missing";
 import { MissingList } from "./MissingList";
 import { ProductsFollowed } from "./ProductsFollowed";
+import styled from "styled-components";
+
+const GridContainerWithPrintMode = styled(GridContainer)`
+  grid-template-columns: repeat(4, 100px);
+
+  @media print {
+    grid-template-columns: repeat(2, 100px);
+  }
+`;
 
 export const Days = [
   "Domingo",
@@ -38,35 +47,34 @@ export function Data({ totals, credits, moneyAmount }: props) {
     () => numberParser(totals.totalProfit + totals.totalSellerProfit),
     [totals.totalProfit, totals.totalSellerProfit]
   );
-  const gridTemplateColumns = "repeat(4, 100px)";
 
   return (
     <Container>
       <Container>
-        <GridContainer $gridTemplateColumns={gridTemplateColumns}>
+        <GridContainerWithPrintMode>
           <Column>Ventas</Column>
           <Column>{numberParser(totals.totalSold)}</Column>
-          <Column>Ganancias</Column>
-          <Column>{netProfit}</Column>
-        </GridContainer>
-        <GridContainer $gridTemplateColumns={gridTemplateColumns}>
+          <Column hideOnPrint>Ganancias</Column>
+          <Column hideOnPrint>{netProfit}</Column>
+        </GridContainerWithPrintMode>
+        <GridContainerWithPrintMode>
           <Column>Credito</Column>
           <Column>{numberParser(credits)}</Column>
-          <Column>Vendedor</Column>
-          <Column>{numberParser(totals.totalSellerProfit)}</Column>
-        </GridContainer>
+          <Column hideOnPrint>Vendedor</Column>
+          <Column hideOnPrint>{numberParser(totals.totalSellerProfit)}</Column>
+        </GridContainerWithPrintMode>
         <Bills totals={totals} setBillsAmount={setBillsAmount} />
-        <GridContainer $gridTemplateColumns={gridTemplateColumns}>
+        <GridContainerWithPrintMode>
           <Column>Efectivo</Column>
           <Column>{numberParser(moneyAmount)}</Column>
           <Column />
-        </GridContainer>
-        <GridContainer $gridTemplateColumns={gridTemplateColumns}>
+        </GridContainerWithPrintMode>
+        <GridContainerWithPrintMode>
           <Column>Liquidación</Column>
           <Column>{liquidation}</Column>
           <Column />
-        </GridContainer>
-        <GridContainer $gridTemplateColumns={gridTemplateColumns}>
+        </GridContainerWithPrintMode>
+        <GridContainerWithPrintMode>
           <Column
             gridColumn="1 / 2"
             className={diff < 0 || diff > 0 ? "alert" : ""}
@@ -77,10 +85,13 @@ export function Data({ totals, credits, moneyAmount }: props) {
             {numberParser(diff)}
           </Column>
           <Column />
-        </GridContainer>
+        </GridContainerWithPrintMode>
       </Container>
       <Missing diff={diff} />
-      <FlexContainer styles={{ justifyContent: "space-between" }}>
+      <FlexContainer
+        className="hide-print"
+        styles={{ justifyContent: "space-between" }}
+      >
         <MissingList />
         <ProductsFollowed />
       </FlexContainer>

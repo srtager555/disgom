@@ -15,7 +15,10 @@ export const Profit = memo(function Profit({
   return (
     <Column
       className="hide-print"
-      gridColumn={!sellerHasInventory ? "-2 / -3" : ""}
+      hideOnPrint
+      gridColumn={!sellerHasInventory ? "span 2" : ""}
+      printGridColumn={!sellerHasInventory ? "-3 / -6" : ""}
+      $textAlign="center"
       title={numberParser(remainStockTotals.profit)}
     >
       {numberParser(remainStockTotals.profit)}

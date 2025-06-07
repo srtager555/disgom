@@ -13,12 +13,18 @@ export function InvoiceTotals({ totalResults, hasInventory }: Props) {
   return (
     <Container styles={{ marginBottom: "50px" }}>
       <ProductContainer $hasInventory={hasInventory} $withoutStock={1}>
-        <Column gridColumn={"8 / 9"}>{""}</Column>
-        <Column gridColumn={"9 / 10"}>
-          <b>Total</b>
+        <Column gridColumn={"8 / 9"} printGridColumn={"7 / 8"}>
+          {""}
+        </Column>
+        <Column
+          gridColumn={"9 / 10"}
+          printGridColumn={hasInventory ? "9 / 10" : "10 / 11"}
+        >
+          <b>TOTAL</b>
         </Column>
         <Column
           gridColumn={!hasInventory ? "span 2" : ""}
+          printGridColumn={!hasInventory ? "span 3" : "span 2"}
           title={numberParser(totalResults.totalSold)}
         >
           <Container styles={{ textAlign: "end" }}>
@@ -26,6 +32,7 @@ export function InvoiceTotals({ totalResults, hasInventory }: Props) {
           </Container>
         </Column>
         <Column
+          hideOnPrint
           gridColumn={!hasInventory ? "span 2" : ""}
           title={numberParser(totalResults.totalProfit)}
         >
@@ -34,6 +41,7 @@ export function InvoiceTotals({ totalResults, hasInventory }: Props) {
         {hasInventory && (
           <>
             <Column
+              hideOnPrint
               gridColumn=""
               title={numberParser(totalResults.totalSellerProfit)}
             >

@@ -64,37 +64,21 @@ export const ProductContainer = styled.div<{
     // !props.$hide ? (!props.$fold ? "36px" : "auto") : "0px"};
     !props.$hide ? "auto" : "0px"};
   visibility: ${(props) => (props.$hide ? "hidden" : "visible")};
-  grid-template-columns: ${(props) => {
-    if (props.$closing) return "75px repeat(17, 85px)";
-    if (props.$hasInventory) {
-      return "75px repeat(12, 85px)";
-    } else {
-      return "75px repeat(12, 85px)";
-    }
-  }};
+  grid-template-columns: 75px repeat(12, 85px);
 
   @media print {
+    grid-template-columns: repeat(auto-fit, minmax(1fr, 1fr));
+
     & > * {
       font-size: 0.8rem !important;
     }
 
-    grid-template-columns: ${(props) => {
-      if (props.$closing) return "repeat(15, 85px)";
-      if (props.$hasInventory) {
-        return "repeat(10, 85px)";
-      } else {
-        return "repeat(10, 85px)";
-      }
-    }};
+    /* grid-template-columns: repeat(10, 85px); */
   }
 
   border-left: 1px solid ${globalCSSVars["--detail"]};
   border-right: 1px solid ${globalCSSVars["--detail"]};
   border-bottom: 1px solid ${globalCSSVars["--detail"]};
-
-  &:first-child {
-    border-top: 1px solid ${globalCSSVars["--detail"]};
-  }
 
   &:nth-child(even) {
     ${(props) => {
@@ -116,9 +100,9 @@ export const ProductContainer = styled.div<{
     }}
   }
 
-  /* @media print {
-    grid-template-columns: repeat(20, 1fr);
-  } */
+  &:first-child {
+    border-top: 1px solid ${globalCSSVars["--detail"]};
+  }
 
   ${(props) =>
     props.$header &&
@@ -126,7 +110,7 @@ export const ProductContainer = styled.div<{
       position: sticky;
       top: 0;
       z-index: 1;
-      /* box-shadow: 0 5px 15px #0003; */
+      color: #fff;
     `}
 
   ${(props) =>
@@ -159,6 +143,10 @@ export const ProductContainer = styled.div<{
   ${(props) =>
     !props.$withoutStock &&
     css`
+      @media print {
+        opacity: 1;
+      }
+
       opacity: 0.5;
       pointer-events: none;
     `}
@@ -279,20 +267,49 @@ export const Descriptions = ({
 }: {
   hasInventory: boolean | undefined;
 }) => (
-  <ProductContainer $header $withoutStock={1} $hasInventory={hasInventory}>
+  <ProductContainer
+    $header
+    $withoutStock={1}
+    $highlight
+    $hasInventory={hasInventory}
+  >
     <Column className="hide-print">Inventario</Column>
-    <Column gridColumn="2 / 5" printGridColumn="1 / 4">
-      Producto
+    <Column
+      gridColumn={hasInventory ? "2 / 5" : "2 / 5"}
+      printGridColumn={hasInventory ? "1 / 5" : "1 / 7"}
+    >
+      {hasInventory ? "Producto" : "DESCRIPCION"}
     </Column>
     <Column hide={!hasInventory}>Guardo</Column>
-    <Column>{hasInventory ? "Consig." : "Cantidad"}</Column>
+    <Column $textAlign="center">{hasInventory ? "Consig." : "CANT."}</Column>
     <Column hide={!hasInventory}>Devol.</Column>
     <Column hide={!hasInventory}>Venta</Column>
-    <Column>Precio</Column>
-    <Column gridColumn={hasInventory ? "" : "-3 / -4"}>Total</Column>
-    <Column hide={!hasInventory}>Comision</Column>
-    <Column className="hide-print">Utilidad</Column>
-    <Column className="hide-print">
+    <Column
+      gridColumn={hasInventory ? "" : "span 2"}
+      printGridColumn={hasInventory ? "" : "span 3"}
+      $textAlign="center"
+    >
+      {hasInventory ? "Precio" : "PRECIO UNITARIO"}
+    </Column>
+    <Column
+      gridColumn={hasInventory ? "" : "span 3"}
+      printGridColumn={hasInventory ? "span 2" : "span 3"}
+      $textAlign="center"
+    >
+      {hasInventory ? "Total" : "IMPORTE"}
+    </Column>
+    <Column className="hide-print" hide={!hasInventory} hideOnPrint>
+      Comision
+    </Column>
+    <Column
+      className="hide-print"
+      hideOnPrint
+      gridColumn={!hasInventory ? "span 2" : ""}
+      $textAlign="center"
+    >
+      Utilidad
+    </Column>
+    <Column className="hide-print" hideOnPrint>
       <Container styles={{ marginRight: "10px" }}>
         <Icon iconType="fold" />
       </Container>

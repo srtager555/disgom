@@ -26,6 +26,8 @@ import { useGetCurrentDevolutionByProduct } from "@/hooks/invoice/getCurrentDevo
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 import { parseNumberInput } from "@/tools/parseNumericInput";
+import { Container } from "@/styles/index.styles";
+import { numberParser } from "@/tools/numberPaser";
 
 // --- Tipos ---
 
@@ -300,14 +302,19 @@ function DevolutionBase({
   if (sellerHasInventory) {
     return (
       <Column>
-        <Input
-          value={devo} // El valor siempre refleja el estado 'devo' del input
-          onChange={(e) => {
-            parseNumberInput(setDevo, e, { min: 0 });
-            humanAmountChanged.current = true; // Marca como cambio humano
-            someHumanChangesDetected.current.devolution = true; // Notifica al componente padre
-          }}
-        />
+        <Container className="show-print" styles={{ textAlign: "center" }}>
+          {numberParser(devo)}
+        </Container>
+        <Container className="hide-print">
+          <Input
+            value={devo} // El valor siempre refleja el estado 'devo' del input
+            onChange={(e) => {
+              parseNumberInput(setDevo, e, { min: 0 });
+              humanAmountChanged.current = true; // Marca como cambio humano
+              someHumanChangesDetected.current.devolution = true; // Notifica al componente padre
+            }}
+          />
+        </Container>
       </Column>
     );
   }

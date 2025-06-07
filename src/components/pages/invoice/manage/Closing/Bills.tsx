@@ -58,8 +58,8 @@ export function Bills({ totals, setBillsAmount }: props) {
           }}
         />
       </Column>
-      <Column>Empresa</Column>
-      <Column>{numberParser(totals.totalProfit)}</Column>
+      <Column hideOnPrint>Empresa</Column>
+      <Column hideOnPrint>{numberParser(totals.totalProfit)}</Column>
     </GridContainer>
   );
 }

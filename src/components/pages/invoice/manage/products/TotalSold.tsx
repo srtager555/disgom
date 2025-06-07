@@ -10,8 +10,10 @@ type props = {
 export function TotalSold({ remainStockTotals, sellerHasInventory }: props) {
   return (
     <Column
-      gridColumn={!sellerHasInventory ? "-3 / -4" : ""}
+      gridColumn={!sellerHasInventory ? "span 3" : ""}
+      printGridColumn={sellerHasInventory ? "span 2" : "span -3"}
       title={numberParser(remainStockTotals.sold)}
+      $textAlign="center"
     >
       {numberParser(remainStockTotals.sold)}
     </Column>

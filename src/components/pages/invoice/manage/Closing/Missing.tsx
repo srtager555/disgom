@@ -110,7 +110,7 @@ export function Missing({ diff }: props) {
   }, [diff, checkAsPaid, invoice, debouncedSaveDiff]);
 
   return (
-    <Container styles={{ margin: "20px 0px" }}>
+    <Container styles={{ margin: "20px 0px" }} className="hide-print">
       <label
         style={{
           cursor: diff < 0 ? "pointer" : "not-allowed",

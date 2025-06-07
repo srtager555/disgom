@@ -8,7 +8,7 @@ type props = {
   diff: number;
 };
 
-const SAVE_DIFF_DEBOUNCE_TIME = 1000; // 1 segundo de espera
+const SAVE_DIFF_DEBOUNCE_TIME = 3000; // 1 segundo de espera
 
 export function Missing({ diff }: props) {
   const { invoice } = useInvoice();
@@ -55,7 +55,9 @@ export function Missing({ diff }: props) {
         }
         // 2. Si (incluso con cambio humano) el estado lógico y el monto son iguales a DB -> No guardar
         if (amountInDb === currentDiff && isPaidInDb === shouldBePaid) {
-          // console.log("Debounced saveDiff: Sin cambios efectivos vs DB, omitiendo guardado.");
+          console.log(
+            "Debounced saveDiff: Sin cambios efectivos vs DB, omitiendo guardado."
+          );
           return;
         }
         // --- Fin Condición ---
@@ -98,7 +100,7 @@ export function Missing({ diff }: props) {
     if (!initialLoadDone.current) return;
 
     // Llama a la función debounced pasando el estado actual de humanInteraction
-    debouncedSaveDiff(diff, checkAsPaid, invoice, humanInteraction.current);
+    debouncedSaveDiff(diff, checkAsPaid, invoice, true);
 
     // Resetea el flag de interacción humana DESPUÉS de llamar al debounce
     // para que la próxima ejecución del efecto (si es solo por 'diff') no se marque como humana.

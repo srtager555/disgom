@@ -1,6 +1,6 @@
 import { ManageClients } from "@/components/pages/sellers/ManageClients";
 import { useGetSellers } from "@/hooks/sellers/getSellers";
-import { Container, FlexContainer } from "@/styles/index.styles";
+import { FlexContainer } from "@/styles/index.styles";
 import { SellersDoc } from "@/tools/sellers/create";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";

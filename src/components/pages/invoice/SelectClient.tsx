@@ -24,8 +24,8 @@ import styled from "styled-components";
 const InvoiceInfo = styled.div`
   display: inline-block;
   padding: 15px;
-  border: solid 2px ${globalCSSVars["--detail"]};
-  border-radius: 20px;
+  border: solid 1px ${globalCSSVars["--detail"]};
+  border-radius: 10px;
   margin-top: 20px;
 `;
 

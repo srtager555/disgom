@@ -1,6 +1,3 @@
-import //  SalesComparisonChart,
-// ChartData,
-"@/components/chart";
 // import { ExtraDataContainer } from "@/pages/feed";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
@@ -24,6 +21,9 @@ import {
 import { useState, useEffect } from "react";
 import { InvoiceContainer, InvoicePreview } from "../invoice/InvoicePreview";
 import { client } from "@/tools/sellers/createClient";
+import SalesComparisonChart, { ChartData } from "@/components/chart";
+import { ExtraDataContainer } from "@/pages/feed";
+import { numberParser } from "@/tools/numberPaser";
 
 interface props {
   sellerDoc: DocumentSnapshot<SellersDoc> | undefined;
@@ -33,16 +33,16 @@ interface props {
 export function SellerChart({ sellerDoc, clientDoc }: props) {
   const [invoicesDocs, setInvoicesDocs] =
     useState<QueryDocumentSnapshot<invoiceType>[]>();
-  // const [chartData, setChartData] = useState<ChartData>([]);
-  // const [maxSale, setMaxSale] = useState<{
-  //   date: string;
-  //   amount: number;
-  // } | null>(null);
-  // const [minSale, setMinSale] = useState<{
-  //   date: string;
-  //   amount: number;
-  // } | null>(null);
-  // const [avgSale, setAvgSale] = useState<number | null>(null);
+  const [chartData, setChartData] = useState<ChartData>([]);
+  const [maxSale, setMaxSale] = useState<{
+    date: string;
+    amount: number;
+  } | null>(null);
+  const [minSale, setMinSale] = useState<{
+    date: string;
+    amount: number;
+  } | null>(null);
+  const [avgSale, setAvgSale] = useState<number | null>(null);
 
   // effecto to get the invoice
   useEffect(() => {
@@ -84,47 +84,47 @@ export function SellerChart({ sellerDoc, clientDoc }: props) {
       const invoices = await getDocs(q as Query<invoiceType>);
 
       setInvoicesDocs(invoices.docs);
-      // const data: ChartData = invoices.docs.map((el) => {
-      //   const data = el.data();
-      //   return {
-      //     createdAt: data.created_at?.toDate() as Date,
-      //     amount: Number(data.total_sold.toFixed(2)),
-      //   };
-      // });
+      const data: ChartData = invoices.docs.map((el) => {
+        const data = el.data();
+        return {
+          createdAt: data.created_at?.toDate() as Date,
+          amount: Number(data.total_sold.toFixed(2)),
+        };
+      });
 
-      // setChartData(data);
+      setChartData(data);
 
-      // if (data.length > 0) {
-      //   let max = data[0];
-      //   let min = data[0];
-      //   let sum = 0;
+      if (data.length > 0) {
+        let max = data[0];
+        let min = data[0];
+        let sum = 0;
 
-      //   data.forEach((item) => {
-      //     if (item.amount > max.amount) {
-      //       max = item;
-      //     }
-      //     if (item.amount < min.amount) {
-      //       min = item;
-      //     }
-      //     sum += item.amount;
-      //   });
+        data.forEach((item) => {
+          if (item.amount > max.amount) {
+            max = item;
+          }
+          if (item.amount < min.amount) {
+            min = item;
+          }
+          sum += item.amount;
+        });
 
-      //   const average = sum / data.length;
+        const average = sum / data.length;
 
-      //   setMaxSale({
-      //     date: max.createdAt.toLocaleDateString(),
-      //     amount: max.amount,
-      //   });
-      //   setMinSale({
-      //     date: min.createdAt.toLocaleDateString(),
-      //     amount: min.amount,
-      //   });
-      //   setAvgSale(average);
-      // } else {
-      //   setMaxSale(null);
-      //   setMinSale(null);
-      //   setAvgSale(null);
-      // }
+        setMaxSale({
+          date: max.createdAt.toLocaleDateString(),
+          amount: max.amount,
+        });
+        setMinSale({
+          date: min.createdAt.toLocaleDateString(),
+          amount: min.amount,
+        });
+        setAvgSale(average);
+      } else {
+        setMaxSale(null);
+        setMinSale(null);
+        setAvgSale(null);
+      }
     }
     getInvoices();
 
@@ -142,7 +142,7 @@ export function SellerChart({ sellerDoc, clientDoc }: props) {
         marginBottom: "30px",
       }}
     >
-      {/* <Container styles={{ width: "60%" }}>
+      <Container styles={{ width: "60%", display: "none" }}>
         <h2 style={{ textAlign: "center" }}>Ventas de las ultimas 2 semanas</h2>
         <FlexContainer styles={{ gap: "10px", marginBottom: "20px" }}>
           <ExtraDataContainer>
@@ -175,8 +175,11 @@ export function SellerChart({ sellerDoc, clientDoc }: props) {
             )}
           </ExtraDataContainer>
         </FlexContainer>
-        <SalesComparisonChart invoiceDataToChart={chartData} />
-      </Container> */}
+        <SalesComparisonChart
+          invoiceDataToChart={chartData}
+          numberOfDaysToShow={15}
+        />
+      </Container>
       <Container styles={{ marginBottom: "100px", width: "100%" }}>
         <h2 style={{ textAlign: "center" }}>Facturas</h2>
         {invoicesDocs && invoicesDocs?.length > 0 ? (

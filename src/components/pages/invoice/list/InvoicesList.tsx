@@ -1,4 +1,4 @@
-import { Container } from "@/styles/index.styles";
+import { Container, FlexContainer } from "@/styles/index.styles";
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import {
@@ -14,12 +14,33 @@ import { useState, useEffect } from "react";
 import { InvoiceContainer, InvoicePreview } from "../InvoicePreview";
 import { Input } from "../Product";
 import { Firestore } from "@/tools/firestore";
+import styled from "styled-components";
+import { numberParser } from "@/tools/numberPaser";
+
+const InvoicesListInfo = styled(FlexContainer)`
+  font-size: 1.2rem;
+  gap: 10px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+
+  & > span {
+    word-wrap: nowrap;
+  }
+`;
+
+const GreenSpan = styled.span`
+  font-weight: bold;
+  color: green;
+`;
 
 export function InvoicesList() {
   const [docsInvoices, setDocsInvoices] = useState<
     QueryDocumentSnapshot<invoiceType>[]
   >([]);
   const [date, setDate] = useState("");
+  const [totalSold, setTotalSold] = useState(0);
+  const [totalProfit, setTotalProfit] = useState(0);
+  const [median, setMedian] = useState(0);
 
   useEffect(() => {
     const db = Firestore();
@@ -53,10 +74,44 @@ export function InvoicesList() {
     );
     const unsubcribe = onSnapshot(q, (snap) => {
       const invoices = snap.docs;
-      setDocsInvoices(invoices);
+      setDocsInvoices(
+        invoices.sort((a, b) => b.data().total_sold - a.data().total_sold)
+      );
+      const totalSoldList = invoices.map((el) => el.data().total_sold);
+      const totalSold = invoices.reduce(
+        (acc, cur) => acc + cur.data().total_sold,
+        0
+      );
+
+      setTotalSold(totalSold);
+      setTotalProfit(
+        invoices.reduce((acc, cur) => acc + cur.data().total_proft, 0)
+      );
+
+      // La mediana es 0 porque no hay facturas
+      if (totalSoldList.length === 0) {
+        setMedian(0);
+        return;
+      }
+
+      const mitad = Math.floor(totalSoldList.length / 2);
+
+      if (totalSoldList.length % 2 === 0) {
+        // Promedia los dos del centro
+        setMedian((totalSoldList[mitad - 1] + totalSoldList[mitad]) / 2);
+      } else {
+        // Devuelve el central
+        setMedian(totalSoldList[mitad]);
+      }
     });
 
-    return unsubcribe;
+    return () => {
+      unsubcribe();
+      setDocsInvoices([]);
+      setTotalSold(0);
+      setTotalProfit(0);
+      setMedian(0);
+    };
   }, [date]);
 
   return (
@@ -76,6 +131,44 @@ export function InvoicesList() {
       ) : (
         <>
           <h2>Facturas hechas {date ? `el ${date}` : "hoy"}</h2>
+          <InvoicesListInfo>
+            <span>
+              {docsInvoices.length}{" "}
+              {docsInvoices.length > 1 ? "Facturas" : "Factura"}
+            </span>
+            |
+            <span>
+              Total Vendido{" "}
+              <GreenSpan>{numberParser(totalSold, true)}</GreenSpan>
+            </span>{" "}
+            |
+            <span>
+              Ganancia Total{" "}
+              <GreenSpan>{numberParser(totalProfit, true)}</GreenSpan>
+            </span>{" "}
+            |
+            <span>
+              Mayor venta{" "}
+              <GreenSpan>
+                {numberParser(docsInvoices[0].data().total_sold, true)}
+              </GreenSpan>
+            </span>
+            |
+            <span>
+              Menor venta{" "}
+              <GreenSpan>
+                {numberParser(
+                  docsInvoices[docsInvoices.length - 1].data().total_sold,
+                  true
+                )}
+              </GreenSpan>
+            </span>{" "}
+            |
+            <span>
+              Mediana de la venta{" "}
+              <GreenSpan>{numberParser(median, true)}</GreenSpan>
+            </span>
+          </InvoicesListInfo>
           <InvoiceContainer>
             {docsInvoices.map((el, i) => {
               return <InvoicePreview key={i} doc={el} />;

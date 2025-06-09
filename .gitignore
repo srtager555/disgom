@@ -50,4 +50,4 @@ firestore-debug.log
 emulator-data/
 
 # sw
-public/sw.js
+/public/sw.js

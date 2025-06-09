@@ -41,7 +41,11 @@ export function LoginLayout({ children }: props) {
     });
 
     return unsub;
-  }, [router]);
+
+    // critial error: infinte loop if router is in the deps
+    // // *NOT ADD ROUTER TO THE DEPS*
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <LoginContext.Provider value={{ currentUser }}>

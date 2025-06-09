@@ -1,26 +1,20 @@
-// import Head from "next/head";
-// import Image from "next/image";
-// import { Geist, Geist_Mono } from "next/font/google";
-// import styles from "@/styles/Home.module.css";
-
+import { LoginForm } from "@/components/auth/LoginForm";
+import { LoginContext } from "@/components/layouts/login.layout";
+import { FlexContainer } from "@/styles/index.styles";
 import { useRouter } from "next/router";
-import { useEffect } from "react";
-
-// const geistSans = Geist({
-//   variable: "--font-geist-sans",
-//   subsets: ["latin"],
-// });
-
-// const geistMono = Geist_Mono({
-//   variable: "--font-geist-mono",
-//   subsets: ["latin"],
-// });
+import { useContext, useEffect } from "react";
 
 export default function Home() {
-  const push = useRouter().push;
-  useEffect(() => {
-    push("/invoices");
-  }, [push]);
+  const { currentUser } = useContext(LoginContext);
+  const router = useRouter();
 
-  return <p>Nothing here</p>;
+  useEffect(() => {
+    if (currentUser) router.push("/dashboard"); // Redirige si ya está logueado
+  }, [currentUser, router]);
+
+  return (
+    <FlexContainer styles={{ minHeight: "100vh", alignItems: "center" }}>
+      <LoginForm />
+    </FlexContainer>
+  );
 }

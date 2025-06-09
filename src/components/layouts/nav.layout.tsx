@@ -1,7 +1,7 @@
 // src/components/layouts/nav.layout.tsx
 import { NavContainer } from "@/styles/Nav.module";
 import { Container } from "@/styles/index.styles";
-import { useEffect, useState } from "react"; // Import useMemo
+import { useContext, useEffect, useState } from "react"; // Import useMemo
 import { useRouter } from "next/router";
 import {
   collection,
@@ -18,10 +18,11 @@ import { client } from "@/tools/sellers/createClient";
 import { sortSellersByName } from "@/tools/sellers/sortSellersByName";
 import { filterSellerHasInventory } from "@/tools/sellers/filterHasInventory";
 import { TheMotherFuckingNav } from "./nav";
+import { LoginContext } from "./login.layout";
 
 export function NavLayout({ children }: { children: children }) {
   // Estado inicial actualizado para usar Record en children
-
+  const { currentUser } = useContext(LoginContext);
   const { asPath } = useRouter();
   const [removeMaxWith, setRemoveMaxWith] = useState(false);
   const [sellers, setSellers] = useState<
@@ -108,16 +109,18 @@ export function NavLayout({ children }: { children: children }) {
 
   return (
     <NavContainer $deployNav={false} $removeMaxWith={removeMaxWith}>
-      <Container
-        styles={{
-          position: "sticky",
-          left: "0",
-          zIndex: "10",
-          marginBottom: "30px",
-        }}
-      >
-        <TheMotherFuckingNav sellers={sellers} clients={clients} />
-      </Container>
+      {currentUser && (
+        <Container
+          styles={{
+            position: "sticky",
+            left: "0",
+            zIndex: "10",
+            marginBottom: "30px",
+          }}
+        >
+          <TheMotherFuckingNav sellers={sellers} clients={clients} />
+        </Container>
+      )}
       {children}
     </NavContainer>
   );

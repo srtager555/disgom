@@ -6,6 +6,7 @@ import { QueryDocumentSnapshot } from "firebase/firestore";
 import { ProductNavSection } from "./ProductsSection";
 import { SellersNavSection } from "./SellersSections";
 import { client } from "@/tools/sellers/createClient";
+import { Anchors } from "./Anchors";
 
 export interface NavElementData {
   href: string;
@@ -43,6 +44,7 @@ export function TheMotherFuckingNav({ sellers, clients }: props) {
       <InvoicesNavSection sellers={sellers} clients={clients} />
       <ProductNavSection sellers={sellers} />
       <SellersNavSection sellers={sellers} clients={clients} />
+      <Anchors href={"/signout"} name={"Cerrar sesión"} child={false} />
     </Nav>
   );
 }

@@ -1,12 +1,10 @@
 import { useEffect, useRef } from "react";
 import { getAuth, signOut } from "firebase/auth";
-import { useRouter } from "next/router";
 
 const INACTIVITY_LIMIT = 5 * 60 * 1000; // 5 minutos
 
 export function useInactivityLogout() {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const router = useRouter();
   const auth = getAuth();
 
   const resetTimer = () => {
@@ -14,7 +12,7 @@ export function useInactivityLogout() {
     timeoutRef.current = setTimeout(() => {
       if (auth.currentUser) {
         console.log("Usuario inactivo, cerrando sesión.");
-        signOut(auth).then(() => router.push("/login"));
+        signOut(auth);
       }
     }, INACTIVITY_LIMIT);
   };

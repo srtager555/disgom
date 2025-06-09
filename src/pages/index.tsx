@@ -9,7 +9,7 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    if (currentUser) router.push("/dashboard"); // Redirige si ya está logueado
+    if (currentUser) router.push("/invoices"); // Redirige si ya está logueado
   }, [currentUser, router]);
 
   return (

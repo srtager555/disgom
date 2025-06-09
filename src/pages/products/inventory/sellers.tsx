@@ -24,6 +24,7 @@ import { Firestore } from "@/tools/firestore"; // Asegúrate que la importación
 import { SellersCollection } from "@/tools/firestore/CollectionTyping"; // Importar constantes
 import { numberParser } from "@/tools/numberPaser"; // Importar para formatear el total
 import { isEqual } from "lodash";
+import { Button } from "@/styles/Form.styles";
 
 // Ajustamos el grid para añadir 3 columnas más para los totales (ancho estimado)
 const gridTemplate =
@@ -38,7 +39,9 @@ type SellerInventoryProduct = {
 };
 
 export default function Page() {
-  const products = useGetProducts();
+  const [order, setOrder] = useState<keyof productDoc>("position");
+  const [orderByName, setOrderByName] = useState(false);
+  const products = useGetProducts(order);
   const sellers = useGetSellers(); // Obtener vendedores aquí
 
   // Filtrar y ordenar vendedores una sola vez
@@ -55,6 +58,16 @@ export default function Page() {
     Record<string, SellerInventoryProduct[]>
   >({});
   const [loadingInventories, setLoadingInventories] = useState(true);
+
+  function handlerOnClick() {
+    if (orderByName) {
+      setOrder("name");
+      setOrderByName(false);
+    } else {
+      setOrder("position");
+      setOrderByName(true);
+    }
+  }
 
   useEffect(() => {
     const fetchAllInventories = async () => {
@@ -168,6 +181,9 @@ export default function Page() {
     >
       <h1 style={{ textAlign: "center" }}>Inventarios de los vendedores</h1>
       <Container>
+        <Button onClick={handlerOnClick}>
+          Ordenado por {orderByName ? "Nombre" : "Posición"}
+        </Button>
         <DescriptionWithSellers sellers={activeSellers} />{" "}
         {/* Pasar vendedores */}
         {products.docs?.map((product) => (

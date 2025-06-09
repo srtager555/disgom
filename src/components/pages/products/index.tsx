@@ -2,6 +2,7 @@
 import { ProductContext } from "@/components/layouts/Products.layout";
 import { useGetProducts } from "@/hooks/products/getProducts";
 import { globalCSSVars } from "@/styles/colors";
+import { Button } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
@@ -72,8 +73,20 @@ const RemoveOnPrint = styled(Container)`
 
 export function Products() {
   const { setSelectedProduct } = useContext(ProductContext);
-  const products = useGetProducts();
+  const [order, setOrder] = useState<keyof productDoc>("position");
+  const [orderByName, setOrderByName] = useState(false);
+  const products = useGetProducts(order);
   const [tags, setTags] = useState<Tag>();
+
+  function handlerOnClickChangeOrder() {
+    if (orderByName) {
+      setOrder("name");
+      setOrderByName(false);
+    } else {
+      setOrder("position");
+      setOrderByName(true);
+    }
+  }
 
   function handlerOnClik(
     product: QueryDocumentSnapshot<productDoc, DocumentData>
@@ -112,6 +125,11 @@ export function Products() {
             {products.snap && products.snap?.size > 0
               ? "Productos"
               : "No hay productos"}
+            {products.snap && products.snap?.size > 0 && (
+              <Button onClick={handlerOnClickChangeOrder}>
+                Ordenado por {orderByName ? "Nombre" : "Posición"}
+              </Button>
+            )}
           </h2>
         </FlexContainer>
         <ProductsContainer>

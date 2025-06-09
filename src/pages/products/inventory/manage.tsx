@@ -4,6 +4,9 @@ import { useGetProducts } from "@/hooks/products/getProducts";
 import { Container, FlexContainer, GridContainer } from "@/styles/index.styles";
 import Link from "next/link";
 import { ProductRow } from "@/components/pages/products/manage/ProductRow";
+import { useState } from "react";
+import { productDoc } from "@/tools/products/create";
+import { Button } from "@/styles/Form.styles";
 
 const grid = "225px repeat(8, 150px)";
 const FlexCenterStyles = {
@@ -14,7 +17,19 @@ const FlexCenterStyles = {
 };
 
 export default function Page() {
-  const products = useGetProducts();
+  const [order, setOrder] = useState<keyof productDoc>("position");
+  const [orderByName, setOrderByName] = useState(false);
+  const products = useGetProducts(order);
+
+  function handlerOnClick() {
+    if (orderByName) {
+      setOrder("name");
+      setOrderByName(false);
+    } else {
+      setOrder("position");
+      setOrderByName(true);
+    }
+  }
 
   return (
     <Container>
@@ -29,6 +44,9 @@ export default function Page() {
         </p>
       </Container>
       <Container styles={{ width: "100%" }}>
+        <Button onClick={handlerOnClick}>
+          Ordenado por {orderByName ? "Nombre" : "Posición"}
+        </Button>
         <Descriptions />
         {products.docsWithoutParent?.map((el, i) => {
           return <ProductRow key={i} product={el} />;

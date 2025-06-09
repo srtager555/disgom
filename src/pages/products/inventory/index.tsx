@@ -1,5 +1,5 @@
 import { ProductContext } from "@/components/layouts/Products.layout";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import { NextPageWithLayout } from "../../_app";
 import { Container, FlexContainer, GridContainer } from "@/styles/index.styles";
 import { Column } from "@/components/pages/invoice/Product";
@@ -7,10 +7,23 @@ import { useGetProducts } from "@/hooks/products/getProducts";
 import { numberParser } from "@/tools/numberPaser";
 import { Button } from "@/styles/Form.styles";
 import { useMemo } from "react";
+import { productDoc } from "@/tools/products/create";
 
 const Page: NextPageWithLayout = () => {
   const productsContext = useContext(ProductContext);
-  const products = useGetProducts();
+  const [order, setOrder] = useState<keyof productDoc>("position");
+  const [orderByName, setOrderByName] = useState(false);
+  const products = useGetProducts(order);
+
+  function handlerOnClick() {
+    if (orderByName) {
+      setOrder("name");
+      setOrderByName(false);
+    } else {
+      setOrder("position");
+      setOrderByName(true);
+    }
+  }
 
   useEffect(() => {
     if (productsContext?.setShowProductsList)
@@ -36,6 +49,9 @@ const Page: NextPageWithLayout = () => {
       >
         <h1 style={{ textAlign: "center" }}>Inventario actual</h1>
         <Button onClick={() => window.print()}>Imprimir</Button>
+        <Button onClick={handlerOnClick}>
+          Ordenado por {orderByName ? "Nombre" : "Posición"}
+        </Button>
       </FlexContainer>
       <Container
         styles={{

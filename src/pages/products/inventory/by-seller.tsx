@@ -2,6 +2,7 @@ import { Column } from "@/components/pages/invoice/Product";
 import { ProductRow } from "@/components/pages/products/inventory/by-seller/ProductRow";
 import useQueryParams from "@/hooks/getQueryParams";
 import { useGetProducts } from "@/hooks/products/getProducts";
+import { Button } from "@/styles/Form.styles";
 import { Container, FlexContainer, GridContainer } from "@/styles/index.styles";
 import { Firestore } from "@/tools/firestore";
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/tools/firestore/CollectionTyping";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { numberParser } from "@/tools/numberPaser";
+import { productDoc } from "@/tools/products/create";
 import { SellersDoc } from "@/tools/sellers/create";
 import {
   collection,
@@ -40,7 +42,9 @@ export type SellerInventoryProduct = {
 
 export default function Page() {
   const { id: sellerId } = useQueryParams(); // Get seller ID from query params
-  const { docs: products } = useGetProducts(); // Get all products
+  const [order, setOrder] = useState<keyof productDoc>("position");
+  const [orderByName, setOrderByName] = useState(false);
+  const { docs: products } = useGetProducts(order); // Get all products
   const [seller, setSeller] = useState<
     DocumentSnapshot<SellersDoc> | undefined
   >(undefined);
@@ -50,6 +54,16 @@ export default function Page() {
   >([]);
   const [loadingInventory, setLoadingInventory] = useState(true);
   const [invoiceID, setInvoiceID] = useState<string>();
+
+  function handlerOnClick() {
+    if (orderByName) {
+      setOrder("name");
+      setOrderByName(false);
+    } else {
+      setOrder("position");
+      setOrderByName(true);
+    }
+  }
 
   // Effect to fetch seller details
   useEffect(() => {
@@ -214,6 +228,9 @@ export default function Page() {
         )}
       </Container>
       <Container styles={{ maxWidth: "600px", alignSelf: "center" }}>
+        <Button onClick={handlerOnClick}>
+          Ordenado por {orderByName ? "Nombre" : "Posición"}
+        </Button>
         <Descriptions />
         {!products ? (
           <p>Cargando productos...</p>

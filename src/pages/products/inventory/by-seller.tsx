@@ -56,12 +56,12 @@ export default function Page() {
   const [invoiceID, setInvoiceID] = useState<string>();
 
   function handlerOnClick() {
-    if (orderByName) {
+    if (!orderByName) {
       setOrder("name");
-      setOrderByName(false);
+      setOrderByName(true);
     } else {
       setOrder("position");
-      setOrderByName(true);
+      setOrderByName(false);
     }
   }
 
@@ -227,36 +227,39 @@ export default function Page() {
           </Container>
         )}
       </Container>
+
       <Container styles={{ maxWidth: "600px", alignSelf: "center" }}>
         <Button onClick={handlerOnClick}>
           Ordenado por {orderByName ? "Nombre" : "Posición"}
         </Button>
-        <Descriptions />
-        {!products ? (
-          <p>Cargando productos...</p>
-        ) : (
-          products.map((product) => (
-            <ProductRow
-              key={product.id}
-              product={product}
-              inventoryProducts={inventoryProducts}
-              loadingInventory={loadingInventory}
-            />
-          ))
-        )}
-        {/* Total Row */}
-        <GridContainer $gridTemplateColumns={gridTemplate}>
-          <Column gridColumn="span 3">
-            <strong style={{ float: "right" }}>TOTAL LPS</strong>
-          </Column>
-          <Column $textAlign="center">
-            <strong>
-              {loadingInventory
-                ? "Calculando..."
-                : numberParser(totalInventoryValue ?? 0)}
-            </strong>
-          </Column>
-        </GridContainer>
+        <Container styles={{ marginTop: "10px" }}>
+          <Descriptions />
+          {!products ? (
+            <p>Cargando productos...</p>
+          ) : (
+            products.map((product) => (
+              <ProductRow
+                key={product.id}
+                product={product}
+                inventoryProducts={inventoryProducts}
+                loadingInventory={loadingInventory}
+              />
+            ))
+          )}
+          {/* Total Row */}
+          <GridContainer $gridTemplateColumns={gridTemplate}>
+            <Column gridColumn="span 3">
+              <strong style={{ float: "right" }}>TOTAL LPS</strong>
+            </Column>
+            <Column $textAlign="center">
+              <strong>
+                {loadingInventory
+                  ? "Calculando..."
+                  : numberParser(totalInventoryValue ?? 0)}
+              </strong>
+            </Column>
+          </GridContainer>
+        </Container>
       </Container>
       <div style={{ height: "50px" }} />
     </FlexContainer>

@@ -132,7 +132,7 @@ export function Products({ selectedSeller, setProductsResults }: props) {
             />
           </Container>
           <Button onClick={toggleSort}>
-            Ordenar por: {currentSort === "position" ? "Nombre" : "Posición"}
+            Ordenardo por {currentSort === "position" ? "Posición" : "Nombre"}
           </Button>
           <Button
             onClick={() => {

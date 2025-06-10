@@ -16,12 +16,12 @@ const Page: NextPageWithLayout = () => {
   const products = useGetProducts(order);
 
   function handlerOnClick() {
-    if (orderByName) {
+    if (!orderByName) {
       setOrder("name");
-      setOrderByName(false);
+      setOrderByName(true);
     } else {
       setOrder("position");
-      setOrderByName(true);
+      setOrderByName(false);
     }
   }
 
@@ -41,13 +41,13 @@ const Page: NextPageWithLayout = () => {
     <FlexContainer styles={{ flexDirection: "column", alignItems: "center" }}>
       <FlexContainer
         styles={{
-          marginBottom: "20px",
           justifyContent: "center",
           alignItems: "center",
-          flexDirection: "column",
         }}
       >
         <h1 style={{ textAlign: "center" }}>Inventario actual</h1>
+      </FlexContainer>
+      <FlexContainer styles={{ marginBottom: "10px", gap: "10px" }}>
         <Button onClick={() => window.print()}>Imprimir</Button>
         <Button onClick={handlerOnClick}>
           Ordenado por {orderByName ? "Nombre" : "Posición"}

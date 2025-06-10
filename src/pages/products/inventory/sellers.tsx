@@ -60,12 +60,12 @@ export default function Page() {
   const [loadingInventories, setLoadingInventories] = useState(true);
 
   function handlerOnClick() {
-    if (orderByName) {
+    if (!orderByName) {
       setOrder("name");
-      setOrderByName(false);
+      setOrderByName(true);
     } else {
       setOrder("position");
-      setOrderByName(true);
+      setOrderByName(false);
     }
   }
 
@@ -184,18 +184,20 @@ export default function Page() {
         <Button onClick={handlerOnClick}>
           Ordenado por {orderByName ? "Nombre" : "Posición"}
         </Button>
-        <DescriptionWithSellers sellers={activeSellers} />{" "}
-        {/* Pasar vendedores */}
-        {products.docs?.map((product) => (
-          // Pasar también los inventarios cargados y el estado de carga
-          <ProductInventory
-            key={product.id}
-            product={product}
-            sellers={activeSellers}
-            allSellerInventories={allSellerInventories}
-            loadingInventories={loadingInventories} // Pasar estado de carga global
-          />
-        ))}
+        <Container styles={{ marginTop: "10px" }}>
+          <DescriptionWithSellers sellers={activeSellers} />{" "}
+          {/* Pasar vendedores */}
+          {products.docs?.map((product) => (
+            // Pasar también los inventarios cargados y el estado de carga
+            <ProductInventory
+              key={product.id}
+              product={product}
+              sellers={activeSellers}
+              allSellerInventories={allSellerInventories}
+              loadingInventories={loadingInventories} // Pasar estado de carga global
+            />
+          ))}
+        </Container>
       </Container>
       {/* Mostrar el Gran Total */}
       <Container

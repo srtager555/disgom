@@ -79,12 +79,12 @@ export function Products() {
   const [tags, setTags] = useState<Tag>();
 
   function handlerOnClickChangeOrder() {
-    if (orderByName) {
+    if (!orderByName) {
       setOrder("name");
-      setOrderByName(false);
+      setOrderByName(true);
     } else {
       setOrder("position");
-      setOrderByName(true);
+      setOrderByName(false);
     }
   }
 
@@ -120,17 +120,24 @@ export function Products() {
   return (
     <Container styles={{ marginBottom: "100px" }}>
       <RemoveOnPrint>
-        <FlexContainer>
+        <FlexContainer
+          styles={{
+            justifyContent: "space-between",
+            width: "100%",
+            alignItems: "center",
+            marginBottom: "20px",
+          }}
+        >
           <h2 style={{ marginRight: "10px" }}>
             {products.snap && products.snap?.size > 0
               ? "Productos"
               : "No hay productos"}
-            {products.snap && products.snap?.size > 0 && (
-              <Button onClick={handlerOnClickChangeOrder}>
-                Ordenado por {orderByName ? "Nombre" : "Posición"}
-              </Button>
-            )}
           </h2>
+          {products.snap && products.snap?.size > 0 && (
+            <Button onClick={handlerOnClickChangeOrder}>
+              Ordenado por {orderByName ? "Nombre" : "Posición"}
+            </Button>
+          )}
         </FlexContainer>
         <ProductsContainer>
           {products.docs?.map((_, i) => {

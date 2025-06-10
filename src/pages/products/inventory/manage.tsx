@@ -22,12 +22,12 @@ export default function Page() {
   const products = useGetProducts(order);
 
   function handlerOnClick() {
-    if (orderByName) {
+    if (!orderByName) {
       setOrder("name");
-      setOrderByName(false);
+      setOrderByName(true);
     } else {
       setOrder("position");
-      setOrderByName(true);
+      setOrderByName(false);
     }
   }
 
@@ -43,10 +43,10 @@ export default function Page() {
           </Link>
         </p>
       </Container>
+      <Button onClick={handlerOnClick} style={{ marginBottom: "10px" }}>
+        Ordenado por {orderByName ? "Nombre" : "Posición"}
+      </Button>
       <Container styles={{ width: "100%" }}>
-        <Button onClick={handlerOnClick}>
-          Ordenado por {orderByName ? "Nombre" : "Posición"}
-        </Button>
         <Descriptions />
         {products.docsWithoutParent?.map((el, i) => {
           return <ProductRow key={i} product={el} />;

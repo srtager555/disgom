@@ -183,19 +183,6 @@ export function AddOutputBase({
         return;
       }
 
-      if (currentStock < amountToSave) {
-        console.log(
-          "Addoutput: Not enough stock. Skipping save and showing warning.",
-          currentStock,
-          "<",
-          amountToSave,
-          "."
-        );
-        humanInteractionDetectedRef.current = false;
-        setOverflowWarning(true);
-        return;
-      }
-
       isCurrentlySavingRef.current = true;
       console.log("AddOutput: -------- Debounced save triggered --------");
       console.log(
@@ -255,6 +242,19 @@ export function AddOutputBase({
           );
           success = true;
         } else if (amountToSave > localCurrentAmount) {
+          if (currentStock < amountToSave - localCurrentAmount) {
+            console.log(
+              "Addoutput: Suma (Increase) Not enough stock. Skipping save and showing warning.",
+              currentStock,
+              "<",
+              amountToSave,
+              "."
+            );
+            humanInteractionDetectedRef.current = false;
+            setOverflowWarning(true);
+            return;
+          }
+
           console.log("AddOutput: Suma (increase) detected.");
           await sumaOutputs(
             invoice,

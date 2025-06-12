@@ -1,3 +1,4 @@
+import { Icon } from "@/components/Icons";
 import AutoResizeTextarea from "@/components/Inputs/autosizetextarea";
 import { Select } from "@/components/Inputs/select";
 import { ProductContext } from "@/components/layouts/Products.layout";
@@ -6,9 +7,22 @@ import { Form, Button } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { productUnits, createProduct } from "@/tools/products/create"; // TagType and getTags removed
 import { getUnits } from "@/tools/products/getUnits"; // TagType and getTags removed
-import { useState, FormEvent, useEffect, useContext, useMemo } from "react"; // useRef removed
+import {
+  useState,
+  FormEvent,
+  useEffect,
+  useContext,
+  useMemo,
+  Dispatch,
+  SetStateAction,
+} from "react"; // useRef removed
 
-export function CreateProduct() {
+interface props {
+  setChangeChartMode: Dispatch<SetStateAction<boolean>>;
+  changeChartMode: boolean;
+}
+
+export function CreateProduct({ setChangeChartMode, changeChartMode }: props) {
   const { selectedProduct, setSelectedProduct } = useContext(ProductContext);
   const units = useMemo(() => getUnits(), []);
   const products = useGetProducts();
@@ -69,7 +83,7 @@ export function CreateProduct() {
     <Container>
       <Container>
         <Form onSubmit={handlerCreateProduct}>
-          <Container styles={{ marginBottom: "10px" }}>
+          <FlexContainer styles={{ marginBottom: "10px", gap: "20px" }}>
             <AutoResizeTextarea
               name="productName"
               required
@@ -77,78 +91,93 @@ export function CreateProduct() {
               onChange={(e) => setProductName(e.target.value)}
               placeholder="Nombre del producto"
             />
-          </Container>
-          <FlexContainer styles={{ gap: "10px", marginBottom: "10px" }}>
-            <label>
-              <input
-                type="checkbox"
-                name="followed"
-                checked={followed}
-                onChange={(e) => setFollowed(e.target.checked)}
-                style={{ marginRight: "10px", display: "inline-block" }}
-              />
-              ¿Se debe hacer un seguimiento de las ventas semanales de este
-              producto?
-            </label>
+            <Button
+              onClick={(e) => {
+                e.preventDefault();
 
-            <label>
-              <input
-                onChange={function (e) {
-                  const value = e.target.checked;
-
-                  setProductVariant(value);
-                }}
-                type="checkbox"
-                checked={productVariant}
-                style={{ marginRight: "10px", display: "inline-block" }}
-              />
-              ¿Este producto es una variación de una existente?
-            </label>
+                setChangeChartMode((prev) => !prev);
+              }}
+            >
+              <Icon iconType="chart" />
+            </Button>
           </FlexContainer>
-          {!productVariant ? (
+          {!changeChartMode && (
             <>
-              <Select
-                name="units"
-                value={currentProductUnits}
-                onChange={(e) =>
-                  setCurrentProductUnits(e.target.value as productUnits | "")
-                }
-                options={units.map((u) => ({ name: "en " + u, value: u }))}
-              >
-                ¿Cómo se medirá este producto?
-              </Select>
-            </>
-          ) : (
-            <Container styles={{ marginBottom: "20px" }}>
-              {productVariant && typeof parentID !== "undefined" && (
-                <Container styles={{ marginTop: "10px" }}>
-                  <Select
-                    required
-                    name="product_parent"
-                    value={parentID}
-                    onChange={(e) => setParentID(e.target.value)}
-                    options={[
-                      {
-                        name: "Seleccione un producto",
-                        value: "",
-                        disabled: true,
-                      },
-                      ...(products.docsWithoutParent?.map((el) => {
-                        const data = el.data();
-                        return {
-                          name: data.name,
-                          value: el.ref.id,
-                        };
-                      }) || []),
-                    ]}
+              <FlexContainer styles={{ gap: "10px", marginBottom: "10px" }}>
+                <label>
+                  <input
+                    type="checkbox"
+                    name="followed"
+                    checked={followed}
+                    onChange={(e) => setFollowed(e.target.checked)}
+                    style={{ marginRight: "10px", display: "inline-block" }}
                   />
+                  ¿Se debe hacer un seguimiento de las ventas semanales de este
+                  producto?
+                </label>
+
+                <label>
+                  <input
+                    onChange={function (e) {
+                      const value = e.target.checked;
+
+                      setProductVariant(value);
+                    }}
+                    type="checkbox"
+                    checked={productVariant}
+                    style={{ marginRight: "10px", display: "inline-block" }}
+                  />
+                  ¿Este producto es una variación de una existente?
+                </label>
+              </FlexContainer>
+              {!productVariant ? (
+                <>
+                  <Select
+                    name="units"
+                    value={currentProductUnits}
+                    onChange={(e) =>
+                      setCurrentProductUnits(
+                        e.target.value as productUnits | ""
+                      )
+                    }
+                    options={units.map((u) => ({ name: "en " + u, value: u }))}
+                  >
+                    ¿Cómo se medirá este producto?
+                  </Select>
+                </>
+              ) : (
+                <Container styles={{ marginBottom: "20px" }}>
+                  {productVariant && typeof parentID !== "undefined" && (
+                    <Container styles={{ marginTop: "10px" }}>
+                      <Select
+                        required
+                        name="product_parent"
+                        value={parentID}
+                        onChange={(e) => setParentID(e.target.value)}
+                        options={[
+                          {
+                            name: "Seleccione un producto",
+                            value: "",
+                            disabled: true,
+                          },
+                          ...(products.docsWithoutParent?.map((el) => {
+                            const data = el.data();
+                            return {
+                              name: data.name,
+                              value: el.ref.id,
+                            };
+                          }) || []),
+                        ]}
+                      />
+                    </Container>
+                  )}
                 </Container>
               )}
-            </Container>
+              <Button $primary style={{ marginRight: "10px" }}>
+                {selectedProduct ? "Actualizar producto" : "Crear producto"}
+              </Button>
+            </>
           )}
-          <Button $primary style={{ marginRight: "10px" }}>
-            {selectedProduct ? "Actualizar producto" : "Crear producto"}
-          </Button>
         </Form>
       </Container>
     </Container>

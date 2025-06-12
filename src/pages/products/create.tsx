@@ -4,6 +4,7 @@ import {
 } from "@/components/layouts/Products.layout";
 import { CreateProduct } from "@/components/pages/products/Create";
 import { ManageStock } from "@/components/pages/products/ManageStock";
+import { ProductMetrics } from "@/components/pages/products/ProductMetrics";
 // import { TagManager } from "@/components/pages/products/TagManager";
 import { NextPageWithLayout } from "@/pages/_app";
 import { Button } from "@/styles/Form.styles";
@@ -16,6 +17,7 @@ const Page: NextPageWithLayout = () => {
   const { selectedProduct, setSelectedProduct } = useContext(ProductContext);
   const productData = useMemo(() => selectedProduct?.data(), [selectedProduct]);
   const [timeOut, setTimeOut] = useState<NodeJS.Timeout>();
+  const [changeChartMode, setChangeChartMode] = useState(false);
 
   function handlerDisableProduct(e: FormEvent) {
     e.preventDefault();
@@ -36,37 +38,46 @@ const Page: NextPageWithLayout = () => {
 
   return (
     <Container>
-      <CreateProduct />
-      <ManageStock />
-      <FlexContainer
-        styles={{ gap: "10px", alignItems: "center", marginTop: "10px" }}
-      >
-        {selectedProduct && (
-          <>
-            <Button
-              onClick={() =>
-                setSelectedProduct && setSelectedProduct(undefined)
-              }
-            >
-              Eliminar selección
-            </Button>
-          </>
-        )}
-        {selectedProduct && (
-          <Button
-            onPointerDown={handlerDisableProduct}
-            onPointerUp={() => clearTimeout(timeOut)}
-            onMouseUp={() => clearTimeout(timeOut)}
-            onMouseLeave={() => clearTimeout(timeOut)}
-            $warn
-            $hold
+      <CreateProduct
+        setChangeChartMode={setChangeChartMode}
+        changeChartMode={changeChartMode}
+      />
+      {changeChartMode ? (
+        <ProductMetrics />
+      ) : (
+        <>
+          <ManageStock />
+          <FlexContainer
+            styles={{ gap: "10px", alignItems: "center", marginTop: "10px" }}
           >
-            {productData?.disabled
-              ? "Habilitar producto"
-              : "Deshabilitar producto"}
-          </Button>
-        )}
-      </FlexContainer>
+            {selectedProduct && (
+              <>
+                <Button
+                  onClick={() =>
+                    setSelectedProduct && setSelectedProduct(undefined)
+                  }
+                >
+                  Eliminar selección
+                </Button>
+              </>
+            )}
+            {selectedProduct && (
+              <Button
+                onPointerDown={handlerDisableProduct}
+                onPointerUp={() => clearTimeout(timeOut)}
+                onMouseUp={() => clearTimeout(timeOut)}
+                onMouseLeave={() => clearTimeout(timeOut)}
+                $warn
+                $hold
+              >
+                {productData?.disabled
+                  ? "Habilitar producto"
+                  : "Deshabilitar producto"}
+              </Button>
+            )}
+          </FlexContainer>
+        </>
+      )}
     </Container>
   );
 };

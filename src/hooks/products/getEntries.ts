@@ -1,43 +1,47 @@
-// import { ProductContext } from "@/components/layouts/Products.layout";
-// import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
-// import { entryDoc } from "@/tools/products/addEntry";
-// import { productDoc } from "@/tools/products/create";
-// import {
-//   collection,
-//   CollectionReference,
-//   DocumentReference,
-//   onSnapshot,
-//   query,
-//   QueryDocumentSnapshot,
-//   QuerySnapshot,
-// } from "firebase/firestore";
-// import { useEffect, useState } from "react";
+import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
+import { entryDoc } from "@/tools/products/addEntry";
+import { productDoc } from "@/tools/products/create";
+import { getCurrentTwoWeekRange } from "@/tools/time/current";
+import {
+  collection,
+  CollectionReference,
+  DocumentReference,
+  onSnapshot,
+  query,
+  QueryDocumentSnapshot,
+  where,
+} from "firebase/firestore";
+import { useEffect, useRef, useState } from "react";
 
-// export type entries = {
-//   lastEntry: QueryDocumentSnapshot<entryDoc>;
-//   entries: QuerySnapshot<entryDoc>;
-// };
+export function useGetEntries(ref: DocumentReference<productDoc> | undefined) {
+  const [entries, setEntries] = useState<QueryDocumentSnapshot<entryDoc>[]>();
+  const last_ref_id = useRef("");
 
-// export function useGetEntries(ref: DocumentReference<productDoc>) {
-//   const [entries, setEntries] = useState<entries>();
+  useEffect(() => {
+    if (!ref) return;
+    if (last_ref_id.current === ref.id) return;
 
-//   useEffect(() => {
-//     const coll = collection(
-//       ref,
-//       ProductsCollection.entry
-//     ) as CollectionReference<entryDoc>;
+    last_ref_id.current = ref.id;
 
-//     const unsubcribe = onSnapshot(coll, (entries) => {
-//       setEntries((props) => {
-//         return {
-//           ...props,
-//           entries,
-//         };
-//       });
-//     });
+    const coll = collection(
+      ref,
+      ProductsCollection.entry
+    ) as CollectionReference<entryDoc>;
 
-//     return () => unsubcribe();
-//   }, []);
+    const range = getCurrentTwoWeekRange(new Date());
+    const q = query(
+      coll,
+      where("disabled", "==", false),
+      where("created_at", ">=", range.start),
+      where("created_at", "<=", range.end)
+    );
 
-//   return "";
-//}
+    const unsubcribe = onSnapshot(q, (entries) => {
+      setEntries(entries.docs);
+    });
+
+    return () => unsubcribe();
+  }, [ref]);
+
+  return entries;
+}

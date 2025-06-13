@@ -1,39 +1,47 @@
 type InputEvent = React.ChangeEvent<HTMLInputElement>;
 
+// Las opciones no cambian, los límites siguen siendo numéricos
 interface ParseOptions {
   min?: number;
   max?: number;
   returnRaw?: boolean;
 }
 
+/**
+ * Procesa el evento de un input para manejarlo como un string numérico.
+ * Esta función está diseñada para trabajar con un estado de tipo `string`.
+ */
 export function parseNumberInput(
+  // CAMBIO: setState ahora espera un string
   setState: (val: string) => void,
   event: InputEvent,
   options?: ParseOptions
-): number | undefined {
+  // CAMBIO: El tipo de retorno ahora es string o undefined
+): string | undefined {
   const rawString: string = event.target.value;
-  console.log("input value: ", rawString);
 
-  // Permitir borrar todo
+  // Permitir borrar todo. Se guarda un string vacío.
   if (rawString === "") {
-    setState(0);
+    setState("");
     if (options?.returnRaw) {
-      return 0;
+      return "";
     }
     return;
   }
 
-  // Validar formato: solo dígitos con máximo un punto decimal
+  // Validar que el formato sea de un número decimal válido.
+  // Esta expresión regular sigue siendo perfecta para el trabajo.
   if (!/^\d*\.?\d*$/.test(rawString)) {
     if (options?.returnRaw) {
-      const defaultValue = parseFloat(event.target.defaultValue);
-      return !isNaN(defaultValue) ? defaultValue : NaN;
+      // Devolvemos el valor por defecto anterior, que es un string.
+      return event.target.defaultValue;
     }
     return;
   }
 
   let processedString = rawString;
-  // Si empieza con ceros (como "0012" o "012.3"), limpiarlos
+
+  // Limpiar ceros a la izquierda (ej: "007" -> "7") sin afectar "0."
   if (
     processedString.startsWith("0") &&
     !processedString.startsWith("0.") &&
@@ -42,47 +50,37 @@ export function parseNumberInput(
     processedString = String(Number(processedString));
   }
 
-  // Si la cadena termina con un punto (ej: "." o "123."), es una entrada
-  // incompleta. No llamamos a setState para permitir que el campo de texto
-  // muestre la entrada actual y el usuario pueda seguir escribiendo.
-  if (processedString.endsWith(".")) {
-    console.log("final with .");
-    if (options?.returnRaw) {
-      // Para returnRaw, devolvemos la parte entera o NaN si solo es "."
-      const val = parseFloat(processedString);
-      return isNaN(val) ? NaN : val;
+  // --- LÓGICA DE VALIDACIÓN DE LÍMITES (MIN/MAX) ---
+  // Solo validamos los límites si el string no termina en ".",
+  // para permitir que el usuario escriba números decimales sin ser
+  // interrumpido. (Ej: Si max=100, permite escribir "12.3")
+  if (!processedString.endsWith(".")) {
+    const numericValue = parseFloat(processedString);
+
+    // Nos aseguramos de que sea un número válido antes de comparar
+    if (!isNaN(numericValue)) {
+      if (options?.min !== undefined && numericValue < options.min) {
+        // Si viola el mínimo, forzamos el estado al valor mínimo (como string)
+        setState(String(options.min));
+        if (options?.returnRaw) {
+          return String(options.min);
+        }
+        return;
+      }
+      if (options?.max !== undefined && numericValue > options.max) {
+        // Si viola el máximo, forzamos el estado al valor máximo (como string)
+        setState(String(options.max));
+        if (options?.returnRaw) {
+          return String(options.max);
+        }
+        return;
+      }
     }
-    return setState(rawString); // No actualizamos el estado numérico todavía.
   }
 
-  const numericValue = parseFloat(processedString);
-
-  // Si parseFloat resulta en NaN (y no fue solo "."), es una entrada inválida.
-  if (isNaN(numericValue)) {
-    if (options?.returnRaw) {
-      return NaN;
-    }
-    return; // No actualizamos el estado con NaN.
-  }
-
-  // Si hay límites, validar con ellos
-  if (options?.min !== undefined && numericValue < options.min) {
-    setState(options.min);
-    if (options?.returnRaw) {
-      return options.min;
-    }
-    return;
-  }
-  if (options?.max !== undefined && numericValue > options.max) {
-    setState(options.max);
-    if (options?.returnRaw) {
-      return options.max;
-    }
-    return;
-  }
-
-  setState(numericValue);
+  // Si todas las validaciones pasan, actualizamos el estado con el string procesado
+  setState(processedString);
   if (options?.returnRaw) {
-    return numericValue;
+    return processedString;
   }
 }

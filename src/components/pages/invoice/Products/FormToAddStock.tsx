@@ -28,17 +28,17 @@ type props = {
 };
 
 interface FormState {
-  productCostPrice: number;
-  productSalePrice: number;
-  sellerProfit: number;
-  amount: number;
+  productCostPrice: string;
+  productSalePrice: string;
+  sellerProfit: string;
+  amount: string;
 }
 
 const initialFormState: FormState = {
-  productCostPrice: 0,
-  productSalePrice: 0,
-  sellerProfit: 0,
-  amount: 0,
+  productCostPrice: "0",
+  productSalePrice: "0",
+  sellerProfit: "0",
+  amount: "0",
 };
 
 // Tipo para el evento de input, compatible con parseNumberInput
@@ -67,19 +67,24 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
       amount: formAmount,
     } = formValues;
 
-    if (formAmount === 0) {
+    const numericFormAmount = Number(formAmount);
+    const numericFormProductCostPrice = Number(formProductCostPrice);
+    const numericFormProductSalePrice = Number(formProductSalePrice);
+    const numericFormSellerProfit = Number(formSellerProfit);
+
+    if (numericFormAmount === 0) {
       alert("El ingreso del producto no puede ser 0");
 
       return;
     }
 
-    if (formProductCostPrice === 0) {
+    if (numericFormProductCostPrice === 0) {
       alert("El precio del costo del producto no puede ser 0");
 
       return;
     }
 
-    if (formProductCostPrice > formProductSalePrice) {
+    if (numericFormProductCostPrice > numericFormProductSalePrice) {
       alert(
         "El precio del costo del producto no puede ser mayor al precio de venta"
       );
@@ -87,16 +92,16 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
       return;
     }
 
-    if (formSellerProfit === 0) {
+    if (numericFormSellerProfit === 0) {
       if (!confirm("¿Esta seguro que la comision del vendedor es 0?")) return;
     }
 
     const purchase_price = parentProduct
       ? parentProduct.data()?.stock[0]?.purchase_price ?? 0
-      : formProductCostPrice;
-    const sale_price = formProductSalePrice;
-    const seller_commission = formSellerProfit;
-    const amount = parentProduct ? 0 : formAmount;
+      : numericFormProductCostPrice;
+    const sale_price = numericFormProductSalePrice;
+    const seller_commission = numericFormSellerProfit;
+    const amount = parentProduct ? 0 : numericFormAmount;
 
     const entryToManege = parentProduct ? product.data?.stock[0] : entryToEdit;
     console.log("theEntry", entryToManege);
@@ -128,7 +133,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
     }
 
     setFormValues(initialFormState);
-    setDynamicMinCost(initialFormState.productCostPrice);
+    setDynamicMinCost(Number(initialFormState.productCostPrice));
   };
 
   // functions to remove a stock
@@ -151,7 +156,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
   }
 
   // Generic handler to update formValues
-  const handleFormValueChange = (fieldName: keyof FormState, value: number) => {
+  const handleFormValueChange = (fieldName: keyof FormState, value: string) => {
     setFormValues((prev) => ({ ...prev, [fieldName]: value }));
   };
 
@@ -161,9 +166,13 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
   const handleCostPriceChange = (event: InputChangeEvent) => {
     parseNumberInput(
       (newCost) => {
+        const numericNewCost = Number(newCost);
+
+        if (isNaN(numericNewCost)) return;
+
         console.log("newCost", newCost);
         handleFormValueChange("productCostPrice", newCost);
-        setDynamicMinCost(newCost); // Update min for sale price
+        setDynamicMinCost(numericNewCost); // Update min for sale price
       },
       event,
       { min: 0 }
@@ -223,7 +232,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
           productSalePrice: initialFormState.productSalePrice,
           sellerProfit: initialFormState.sellerProfit,
         }));
-        setDynamicMinCost(initialFormState.productCostPrice);
+        setDynamicMinCost(Number(initialFormState.productCostPrice));
       }
       return;
     }
@@ -236,9 +245,9 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
 
     setFormValues((prev) => ({
       ...prev, // Keep amount if it was set by entryToEdit effect
-      productCostPrice: cost,
-      productSalePrice: salePrice,
-      sellerProfit: sellerCommission,
+      productCostPrice: String(cost),
+      productSalePrice: String(salePrice),
+      sellerProfit: String(sellerCommission),
     }));
     setDynamicMinCost(cost);
   }, [stock, entryToEdit]);
@@ -254,7 +263,10 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
         return;
       }
 
-      setFormValues((prev) => ({ ...prev, amount: entryToEdit.amount }));
+      setFormValues((prev) => ({
+        ...prev,
+        amount: String(entryToEdit.amount),
+      }));
       const query = await getDoc(entryToEdit.entry_ref);
       const originalAmount = query.data()?.amount;
       if (originalAmount) setOriginalAmount(originalAmount);
@@ -268,7 +280,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
     setFormValues(initialFormState);
     setParentProduct(undefined);
     setEntryToEdit(undefined);
-    setDynamicMinCost(initialFormState.productCostPrice);
+    setDynamicMinCost(Number(initialFormState.productCostPrice));
   }, [selectedProduct, setEntryToEdit]);
 
   return (

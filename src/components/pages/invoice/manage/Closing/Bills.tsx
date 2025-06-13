@@ -3,7 +3,6 @@ import { numberParser } from "@/tools/numberPaser";
 import { Column, Input } from "../../Product";
 import { TotalResults } from "@/hooks/useProductResults";
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
-import { useDebounce } from "@/hooks/debounce";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { updateDoc } from "firebase/firestore";
 import { parseNumberInput } from "@/tools/parseNumericInput";
@@ -17,31 +16,38 @@ type props = {
 
 export function Bills({ totals, setBillsAmount }: props) {
   const { invoice } = useInvoice();
-  const [currentBillsAmount, setCurrentBillsAmount] = useState(0);
-  const billsDebounce = useDebounce(currentBillsAmount);
+  const [currentBillsAmount, setCurrentBillsAmount] = useState("0");
   const billsGetted = useRef(false);
 
   useEffect(() => {
     if (!invoice || billsGetted.current) return;
     billsGetted.current = true;
 
-    setCurrentBillsAmount(invoice.data().bills);
+    setCurrentBillsAmount(invoice.data().bills.toString());
     setBillsAmount(invoice.data().bills);
   }, [invoice]);
 
   useEffect(() => {
     async function saveBills() {
       if (!invoice) return;
+      const numericCurrentBillsAmount = Number(currentBillsAmount);
+
+      if (isNaN(numericCurrentBillsAmount)) {
+        return;
+      }
+
+      setBillsAmount(numericCurrentBillsAmount);
+
       const dbBills = invoice.data().bills;
-      if (dbBills === billsDebounce) return;
+      if (dbBills === numericCurrentBillsAmount) return;
 
       await updateDoc(invoice.ref, {
-        bills: billsDebounce ?? 0,
+        bills: numericCurrentBillsAmount ?? 0,
       });
     }
 
     saveBills();
-  }, [billsDebounce]);
+  }, [currentBillsAmount]);
 
   return (
     <GridContainer $gridTemplateColumns={gridTemplateColumns}>
@@ -51,9 +57,9 @@ export function Bills({ totals, setBillsAmount }: props) {
           value={currentBillsAmount}
           onChange={(e) => {
             const amount = parseNumberInput(() => {}, e, { returnRaw: true });
+
             if (amount === undefined) return;
 
-            setBillsAmount(amount);
             setCurrentBillsAmount(amount);
           }}
         />

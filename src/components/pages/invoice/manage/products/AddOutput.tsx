@@ -108,7 +108,7 @@ export function AddOutputBase({
   setOverflowWarning,
   defaultCustomPrices,
 }: props) {
-  const [amount, setAmount] = useState(serverCurrentAmount); // Input field's value
+  const [amount, setAmount] = useState<string>(String(serverCurrentAmount)); // Input field's value
   const [localCurrentAmount, setLocalCurrentAmount] =
     useState(serverCurrentAmount); // Last known "saved" or "processed" amount
   const [localCurrentAmountHistory, setLocalCurrentAmountHistory] = useState<
@@ -131,7 +131,7 @@ export function AddOutputBase({
         ". Syncing."
       );
       setLocalCurrentAmount(serverCurrentAmount);
-      setAmount(serverCurrentAmount); // Also update input field
+      setAmount(String(serverCurrentAmount)); // Also update input field
       humanInteractionDetectedRef.current = false; // This was not a local human interaction
     }
   }, [serverCurrentAmount, localCurrentAmountHistory]);
@@ -139,13 +139,16 @@ export function AddOutputBase({
   // Effect to refresh the input field if localCurrentAmount changes (e.g., after a save)
   // and the user hasn't made newer changes.
   useEffect(() => {
-    if (amount !== localCurrentAmount && !humanInteractionDetectedRef.current) {
+    if (
+      Number(amount) !== localCurrentAmount &&
+      !humanInteractionDetectedRef.current
+    ) {
       console.log(
         "AddOutput: localCurrentAmount changed to",
         localCurrentAmount,
         ". Syncing input field."
       );
-      setAmount(localCurrentAmount);
+      setAmount(String(localCurrentAmount));
     }
   }, [localCurrentAmount, amount]); // Removed humanInteractionDetectedRef from deps to avoid potential loop, logic relies on its current value
 
@@ -157,7 +160,7 @@ export function AddOutputBase({
       ". Resetting state.",
       customPrice
     );
-    setAmount(serverCurrentAmount);
+    setAmount(String(serverCurrentAmount));
     setLocalCurrentAmount(serverCurrentAmount);
     setLocalCurrentAmountHistory([serverCurrentAmount]);
     lastCustomPriceRef.current = customPrice;
@@ -331,12 +334,19 @@ export function AddOutputBase({
 
   // Effect to trigger debounced save on amount (from input) or customPrice (from prop) change
   useEffect(() => {
+    const amountParsedToNumber = Number(amount);
+
+    if (isNaN(amountParsedToNumber)) {
+      console.log("Invalid amount detected, maybe is a decimal number?");
+      return;
+    }
+
     if (humanInteractionDetectedRef.current) {
       console.log(
         `AddOutput: Interaction detected. Scheduling save with amount: ${amount}, customPrice: ${customPrice}`
       );
       checkHasNextInvoice(
-        () => debouncedSaveChanges(amount, customPrice),
+        () => debouncedSaveChanges(amountParsedToNumber, customPrice),
         humanInteractionDetectedRef.current,
         productDoc.id
       );
@@ -358,7 +368,7 @@ export function AddOutputBase({
   return (
     <Column>
       <Container className="show-print" styles={{ textAlign: "center" }}>
-        {numberParser(amount)}
+        {numberParser(Number(amount))}
       </Container>
       <Container className="hide-print">
         <Input

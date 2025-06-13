@@ -111,30 +111,13 @@ export function Money({ setMoneyAmount, moneyAmount }: props) {
 
   return (
     <Container>
-      <GridContainer $gridTemplateColumns={gridTemplateColumns}>
-        <Column>Depositos</Column>
-        <Column>
-          <Input
-            type="text"
-            value={String(money["deposits"]?.amount ?? 0)}
-            onChange={(e) => {
-              const amount = parseNumberInput(() => {}, e, {
-                returnRaw: true,
-              });
-              if (amount === undefined) return;
-
-              setMoney((prev) => ({
-                ...prev,
-                ["deposits"]: {
-                  amount: amount,
-                  total: amount,
-                },
-              }));
-            }}
-          />
-        </Column>
-        <Column>{numberParser(money["deposits"]?.total ?? 0)}</Column>
-      </GridContainer>
+      <MoneyInput
+        moneyAmount={1}
+        deposits
+        setMoney={setMoney}
+        initialAmount={money["deposits"]?.amount ?? 0}
+        initialLoadComplete={initialLoadComplete}
+      />
 
       {moneyList.map((item) => {
         return (
@@ -164,6 +147,7 @@ type MoneyInputProps = {
   setMoney: Dispatch<SetStateAction<rawMoneyType>>;
   initialAmount: number;
   initialLoadComplete: boolean;
+  deposits?: boolean;
 };
 
 // --- Componente MoneyInput (usa moneyAmount como clave) ---
@@ -172,16 +156,17 @@ const MoneyInput = ({
   moneyAmount, // Este es el valor numérico que usaremos como clave
   initialAmount,
   initialLoadComplete,
+  deposits,
 }: MoneyInputProps) => {
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState("0");
 
   // --- Establecer el valor inicial (sin cambios) ---
   useEffect(() => {
-    if (initialLoadComplete && amount !== initialAmount) {
+    if (initialLoadComplete && Number(amount) !== initialAmount) {
       console.log(
         `MoneyInput (${moneyAmount}): Setting initial amount to ${initialAmount}`
       );
-      setAmount(initialAmount);
+      setAmount(String(initialAmount));
     }
   }, [initialAmount, initialLoadComplete, amount, moneyAmount]); // Se mantiene amount aquí para re-evaluar si cambia externamente
 
@@ -190,19 +175,25 @@ const MoneyInput = ({
     if (newAmount === undefined) return;
 
     setAmount(newAmount); // Actualiza estado local
+    const numericNewAmount = Number(newAmount);
+
+    if (isNaN(numericNewAmount)) {
+      return;
+    }
+
     setMoney((prev) => ({
       ...prev,
       // Usa 'moneyAmount' (el número) como clave en el objeto 'money'
-      [moneyAmount]: {
-        amount: newAmount,
-        total: newAmount * moneyAmount,
+      [deposits ? "deposits" : moneyAmount]: {
+        amount: numericNewAmount,
+        total: numericNewAmount * moneyAmount,
       },
     }));
   };
 
   return (
     <GridContainer $gridTemplateColumns={gridTemplateColumns}>
-      <Column>{moneyAmount}</Column>
+      <Column>{deposits ? "Deposito" : moneyAmount}</Column>
       <Column>
         <Input
           type="text"
@@ -210,7 +201,7 @@ const MoneyInput = ({
           onChange={handleInputChange}
         />
       </Column>
-      <Column>{numberParser(amount * moneyAmount)}</Column>
+      <Column>{numberParser(Number(amount) * moneyAmount)}</Column>
     </GridContainer>
   );
 };

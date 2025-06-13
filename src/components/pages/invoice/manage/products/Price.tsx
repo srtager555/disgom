@@ -213,6 +213,12 @@ function PriceInputBase({
 }: inputProps) {
   const { setNewDefaultCustomPrices } = useNewDefaultCustomPricesContext();
   const { checkHasNextInvoice } = useHasNextInvoice();
+  const [priceValue, setPriceValue] = useState("0");
+
+  // effect to update the priceValue with the newPrice
+  useEffect(() => {
+    setPriceValue(String(newPrice));
+  }, [newPrice]);
 
   return (
     <Container className="hide-print">
@@ -221,13 +227,25 @@ function PriceInputBase({
           const value = parseNumberInput(() => {}, e, { returnRaw: true });
           if (value === undefined) return;
 
-          checkHasNextInvoice(() => setNewPrice(value), true, product_ref.id);
+          setPriceValue(value);
 
-          if (normalPrice != value && !isDefaultCustomPrice.areTheSame) {
+          const numericValue = Number(value);
+          if (isNaN(numericValue)) {
+            console.log("Invalid price detected, maybe is a decimal number?");
+            return;
+          }
+
+          checkHasNextInvoice(
+            () => setNewPrice(numericValue),
+            true,
+            product_ref.id
+          );
+
+          if (normalPrice != numericValue && !isDefaultCustomPrice.areTheSame) {
             setNewDefaultCustomPrices((prev) => ({
               ...prev,
               [product_ref.id]: {
-                price: value,
+                price: numericValue,
                 product_ref,
               },
             }));
@@ -241,7 +259,7 @@ function PriceInputBase({
           humanAmountChanged.current = true;
           someHumanChangesDetected.current.price = true;
         }}
-        value={newPrice} // Use the state value directly (already potentially negative)
+        value={priceValue} // Use the state value directly (already potentially negative)
         style={{ zIndex: "1", position: "relative" }}
         type="number"
       />

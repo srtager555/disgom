@@ -117,7 +117,7 @@ function DevolutionBase({
   someHumanChangesDetected,
 }: devolutionBase) {
   // --- Estados y Refs ---
-  const [devo, setDevo] = useState(currentServerDevolution); // Input state, inicializado con valor del servidor
+  const [devo, setDevo] = useState(String(currentServerDevolution)); // Input state, inicializado con valor del servidor
   const [lastHasInventory, setLastHasInventory] = useState<boolean | undefined>(
     sellerHasInventory
   );
@@ -156,11 +156,11 @@ function DevolutionBase({
     // actualiza el input para reflejar el estado local.
     // Esto ocurre después de que el guardado (debounced) actualiza localCurrentDevo,
     // o cuando el efecto anterior actualiza localCurrentDevo por un cambio del servidor.
-    if (devo !== localCurrentDevo) {
+    if (Number(devo) !== localCurrentDevo) {
       // console.log(
       //   `Syncing input 'devo' (${devo}) with 'localCurrentDevo' (${localCurrentDevo})`
       // );
-      setDevo(localCurrentDevo);
+      setDevo(String(localCurrentDevo));
       // Importante: NO marcar humanAmountChanged.current = false aquí,
       // porque este cambio NO es una interacción humana directa con el input.
     }
@@ -258,12 +258,19 @@ function DevolutionBase({
       return;
     }
 
+    const numericDevo = Number(devo);
+
+    if (isNaN(numericDevo)) {
+      console.log("Invalid devo detected, maybe is a decimal number?");
+      return;
+    }
+
     // Llama a la función debounced CADA VEZ que 'devo' (el input) o 'customPrice' cambien.
     // La lógica DENTRO de debouncedSaveDevolution decidirá si realmente necesita guardar.
     checkHasNextInvoice(
       () =>
         debouncedSaveDevolution(
-          devo, // Usa el valor actual del input
+          numericDevo, // Usa el valor actual del input
           customPrice,
           invoiceDoc,
           productDoc,
@@ -303,7 +310,7 @@ function DevolutionBase({
     return (
       <Column>
         <Container className="show-print" styles={{ textAlign: "center" }}>
-          {numberParser(devo)}
+          {numberParser(Number(devo))}
         </Container>
         <Container className="hide-print">
           <Input

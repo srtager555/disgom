@@ -58,11 +58,12 @@ export function MissingList() {
     const q = query(
       coll,
       where("diff.amount", "<", 0),
-      where("diff.paid", "==", false)
+      where("diff.paid", "==", false),
+      where("disabled", "==", false)
     );
 
     const unsubcribe = onSnapshot(q, (snap) => {
-      console.log("aaaa", snap.docs);
+      console.log("ßßßßßßßßßßßßß Missing money list ßßßßßßßßßßßß", snap.docs);
       setDocs(snap.docs);
     });
 

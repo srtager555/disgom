@@ -58,7 +58,7 @@ export function Devolution(props: props) {
   const outputs = useGetProductOutputByID(props.productDoc.id); // Obtiene outputs de la factura
   const { invoice: invoiceDoc } = useInvoice();
 
-  console.log("los oyutputs de la devo", currentInventory.outputs);
+  // console.log("los oyutputs de la devo", currentInventory.outputs);
 
   // Calcula la devolución actual basada en los 'outputs' de la factura
   const currentServerDevolution = useMemo(
@@ -206,9 +206,16 @@ function DevolutionBase({
           return;
         }
 
-        console.log(
-          `Debounced saveDevolution: Attempting to save devo: ${currentDevoToSave} (Local was ${currentLocalDevoState}, HumanChange: ${isHumanChangeRef.current})`
-        );
+        // // check if the current devo is the same in the input
+        // if (currentLocalDevoState === currentDevoToSave) {
+        //   console.log(
+        //     "The new devo is the same as currentDevolution, saving cancelated"
+        //   );
+
+        //   humanAmountChanged.current = false;
+
+        //   return false;
+        // }
 
         // Llama a la función externa que contiene la lógica de guardado
         const success = await saveDevolution(
@@ -233,13 +240,18 @@ function DevolutionBase({
             if (newHistory.length > 10) {
               newHistory.shift();
             }
-            // console.log("Devolution save success. New local history:", newHistory);
+            console.log(
+              "^^^^^^^ Devolution save success. New local history:",
+              newHistory,
+              " ^^^^^^^^^^^"
+            );
             return newHistory;
           });
           // El flag humanAmountChanged ya debería haber sido reseteado por saveDevolution
         } else {
           // Opcional: Revertir el input 'devo' al 'localCurrentDevo' anterior si falla
-          // setDevo(currentLocalDevoState);
+          // console.log("****** Hubo un fallo al guardar la DEVOLUCION ******");
+          setDevo(String(currentLocalDevoState));
           // Asegurarse de resetear el flag si falló para no reintentar indefinidamente
           isHumanChangeRef.current = false;
         }

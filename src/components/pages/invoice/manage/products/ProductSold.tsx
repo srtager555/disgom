@@ -81,11 +81,13 @@ export function ProductSoldBase({
 
         if (!refresh_data[product_doc.id])
           if (!isHumanChanges) {
-            console.log("skip");
+            console.log(
+              "No human changes detected, skipping save outputs solds"
+            );
             return;
           }
 
-        console.log("save outputs solds");
+        console.log("######## saving outputs solds ########");
 
         const coll = collection(
           invoice.ref,
@@ -98,10 +100,10 @@ export function ProductSoldBase({
           where("disabled", "==", false),
           where("product_ref", "==", product_doc.ref)
         );
-        const outputs_sold = await getDocs(q);
+        const old_outputs_sold = await getDocs(q);
 
-        if (outputs_sold.size > 0) {
-          outputs_sold.forEach(async (doc) => {
+        if (old_outputs_sold.size > 0) {
+          old_outputs_sold.forEach(async (doc) => {
             await updateDoc(doc.ref, {
               disabled: true,
             });
@@ -110,7 +112,12 @@ export function ProductSoldBase({
 
         // outputs totalSold
         await addOutputs(invoice, product_doc, remainStock, coll);
+
+        console.log("######## outputs solds saved ########");
       } catch (error) {
+        console.error(
+          "######## An error has been ejected saving the outputs solds ########"
+        );
         console.error(error);
       } finally {
         if (

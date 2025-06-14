@@ -73,7 +73,8 @@ export async function addOutputs(
   ) as CollectionReference<outputType>;
   const coll = outputColl || normalColl;
 
-  if (rawOutputs.length === 0) {
+  // if the outputColl isn't undefined, so the outputs don't be reseted
+  if (rawOutputs.length === 0 && !outputColl) {
     if (returnOutputs) return [];
 
     await updateDoc(docRef, {

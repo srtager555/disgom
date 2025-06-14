@@ -119,7 +119,7 @@ export function BasePrice({
     async function manageThePrice() {
       // use the normal price or the default custom price if exits
       console.log(
-        "revision de los precion en price",
+        "checking prices, custom seller/client price and normal price",
         defaultCustomPrice,
         normalPrice
       );

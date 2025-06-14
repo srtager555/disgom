@@ -57,19 +57,10 @@ export async function saveDevolution(
   // save sold product
   setRemainStock(outputsWorked.remainingStocks);
 
-  // check if a human make the changes
-  if (!humanAmountChanged.current) {
-    console.log("Human change not detected, saving cancelated");
-    return false;
-  }
-  console.log("Human change detected, saving devolution");
-
   // check if the current devo is the same in the input
   if (devoDebounce === currentDevolution) {
     console.log(
-      "devoDebounce is the same as currentDevolution, saving cancelated",
-      devoDebounce,
-      currentDevolution
+      "devoDebounce is the same as currentDevolution, saving cancelated"
     );
 
     humanAmountChanged.current = false;
@@ -77,10 +68,20 @@ export async function saveDevolution(
     return false;
   }
 
+  console.log("------- starting to save the DEVOLUTION ========-");
+  console.log(
+    `Debounced saveDevolution: Attempting to save devo: ${devoDebounce} (Local was ${currentDevolution})`
+  );
+
+  // check if a human make the changes
+  if (!humanAmountChanged.current) {
+    console.log("Human change not detected, saving cancelated");
+    return false;
+  }
+  console.log("Human change detected, saving devolution");
+
   humanAmountChanged.current = false;
-
   let inventoryRef: DocumentReference<inventory>;
-
   const devoFromInvo = invoiceDoc.data()?.devolution;
 
   // first check in the invoices
@@ -141,5 +142,4 @@ export async function saveDevolution(
   });
 
   return true;
-  console.log("devo saved");
 }

@@ -25,7 +25,7 @@ export function useGetCurrentDevolutionByProduct(product_id: string) {
     const inventoryRef = data?.devolution;
     const productRef = doc(db, ProductsCollection.root, product_id);
 
-    console.log("inventory ref in the server", inventoryRef);
+    // console.log("inventory ref in the server", inventoryRef);
 
     if (!inventoryRef) return;
     const coll = collection(

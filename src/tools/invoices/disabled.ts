@@ -84,7 +84,7 @@ export async function disabled() {
       } as PartialWithFieldValue<invoiceType>);
     }
   } catch (error) {
-    console.log(error);
+    console.error(error);
     return false;
   } finally {
     return true;

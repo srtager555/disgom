@@ -18,7 +18,6 @@ import {
   useEffect,
   Dispatch,
   SetStateAction,
-  ChangeEvent,
 } from "react";
 
 type props = {

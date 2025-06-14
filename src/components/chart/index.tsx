@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -11,6 +11,7 @@ import {
   ChartData as ChartJSChartData,
   TooltipItem,
 } from "chart.js";
+import { isEqual } from "lodash";
 
 ChartJS.register(
   PointElement,
@@ -53,6 +54,7 @@ const SalesComparisonChart = ({
   numberOfDaysToShow = 7, // Valor por defecto de 7 días
 }: props) => {
   const [chartData, setChartData] = useState<SalesChartJSData | null>(null);
+  const last_dataToChat = useRef<ChartData>();
 
   useEffect(() => {
     const processChartData = () => {
@@ -163,7 +165,12 @@ const SalesComparisonChart = ({
       setChartData(data);
     };
 
-    processChartData();
+    if (!isEqual(invoiceDataToChart, last_dataToChat.current)) {
+      last_dataToChat.current = invoiceDataToChart;
+      processChartData();
+    }
+
+    return;
   }, [invoiceDataToChart, numberOfDaysToShow]); // Añadir numberOfDaysToShow a las dependencias
 
   const options = {

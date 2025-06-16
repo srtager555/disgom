@@ -5,13 +5,15 @@ import React, {
   RefObject,
   useState,
   useCallback,
+  Dispatch,
+  SetStateAction,
 } from "react";
 import { Column, Input } from "../../Product";
 import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { entryDoc } from "@/tools/products/addEntry";
 import { outputType } from "@/tools/products/addOutputs";
-import { isEqual, debounce } from "lodash";
+import { isEqual } from "lodash";
 import { getInvoiceByQuery } from "@/tools/invoices/getInvoiceByQuery";
 import { restaOutputs } from "@/tools/products/restaOutputs";
 import { sumaOutputs } from "@/tools/products/sumaOutputs";
@@ -22,9 +24,12 @@ import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 import { parseNumberInput } from "@/tools/parseNumericInput";
 import { Container } from "@/styles/index.styles";
 import { numberParser } from "@/tools/numberPaser";
+import { stockType } from "@/tools/products/addToStock";
 
 type props = {
   outputs: DocumentSnapshot<outputType>[];
+  setRawOutputs: Dispatch<SetStateAction<rawOutput[]>>;
+  parentStock: stockType[];
   serverCurrentAmount: number;
   currentStock: number;
   customPrice: number | undefined;
@@ -38,12 +43,6 @@ export type variations = Array<{
   amount: number;
   purchase_price: number;
 }>;
-
-export type a = {
-  sale_price: number;
-  commission: number;
-  purchase_price_variations: variations;
-};
 
 export type rawOutput = {
   product_ref: DocumentReference<productDoc>;
@@ -67,18 +66,7 @@ export const AddOutput = (props: Omit<props, "serverCurrentAmount">) => {
     }, 0);
   }, [props.outputs]);
 
-  return (
-    <MemoAddOutput
-      outputs={props.outputs}
-      serverCurrentAmount={serverCurrentAmount}
-      productDoc={props.productDoc}
-      currentStock={props.currentStock}
-      customPrice={props.customPrice}
-      someHumanChangesDetected={props.someHumanChangesDetected}
-      setOverflowWarning={props.setOverflowWarning}
-      defaultCustomPrices={props.defaultCustomPrices}
-    />
-  );
+  return <MemoAddOutput {...props} serverCurrentAmount={serverCurrentAmount} />;
 };
 
 export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
@@ -93,11 +81,6 @@ export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   return true;
 });
 
-// type lastAmountToChange = {
-//   amount: number;
-//   customPrice: number | undefined;
-// };
-
 export function AddOutputBase({
   outputs,
   serverCurrentAmount,
@@ -107,6 +90,8 @@ export function AddOutputBase({
   someHumanChangesDetected,
   setOverflowWarning,
   defaultCustomPrices,
+  setRawOutputs,
+  parentStock,
 }: props) {
   const [amount, setAmount] = useState<string>(String(serverCurrentAmount)); // Input field's value
   const [localCurrentAmount, setLocalCurrentAmount] =
@@ -134,7 +119,7 @@ export function AddOutputBase({
       setAmount(String(serverCurrentAmount)); // Also update input field
       humanInteractionDetectedRef.current = false; // This was not a local human interaction
     }
-  }, [serverCurrentAmount, localCurrentAmountHistory]);
+  }, [serverCurrentAmount]);
 
   // Effect to refresh the input field if localCurrentAmount changes (e.g., after a save)
   // and the user hasn't made newer changes.
@@ -210,11 +195,6 @@ export function AddOutputBase({
         return;
       }
 
-      // if (priceToSave === undefined || priceToSave === 0) {
-      //   console.error("No se puede añadir un output sin precio");
-      //   return;
-      // }
-
       let success = false;
       try {
         if (
@@ -229,6 +209,8 @@ export function AddOutputBase({
             defaultCustomPrices,
             outputs,
             amountToSave,
+            parentStock,
+            setRawOutputs,
             priceToSave
           );
           success = true;
@@ -241,6 +223,8 @@ export function AddOutputBase({
             defaultCustomPrices,
             amountToSave,
             localCurrentAmount,
+            parentStock,
+            setRawOutputs,
             priceToSave
           );
           success = true;
@@ -265,6 +249,8 @@ export function AddOutputBase({
             amountToSave,
             localCurrentAmount,
             defaultCustomPrices,
+            parentStock,
+            setRawOutputs,
             priceToSave
           );
           success = true;
@@ -306,13 +292,6 @@ export function AddOutputBase({
     ]
   );
 
-  const debouncedSaveChanges = useCallback(
-    debounce((currentAmount: number, currentPrice: number | undefined) => {
-      saveChangesLogic(currentAmount, currentPrice);
-    }, 1000),
-    [saveChangesLogic]
-  );
-
   // Effect to detect if the customPrice prop has changed from what we last processed.
   useEffect(() => {
     console.log(
@@ -346,15 +325,12 @@ export function AddOutputBase({
         `AddOutput: Interaction detected. Scheduling save with amount: ${amount}, customPrice: ${customPrice}`
       );
       checkHasNextInvoice(
-        () => debouncedSaveChanges(amountParsedToNumber, customPrice),
+        () => saveChangesLogic(amountParsedToNumber, customPrice),
         humanInteractionDetectedRef.current,
         productDoc.id
       );
     }
-    return () => {
-      debouncedSaveChanges.cancel();
-    };
-  }, [amount, customPrice, debouncedSaveChanges]);
+  }, [amount, customPrice, saveChangesLogic]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     parseNumberInput(setAmount, e, { min: 0 });
@@ -373,8 +349,6 @@ export function AddOutputBase({
       <Container className="hide-print">
         <Input
           value={amount} // Controlled component
-          // min={0}
-          // max={currentStock + serverCurrentAmount}
           onChange={handleInputChange}
         />
       </Container>

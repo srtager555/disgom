@@ -11,7 +11,6 @@ import React, {
 } from "react";
 import { Column, Input } from "../../Product";
 import { saveDevolution } from "@/tools/products/saveDevolution";
-import debounce from "lodash/debounce"; // <-- Importa debounce
 import { DocumentSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { outputParser, outputType } from "@/tools/products/addOutputs";

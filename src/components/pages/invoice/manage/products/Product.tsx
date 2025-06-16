@@ -27,6 +27,7 @@ import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
 import { getDefaultCustomPrice } from "@/tools/sellers/customPrice/getDefaultCustomPrice";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 import { stockType } from "@/tools/products/addToStock";
+import { outputType } from "@/tools/products/addOutputs";
 
 // サラマンダー
 export type props = {
@@ -88,6 +89,8 @@ export function Product({
     seller_sold: 0,
     seller_profit: 0,
   });
+  const [rawOutputs, setRawOutputs] = useState<rawOutput[]>([]);
+  const lastRawOutputs = useRef<rawOutput[]>([]);
   const rtDocData = rtDoc.data();
   const inventory = useMemo(() => {
     return getInventoryByProduct(allInventory, doc.ref);
@@ -121,6 +124,28 @@ export function Product({
     price: false,
   });
 
+  // effect to init/check the rawOutputs with the outputs from the server
+  useEffect(() => {
+    const outputsData = outputs.map((output) => output.data() as outputType);
+    const outputsParsedToRawOutputs: rawOutput[] = outputsData.map(
+      (output) => ({
+        product_ref: output.product_ref,
+        entry_ref: output.entry_ref,
+        amount: output.amount,
+        sale_price: output.sale_price,
+        purchase_price: output.purchase_price,
+        commission: output.commission,
+        default_custom_price_ref: output.default_custom_price_ref,
+      })
+    );
+
+    if (isEqual(rawOutputs, outputsParsedToRawOutputs)) return;
+    if (isEqual(lastRawOutputs.current, outputsParsedToRawOutputs)) return;
+
+    setRawOutputs(outputsParsedToRawOutputs);
+    lastRawOutputs.current = outputsParsedToRawOutputs;
+  }, [outputs]);
+
   // effect to get the realtime parent to get him stock
   useEffect(() => {
     if (!rtDocData?.product_parent) return;
@@ -141,6 +166,7 @@ export function Product({
     return () => unsubcribe();
   }, [doc.ref]);
 
+  // effect to calculate the invoice result
   useEffect(() => {
     const results = remainStock.reduce<productResult>(
       (acc, stock) => {
@@ -203,8 +229,6 @@ export function Product({
     };
   }, [selectedSeller, doc.id]);
 
-  // useEffect(() => console.log("root remaingStock", remainStock), [remainStock]);
-
   if (hideProductWithoutStock && currentStock === 0) return <></>;
 
   return (
@@ -249,6 +273,8 @@ export function Product({
         someHumanChangesDetected={someHumanChangesDetected}
         setOverflowWarning={setStockOverflowWarning}
         defaultCustomPrices={defaultCustomPrice}
+        setRawOutputs={setRawOutputs}
+        parentStock={stockFromParent || []}
       />
       <Devolution
         productDoc={doc}
@@ -258,6 +284,7 @@ export function Product({
         seletedSeller={selectedSeller}
         someHumanChangesDetected={someHumanChangesDetected}
         inventory={inventory.outputs}
+        rawOutputs={rawOutputs}
       />
       <ProductSold
         remainStock={remainStock}

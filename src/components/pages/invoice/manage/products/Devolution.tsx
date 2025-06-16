@@ -14,8 +14,7 @@ import { saveDevolution } from "@/tools/products/saveDevolution";
 import debounce from "lodash/debounce"; // <-- Importa debounce
 import { DocumentSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
-import { outputType } from "@/tools/products/addOutputs";
-import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
+import { outputParser, outputType } from "@/tools/products/addOutputs";
 import { SellersDoc } from "@/tools/sellers/create";
 import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 import { rawOutput } from "./AddOutput";
@@ -32,6 +31,7 @@ import { numberParser } from "@/tools/numberPaser";
 // --- Tipos ---
 
 type props = {
+  rawOutputs: rawOutput[];
   productDoc: QueryDocumentSnapshot<productDoc>;
   sellerHasInventory: boolean | undefined;
   setRemainStock: Dispatch<SetStateAction<rawOutput[]>>;
@@ -42,12 +42,10 @@ type props = {
 };
 
 type devolutionBase = props & {
-  outputs: DocumentSnapshot<outputType>[]; // outputs de la factura actual para este producto
+  outputs: outputType[]; // los outputs procesados
   invoiceDoc: DocumentSnapshot<invoiceType> | undefined;
   currentServerDevolution: number;
 };
-
-const SAVE_DEVOLUTION_DEBOUNCE_TIME = 1000; // 1 segundo de espera
 
 // --- Componente Principal (Exportado) ---
 
@@ -55,10 +53,15 @@ export function Devolution(props: props) {
   const currentInventory = useGetCurrentDevolutionByProduct(
     props.productDoc.id
   );
-  const outputs = useGetProductOutputByID(props.productDoc.id); // Obtiene outputs de la factura
   const { invoice: invoiceDoc } = useInvoice();
 
-  // console.log("los oyutputs de la devo", currentInventory.outputs);
+  const outputs = useMemo(() => {
+    if (!invoiceDoc) return [];
+
+    return props.rawOutputs.map((raw) =>
+      outputParser(invoiceDoc, props.productDoc, raw)
+    );
+  }, [props.rawOutputs, invoiceDoc, props.productDoc]);
 
   // Calcula la devolución actual basada en los 'outputs' de la factura
   const currentServerDevolution = useMemo(
@@ -188,76 +191,62 @@ function DevolutionBase({
   }, [sellerHasInventory, lastHasInventory]);
 
   // --- Función debounced para guardar la devolución ---
-  const debouncedSaveDevolution = useCallback(
-    debounce(
-      async (
-        currentDevoToSave: number, // Valor del input que se intenta guardar
-        currentCustomPrice: number | undefined,
-        currentInvoiceDoc: typeof invoiceDoc,
-        currentProductDoc: typeof productDoc,
-        currentSeller: typeof seletedSeller,
-        currentInventoryOutputs: typeof inventory_outputs,
-        currentOutputs: typeof outputs,
-        currentLocalDevoState: number, // Estado local confirmado actual
-        isHumanChangeRef: MutableRefObject<boolean>
-      ) => {
-        // Solo pasara si los datos esenciales están presentes.
-        if (!currentInvoiceDoc || !currentProductDoc || !currentSeller) {
-          return;
-        }
+  const saveTheDevolution = useCallback(
+    async (
+      currentDevoToSave: number, // Valor del input que se intenta guardar
+      currentCustomPrice: number | undefined,
+      currentInvoiceDoc: typeof invoiceDoc,
+      currentProductDoc: typeof productDoc,
+      currentSeller: typeof seletedSeller,
+      currentInventoryOutputs: typeof inventory_outputs,
+      currentOutputs: typeof outputs,
+      currentLocalDevoState: number, // Estado local confirmado actual
+      isHumanChangeRef: MutableRefObject<boolean>
+    ) => {
+      // Solo pasara si los datos esenciales están presentes.
+      if (!currentInvoiceDoc || !currentProductDoc || !currentSeller) {
+        return;
+      }
 
-        // // check if the current devo is the same in the input
-        // if (currentLocalDevoState === currentDevoToSave) {
-        //   console.log(
-        //     "The new devo is the same as currentDevolution, saving cancelated"
-        //   );
+      // Llama a la función externa que contiene la lógica de guardado
+      const success = await saveDevolution(
+        currentInvoiceDoc,
+        currentProductDoc,
+        currentSeller,
+        currentInventoryOutputs,
+        currentOutputs,
+        currentDevoToSave, // Usa el valor del input que disparó el debounce
+        currentCustomPrice,
+        setRemainStock, // Pasa el setter directamente
+        isHumanChangeRef, // Pasa el ref del flag de cambio humano (saveDevolution lo reseteará si guarda)
+        currentLocalDevoState // Pasa el estado local actual para comparación interna si es necesario
+      );
 
-        //   humanAmountChanged.current = false;
-
-        //   return false;
-        // }
-
-        // Llama a la función externa que contiene la lógica de guardado
-        const success = await saveDevolution(
-          currentInvoiceDoc,
-          currentProductDoc,
-          currentSeller,
-          currentInventoryOutputs,
-          currentOutputs,
-          currentDevoToSave, // Usa el valor del input que disparó el debounce
-          currentCustomPrice,
-          setRemainStock, // Pasa el setter directamente
-          isHumanChangeRef, // Pasa el ref del flag de cambio humano (saveDevolution lo reseteará si guarda)
-          currentLocalDevoState // Pasa el estado local actual para comparación interna si es necesario
-        );
-
-        // Si saveDevolution fue exitoso (o si siempre debe actualizarse el estado local)
-        if (success) {
-          // Asume que saveDevolution devuelve true/false o maneja errores internos
-          setLocalCurrentDevo(currentDevoToSave); // Actualiza el estado local con el valor guardado
-          setLocalCurrentDevoHistory((prevHistory) => {
-            const newHistory = [...prevHistory, currentDevoToSave];
-            if (newHistory.length > 10) {
-              newHistory.shift();
-            }
-            console.log(
-              "^^^^^^^ Devolution save success. New local history:",
-              newHistory,
-              " ^^^^^^^^^^^"
-            );
-            return newHistory;
-          });
-          // El flag humanAmountChanged ya debería haber sido reseteado por saveDevolution
-        } else {
-          // Opcional: Revertir el input 'devo' al 'localCurrentDevo' anterior si falla
-          // console.log("****** Hubo un fallo al guardar la DEVOLUCION ******");
-          setDevo(String(currentLocalDevoState));
-          // Asegurarse de resetear el flag si falló para no reintentar indefinidamente
-          isHumanChangeRef.current = false;
-        }
-      },
-      SAVE_DEVOLUTION_DEBOUNCE_TIME
-    ),
+      // Si saveDevolution fue exitoso (o si siempre debe actualizarse el estado local)
+      if (success) {
+        // Asume que saveDevolution devuelve true/false o maneja errores internos
+        setLocalCurrentDevo(currentDevoToSave); // Actualiza el estado local con el valor guardado
+        setLocalCurrentDevoHistory((prevHistory) => {
+          const newHistory = [...prevHistory, currentDevoToSave];
+          if (newHistory.length > 10) {
+            newHistory.shift();
+          }
+          console.log(
+            "^^^^^^^ Devolution save success. New local history:",
+            newHistory,
+            " ^^^^^^^^^^^"
+          );
+          return newHistory;
+        });
+        // El flag humanAmountChanged ya debería haber sido reseteado por saveDevolution
+      } else {
+        // Opcional: Revertir el input 'devo' al 'localCurrentDevo' anterior si falla
+        // console.log("****** Hubo un fallo al guardar la DEVOLUCION ******");
+        setDevo(String(currentLocalDevoState));
+        // Asegurarse de resetear el flag si falló para no reintentar indefinidamente
+        isHumanChangeRef.current = false;
+      }
+    },
     [setRemainStock] // Dependencias de useCallback: setters de estado o funciones estables
   );
 
@@ -281,7 +270,7 @@ function DevolutionBase({
     // La lógica DENTRO de debouncedSaveDevolution decidirá si realmente necesita guardar.
     checkHasNextInvoice(
       () =>
-        debouncedSaveDevolution(
+        saveTheDevolution(
           numericDevo, // Usa el valor actual del input
           customPrice,
           invoiceDoc,
@@ -298,10 +287,6 @@ function DevolutionBase({
 
     // Función de limpieza para cancelar el debounce si el componente se desmonta
     // o si alguna de las dependencias cambia ANTES de que el debounce se ejecute.
-    return () => {
-      // console.log("Canceling previous debounce for devo:", devo);
-      debouncedSaveDevolution.cancel();
-    };
   }, [
     devo, // Depende del valor del input
     customPrice,
@@ -311,7 +296,7 @@ function DevolutionBase({
     inventory_outputs,
     outputs,
     localCurrentDevo, // Añadido como dependencia para la lógica interna del debounce
-    debouncedSaveDevolution, // La función debounced en sí misma
+    saveTheDevolution, // La función debounced en sí misma
     checkHasNextInvoice,
   ]);
 

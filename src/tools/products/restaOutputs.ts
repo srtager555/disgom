@@ -5,42 +5,21 @@ import { disableOutput } from "./disableOutput";
 import { createStockFromOutputType, amountListener } from "./ManageSaves";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
-import { getParentStock } from "./getParentStock";
+import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
+import { Dispatch, SetStateAction } from "react";
+import { stockType } from "./addToStock";
+import { debounce } from "lodash";
 
-export async function restaOutputs(
-  invoice: DocumentSnapshot<invoiceType>,
-  productDoc: DocumentSnapshot<productDoc>,
+async function saveNewOutputs(
+  parentStockIsReal: stockType[] | null,
   outputs: DocumentSnapshot<outputType>[],
-  defaultCustomPrice: DocumentSnapshot<defaultCustomPrice> | undefined,
-  amount: number,
-  currentAmount: number,
-  customPrice?: number
+  invoice: DocumentSnapshot<invoiceType>,
+  newStockToSave: rawOutput[],
+  newOutputs: rawOutput[],
+  productDoc: DocumentSnapshot<productDoc>
 ) {
-  // debugger;
-
   const data = productDoc.data();
-  const parentStock = data?.product_parent
-    ? await getParentStock(data?.product_parent)
-    : null;
-  const parentPrice = parentStock?.[0].sale_price;
-
-  // 1. Comprobar que amount no sea menor que 0
-  const finalAmount = Math.max(0, amount);
-
-  // 4. Convertir outputs a stocks
-  const stocks = outputs.map((doc: DocumentSnapshot<outputType>) =>
-    createStockFromOutputType(doc.data() as outputType)
-  );
-
-  // 5. Calcular la diferencia y usar amountListener
-  const difference = currentAmount - finalAmount;
-  const { outputsToCreate, remainingStocks } = amountListener(
-    difference,
-    stocks,
-    defaultCustomPrice,
-    productDoc,
-    customPrice
-  );
+  const parentPrice = parentStockIsReal?.[0].sale_price;
 
   // 6. Deshabilitar outputs anteriores
   await Promise.all(
@@ -49,10 +28,10 @@ export async function restaOutputs(
 
   // return;
   // 7. Consolidar los stocks basados en entry_ref y precio de venta
-  const currentProductStock = parentStock || productDoc.data()?.stock || [];
+  const currentProductStock = parentStockIsReal || data?.stock || [];
   const consolidatedStocks = [...currentProductStock];
 
-  for (const newStock of outputsToCreate) {
+  for (const newStock of newStockToSave) {
     const existingStockIndex = consolidatedStocks.findIndex(
       (stock) =>
         stock.entry_ref.path === newStock.entry_ref.path &&
@@ -83,7 +62,57 @@ export async function restaOutputs(
   });
 
   // 9. Guardar los nuevos outputs
-  await addOutputs(invoice, productDoc, remainingStocks);
+  await addOutputs(invoice, productDoc, newOutputs);
+}
+
+const debouceSaveNewOutputs = debounce(saveNewOutputs, 1000);
+
+export async function restaOutputs(
+  invoice: DocumentSnapshot<invoiceType>,
+  productDoc: DocumentSnapshot<productDoc>,
+  outputs: DocumentSnapshot<outputType>[],
+  defaultCustomPrice: DocumentSnapshot<defaultCustomPrice> | undefined,
+  amount: number,
+  currentAmount: number,
+  parentStock: stockType[],
+  setRawOutputs: Dispatch<SetStateAction<rawOutput[]>>,
+  customPrice?: number
+) {
+  // debugger;
+
+  const data = productDoc.data();
+  const parentStockIsReal = data?.product_parent ? parentStock : null;
+
+  // 1. Comprobar que amount no sea menor que 0
+  const finalAmount = Math.max(0, amount);
+
+  // 4. Convertir outputs a stocks
+  const stocks = outputs.map((doc: DocumentSnapshot<outputType>) =>
+    createStockFromOutputType(doc.data() as outputType)
+  );
+
+  // 5. Calcular la diferencia y usar amountListener
+  const difference = currentAmount - finalAmount;
+  const { outputsToCreate: newStockToSave, remainingStocks: newOutputs } =
+    amountListener(
+      difference,
+      stocks,
+      defaultCustomPrice,
+      productDoc,
+      customPrice
+    );
+
+  // ** save the new outputs to manage the devolution correctly
+  setRawOutputs(newOutputs);
+
+  debouceSaveNewOutputs(
+    parentStockIsReal,
+    outputs,
+    invoice,
+    newStockToSave,
+    newOutputs,
+    productDoc
+  );
 
   console.log("Proceso de resta completado");
 }

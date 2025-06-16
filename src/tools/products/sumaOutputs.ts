@@ -15,36 +15,18 @@ import { invoiceType } from "../invoices/createInvoice";
 import { outputParser } from "./addOutputs";
 import { DocumentWithTheOutputs } from "@/hooks/invoice/getProductOutputsByID";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
-import { getParentStock } from "./getParentStock";
+import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
+import { Dispatch, SetStateAction } from "react";
+import { debounce } from "lodash";
+import { stockType } from "./addToStock";
 
-export async function sumaOutputs(
-  invoice: DocumentSnapshot<invoiceType>,
+async function saveNewOutputs(
   productDoc: DocumentSnapshot<productDoc>,
-  amount: number,
-  currentAmount: number,
-  defaulCustomPrices:
-    | DocumentSnapshot<defaultCustomPrice>
-    | undefined = undefined,
-  customPrice?: number
+  outputsToCreate: rawOutput[],
+  remainingStocks: rawOutput[],
+  invoice: DocumentSnapshot<invoiceType>
 ) {
   const data = productDoc.data();
-
-  // 1. Obtener el stock actual del producto
-  const currentStock = data?.product_parent
-    ? await getParentStock(data?.product_parent)
-    : productDoc.data()?.stock || [];
-
-  // 2. Calcular la diferencia que necesitamos agregar
-  const difference = amount - currentAmount;
-
-  // 3. Usar amountListener para obtener los outputs a crear y el stock restante
-  const { outputsToCreate, remainingStocks } = amountListener(
-    difference,
-    currentStock,
-    defaulCustomPrices,
-    productDoc,
-    customPrice
-  );
 
   // 4. Actualizar el stock del producto con los stocks restantes
   await updateDoc(data?.product_parent || productDoc.ref, {
@@ -90,11 +72,45 @@ export async function sumaOutputs(
       outputs: newOutputs,
     });
   }
+}
 
-  // 6. Agregar los nuevos outputs al array de products_outputs
-  // await updateDoc(invoice.ref, {
-  //   [`products_outputs.${productDoc.id}`]: arrayUnion(...newOutputs),
-  // });
+const debouceSaveNewOutputs = debounce(saveNewOutputs, 1000);
+
+export async function sumaOutputs(
+  invoice: DocumentSnapshot<invoiceType>,
+  productDoc: DocumentSnapshot<productDoc>,
+  amount: number,
+  currentAmount: number,
+  defaulCustomPrices:
+    | DocumentSnapshot<defaultCustomPrice>
+    | undefined = undefined,
+  parentStock: stockType[],
+  setRawOutputs: Dispatch<SetStateAction<rawOutput[]>>,
+  customPrice?: number
+) {
+  const data = productDoc.data();
+
+  // 1. Obtener el stock actual del producto
+  const currentStock = data?.product_parent
+    ? parentStock
+    : productDoc.data()?.stock || [];
+
+  // 2. Calcular la diferencia que necesitamos agregar
+  const difference = amount - currentAmount;
+
+  // 3. Usar amountListener para obtener los outputs a crear y el stock restante
+  const { outputsToCreate, remainingStocks } = amountListener(
+    difference,
+    currentStock,
+    defaulCustomPrices,
+    productDoc,
+    customPrice
+  );
+
+  // ** save the new outputs to manage the devolution correctly
+  setRawOutputs(outputsToCreate);
+
+  debouceSaveNewOutputs(productDoc, outputsToCreate, remainingStocks, invoice);
 
   console.log("Proceso de suma completado");
 }

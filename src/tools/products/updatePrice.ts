@@ -1,4 +1,4 @@
-import { DocumentSnapshot, getDoc } from "firebase/firestore";
+import { DocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "./create";
 import { outputType } from "./addOutputs";
 import { createStockFromOutputType } from "./ManageSaves";
@@ -7,7 +7,28 @@ import { addOutputs } from "./addOutputs";
 import { amountListener } from "./ManageSaves";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
-import { getParentStock } from "./getParentStock";
+import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
+import { debounce } from "lodash";
+import { stockType } from "./addToStock";
+
+async function saveNewOutputs(
+  outputs: DocumentSnapshot<outputType>[],
+  invoice: DocumentSnapshot<invoiceType>,
+  productDoc: DocumentSnapshot<productDoc>,
+  outputsToCreate: rawOutput[]
+) {
+  // Deshabilitar outputs anteriores
+  await Promise.all(
+    outputs.map(async (el) => {
+      await disableOutput(el.ref);
+    })
+  );
+
+  // Crear nuevos outputs
+  await addOutputs(invoice, productDoc, outputsToCreate);
+}
+
+const debouceSaveNewOutputs = debounce(saveNewOutputs, 1000);
 
 export async function updatePrice(
   invoice: DocumentSnapshot<invoiceType>,
@@ -15,6 +36,8 @@ export async function updatePrice(
   defaulCustomPrices: DocumentSnapshot<defaultCustomPrice> | undefined,
   outputs: DocumentSnapshot<outputType>[],
   amount: number,
+  parentStock: stockType[],
+  setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>,
   customPrice?: number
 ) {
   console.log("Solo cambia el precio, actualizando outputs");
@@ -27,19 +50,11 @@ export async function updatePrice(
   const data = productDoc.data();
   // Obtener los outputs actuales
   const currentProductStocks = data?.product_parent
-    ? await getParentStock(data?.product_parent)
+    ? parentStock
     : productDoc.data()?.stock || [];
 
-  // Obtener los documentos de los outputs
-  const outputDocs = await Promise.all(
-    outputs.map(async (el) => {
-      const doc = await getDoc(el.ref);
-      return doc;
-    })
-  );
-
   // Convertir outputs a stocks
-  const stocks = outputDocs.map((doc: DocumentSnapshot<outputType>) =>
+  const stocks = outputs.map((doc: DocumentSnapshot<outputType>) =>
     createStockFromOutputType(doc.data() as outputType)
   );
 
@@ -54,13 +69,8 @@ export async function updatePrice(
     newPrice
   );
 
-  // Deshabilitar outputs anteriores
-  await Promise.all(
-    outputs.map(async (el) => {
-      await disableOutput(el.ref);
-    })
-  );
+  // Guardar los nuevos outputs
+  setRawOutputs(outputsToCreate);
 
-  // Crear nuevos outputs
-  await addOutputs(invoice, productDoc, outputsToCreate);
+  debouceSaveNewOutputs(outputs, invoice, productDoc, outputsToCreate);
 }

@@ -10,6 +10,7 @@ import {
   limit,
   DocumentReference,
   CollectionReference,
+  Timestamp,
 } from "firebase/firestore";
 import { invoiceType } from "../invoices/createInvoice";
 import { SellersDoc } from "../sellers/create";
@@ -24,63 +25,18 @@ import { productDoc } from "./create";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 import { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { SellersCollection } from "../firestore/CollectionTyping";
+import { debounce } from "lodash";
 
-export async function saveDevolution(
+async function saveNewDevolution(
   invoiceDoc: DocumentSnapshot<invoiceType>,
+  selectedSeller: DocumentSnapshot<SellersDoc>,
   productDoc: DocumentSnapshot<productDoc>,
-  seletedSeller: DocumentSnapshot<SellersDoc>,
-  inventory_outputs: DocumentSnapshot<outputType>[],
-  outputs: DocumentSnapshot<outputType>[],
-  devoDebounce: number,
-  customPrice: number | undefined,
-  setRemainStock: Dispatch<SetStateAction<rawOutput[]>>,
-  humanAmountChanged: MutableRefObject<boolean>,
-  currentDevolution: number
+  outputsWorked: {
+    outputsToCreate: rawOutput[];
+    remainingStocks: rawOutput[];
+  },
+  seletedSeller: DocumentSnapshot<SellersDoc>
 ) {
-  const allOutputs = [...inventory_outputs, ...[...outputs].reverse()];
-  const stock = allOutputs.map((el) =>
-    createStockFromOutputType(el.data() as outputType)
-  );
-
-  const amountToAmountListener = seletedSeller.data()?.hasInventory
-    ? (devoDebounce as number)
-    : 0;
-
-  const outputsWorked = amountListener(
-    amountToAmountListener,
-    stock,
-    undefined,
-    productDoc as QueryDocumentSnapshot<productDoc>,
-    customPrice
-  );
-
-  // save sold product
-  setRemainStock(outputsWorked.remainingStocks);
-
-  // check if the current devo is the same in the input
-  if (devoDebounce === currentDevolution) {
-    console.log(
-      "devoDebounce is the same as currentDevolution, saving cancelated"
-    );
-
-    humanAmountChanged.current = false;
-
-    return false;
-  }
-
-  console.log("------- starting to save the DEVOLUTION ========-");
-  console.log(
-    `Debounced saveDevolution: Attempting to save devo: ${devoDebounce} (Local was ${currentDevolution})`
-  );
-
-  // check if a human make the changes
-  if (!humanAmountChanged.current) {
-    console.log("Human change not detected, saving cancelated");
-    return false;
-  }
-  console.log("Human change detected, saving devolution");
-
-  humanAmountChanged.current = false;
   let inventoryRef: DocumentReference<inventory>;
   const devoFromInvo = invoiceDoc.data()?.devolution;
 
@@ -132,6 +88,7 @@ export async function saveDevolution(
         ...el,
         inventory_ref: inventoryRef,
         disabled: false,
+        created_at: Timestamp.fromDate(new Date()),
       } as inventory_output)
   );
 
@@ -140,6 +97,79 @@ export async function saveDevolution(
   await updateDoc(invoiceDoc.ref, {
     devolution: inventoryRef,
   });
+}
 
-  return true;
+const debouceSaveNewDevo = debounce(saveNewDevolution, 1000);
+
+export async function saveDevolution(
+  invoiceDoc: DocumentSnapshot<invoiceType>,
+  productDoc: DocumentSnapshot<productDoc>,
+  seletedSeller: DocumentSnapshot<SellersDoc>,
+  inventory_outputs: DocumentSnapshot<outputType>[],
+  outputs: outputType[],
+  devoDebounce: number,
+  customPrice: number | undefined,
+  setRemainStock: Dispatch<SetStateAction<rawOutput[]>>,
+  humanAmountChanged: MutableRefObject<boolean>,
+  currentDevolution: number
+) {
+  const inv = inventory_outputs.map((el) => el.data() as outputType);
+  const allOutputs = [...inv, ...[...outputs].reverse()];
+  const stock = allOutputs.map((el) => createStockFromOutputType(el));
+
+  const amountToAmountListener = seletedSeller.data()?.hasInventory
+    ? (devoDebounce as number)
+    : 0;
+
+  const outputsWorked = amountListener(
+    amountToAmountListener,
+    stock,
+    undefined,
+    productDoc as QueryDocumentSnapshot<productDoc>,
+    customPrice
+  );
+
+  // save sold product
+  setRemainStock(outputsWorked.remainingStocks);
+
+  // check if the current devo is the same in the input
+  if (devoDebounce === currentDevolution) {
+    console.log(
+      "devoDebounce is the same as currentDevolution, saving cancelated"
+    );
+
+    humanAmountChanged.current = false;
+
+    return false;
+  }
+
+  console.log("------- starting to save the DEVOLUTION ========-");
+  console.log(
+    `Debounced saveDevolution: Attempting to save devo: ${devoDebounce} (Local was ${currentDevolution})`
+  );
+
+  // check if a human make the changes
+  if (!humanAmountChanged.current) {
+    console.log("Human change not detected, saving cancelated");
+    return false;
+  }
+  console.log("Human change detected, saving devolution");
+
+  humanAmountChanged.current = false;
+
+  try {
+    debouceSaveNewDevo(
+      invoiceDoc,
+      seletedSeller,
+      productDoc,
+      outputsWorked,
+      seletedSeller
+    );
+  } catch (error) {
+    console.log(error);
+
+    return false;
+  } finally {
+    return true;
+  }
 }

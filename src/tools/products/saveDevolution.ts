@@ -23,7 +23,7 @@ import { outputType } from "./addOutputs";
 import { createStockFromOutputType, amountListener } from "./ManageSaves";
 import { productDoc } from "./create";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
-import { Dispatch, MutableRefObject, SetStateAction } from "react";
+import { Dispatch, SetStateAction } from "react";
 import { SellersCollection } from "../firestore/CollectionTyping";
 import { debounce } from "lodash";
 
@@ -31,11 +31,7 @@ async function saveNewDevolution(
   invoiceDoc: DocumentSnapshot<invoiceType>,
   selectedSeller: DocumentSnapshot<SellersDoc>,
   productDoc: DocumentSnapshot<productDoc>,
-  outputsWorked: {
-    outputsToCreate: rawOutput[];
-    remainingStocks: rawOutput[];
-  },
-  seletedSeller: DocumentSnapshot<SellersDoc>
+  outputsWorked: { outputsToCreate: rawOutput[]; remainingStocks: rawOutput[] }
 ) {
   let inventoryRef: DocumentReference<inventory>;
   const devoFromInvo = invoiceDoc.data()?.devolution;
@@ -46,7 +42,7 @@ async function saveNewDevolution(
   } else {
     // search in the seller coll
     const coll = collection(
-      seletedSeller.ref,
+      selectedSeller.ref,
       SellersCollection.inventories.root
     ) as CollectionReference<inventory>;
     const q = query(
@@ -62,7 +58,7 @@ async function saveNewDevolution(
     if (devo.size > 0) {
       inventoryRef = devo.docs[0].ref;
     } else {
-      inventoryRef = await createInventory(invoiceDoc.ref, seletedSeller?.ref);
+      inventoryRef = await createInventory(invoiceDoc.ref, selectedSeller?.ref);
     }
   }
 
@@ -97,28 +93,28 @@ async function saveNewDevolution(
   await updateDoc(invoiceDoc.ref, {
     devolution: inventoryRef,
   });
+
+  console.log("Devolution saved successfully");
 }
 
-const debouceSaveNewDevo = debounce(saveNewDevolution, 1000);
+const debounceSaveNewDevo = debounce(saveNewDevolution, 1000);
 
-export async function saveDevolution(
+export function saveDevolution(
   invoiceDoc: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
   seletedSeller: DocumentSnapshot<SellersDoc>,
   inventory_outputs: DocumentSnapshot<outputType>[],
   outputs: outputType[],
-  devoDebounce: number,
+  amountToSave: number,
   customPrice: number | undefined,
-  setRemainStock: Dispatch<SetStateAction<rawOutput[]>>,
-  humanAmountChanged: MutableRefObject<boolean>,
-  currentDevolution: number
+  setRemainStock: Dispatch<SetStateAction<rawOutput[]>>
 ) {
   const inv = inventory_outputs.map((el) => el.data() as outputType);
   const allOutputs = [...inv, ...[...outputs].reverse()];
   const stock = allOutputs.map((el) => createStockFromOutputType(el));
 
   const amountToAmountListener = seletedSeller.data()?.hasInventory
-    ? (devoDebounce as number)
+    ? amountToSave
     : 0;
 
   const outputsWorked = amountListener(
@@ -132,44 +128,19 @@ export async function saveDevolution(
   // save sold product
   setRemainStock(outputsWorked.remainingStocks);
 
-  // check if the current devo is the same in the input
-  if (devoDebounce === currentDevolution) {
-    console.log(
-      "devoDebounce is the same as currentDevolution, saving cancelated"
-    );
-
-    humanAmountChanged.current = false;
-
-    return false;
-  }
-
   console.log("------- starting to save the DEVOLUTION ========-");
-  console.log(
-    `Debounced saveDevolution: Attempting to save devo: ${devoDebounce} (Local was ${currentDevolution})`
-  );
-
-  // check if a human make the changes
-  if (!humanAmountChanged.current) {
-    console.log("Human change not detected, saving cancelated");
-    return false;
-  }
-  console.log("Human change detected, saving devolution");
-
-  humanAmountChanged.current = false;
 
   try {
-    debouceSaveNewDevo(
-      invoiceDoc,
-      seletedSeller,
-      productDoc,
-      outputsWorked,
-      seletedSeller
-    );
-  } catch (error) {
-    console.log(error);
+    console.log("Waiting to save devolution...");
 
-    return false;
-  } finally {
-    return true;
+    debounceSaveNewDevo(invoiceDoc, seletedSeller, productDoc, outputsWorked);
+
+    return () => {
+      debounceSaveNewDevo.cancel();
+      console.log("Devolution saved canceled");
+    };
+  } catch (error) {
+    console.error("Hubo un error", error);
+    return () => {};
   }
 }

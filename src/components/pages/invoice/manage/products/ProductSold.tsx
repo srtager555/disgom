@@ -5,6 +5,7 @@ import {
   memo,
   MutableRefObject,
   SetStateAction,
+  useCallback,
   useEffect,
 } from "react";
 import { addOutputs, outputType } from "@/tools/products/addOutputs";
@@ -18,7 +19,7 @@ import {
   where,
 } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
-import { isEqual, isPlainObject } from "lodash";
+import { debounce, isEqual, isPlainObject } from "lodash";
 import { SellersDoc } from "@/tools/sellers/create";
 import { rawOutput } from "./AddOutput";
 import { someHumanChangesDetected } from "./Product";
@@ -62,8 +63,8 @@ export function ProductSoldBase({
     setWarn(remainStockTotals.amount < 0);
   }, [remainStockTotals.amount, setWarn]);
 
-  useEffect(() => {
-    async function saveOutputsSolds() {
+  const debouncedSave = useCallback(
+    debounce(async (currentRemainStock: rawOutput[]) => {
       if (!invoice) {
         console.log("no invoice in product sold");
         return;
@@ -111,7 +112,7 @@ export function ProductSoldBase({
         }
 
         // outputs totalSold
-        await addOutputs(invoice, product_doc, remainStock, coll);
+        await addOutputs(invoice, product_doc, currentRemainStock, coll);
 
         console.log("######## outputs solds saved ########");
       } catch (error) {
@@ -135,10 +136,17 @@ export function ProductSoldBase({
           price: false,
         };
       }
-    }
+    }, 1500), // Debounce de 1.5 segundos
+    [invoice, product_doc.id, someHumanChangesDetected]
+  );
 
-    saveOutputsSolds();
-  }, [remainStock]);
+  useEffect(() => {
+    debouncedSave(remainStock);
+
+    return () => {
+      debouncedSave.cancel();
+    };
+  }, [remainStock, debouncedSave]);
 
   if (sellerHasInventory)
     return (

@@ -1,12 +1,9 @@
 import React, {
   useEffect,
-  useMemo,
   useRef,
   RefObject,
   useState,
   useCallback,
-  Dispatch,
-  SetStateAction,
 } from "react";
 import { Column, Input } from "../../Product";
 import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
@@ -14,10 +11,8 @@ import { productDoc } from "@/tools/products/create";
 import { entryDoc } from "@/tools/products/addEntry";
 import { outputType } from "@/tools/products/addOutputs";
 import { isEqual } from "lodash";
-import { getInvoiceByQuery } from "@/tools/invoices/getInvoiceByQuery";
 import { restaOutputs } from "@/tools/products/restaOutputs";
 import { sumaOutputs } from "@/tools/products/sumaOutputs";
-import { updatePrice } from "@/tools/products/updatePrice";
 import { someHumanChangesDetected } from "./Product";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
@@ -25,12 +20,13 @@ import { parseNumberInput } from "@/tools/parseNumericInput";
 import { Container } from "@/styles/index.styles";
 import { numberParser } from "@/tools/numberPaser";
 import { stockType } from "@/tools/products/addToStock";
+import { useManageServerAmount } from "@/hooks/invoice/useManageServerAmount";
+import { useInvoice } from "@/contexts/InvoiceContext";
 
-type props = {
-  outputs: DocumentSnapshot<outputType>[];
-  setRawOutputs: Dispatch<SetStateAction<rawOutput[]>>;
+type AddOutputBaseProps = {
+  setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>;
+  rawOutputs: rawOutput[];
   parentStock: stockType[];
-  serverCurrentAmount: number;
   currentStock: number;
   customPrice: number | undefined;
   productDoc: DocumentSnapshot<productDoc>;
@@ -58,32 +54,39 @@ export type product_outputs = {
   [key: string]: Array<DocumentReference<outputType>>;
 };
 
-export const AddOutput = (props: Omit<props, "serverCurrentAmount">) => {
-  const serverCurrentAmount = useMemo(() => {
-    return props.outputs.reduce((acc, now) => {
-      const nowAmount = now.data()?.amount || 0;
-      return acc + nowAmount;
-    }, 0);
-  }, [props.outputs]);
+function outputDocToRawOutput(
+  outputDoc: DocumentSnapshot<outputType>
+): rawOutput {
+  const data = outputDoc.data();
+  if (!data) {
+    // This should not happen if the document exists, but it's good practice to handle it.
+    throw new Error(`Output document ${outputDoc.id} has no data.`);
+  }
+  return {
+    product_ref: data.product_ref,
+    entry_ref: data.entry_ref,
+    amount: data.amount,
+    sale_price: data.sale_price,
+    purchase_price: data.purchase_price,
+    commission: data.commission,
+    default_custom_price_ref: data.default_custom_price_ref,
+  };
+}
 
-  return <MemoAddOutput {...props} serverCurrentAmount={serverCurrentAmount} />;
-};
+export const AddOutput = (props: AddOutputBaseProps) => (
+  <MemoAddOutput {...props} />
+);
 
 export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
-  if (prev.serverCurrentAmount != next.serverCurrentAmount) return false;
   if (prev.customPrice !== next.customPrice) return false;
   if (prev.productDoc.id !== next.productDoc.id) return false;
   if (prev.currentStock !== next.currentStock) return false;
-
-  if (!isEqual(prev.outputs, next.outputs)) return false;
-  if (isEqual(prev.productDoc, next.productDoc)) return false;
+  if (!isEqual(prev.rawOutputs, next.rawOutputs)) return false;
 
   return true;
 });
 
 export function AddOutputBase({
-  outputs,
-  serverCurrentAmount,
   productDoc,
   currentStock,
   customPrice,
@@ -91,67 +94,47 @@ export function AddOutputBase({
   setOverflowWarning,
   defaultCustomPrices,
   setRawOutputs,
+  rawOutputs,
   parentStock,
-}: props) {
-  const [amount, setAmount] = useState<string>(String(serverCurrentAmount)); // Input field's value
-  const [localCurrentAmount, setLocalCurrentAmount] =
-    useState(serverCurrentAmount); // Last known "saved" or "processed" amount
-  const [localCurrentAmountHistory, setLocalCurrentAmountHistory] = useState<
-    number[]
-  >([serverCurrentAmount]);
+}: AddOutputBaseProps) {
+  const [amountInput, setAmountInput] = useState<string>("0");
+  const { invoice } = useInvoice();
+  const {
+    currentServerAmount,
+    notifyIsWritting,
+    rawOutputsFromServer: outputsFromServer,
+  } = useManageServerAmount(setAmountInput, productDoc.id);
 
   const { checkHasNextInvoice } = useHasNextInvoice();
+  const lastDebouncedOperationToCancel = useRef<() => void>(() => {});
   const lastCustomPriceRef = useRef(customPrice); // Tracks the last successfully processed customPrice
   const humanInteractionDetectedRef = useRef(false); // User typed or relevant prop changed
   const isCurrentlySavingRef = useRef(false); // Prevents re-entrant saves
 
-  // Effect to sync with serverCurrentAmount if it changes externally and is not a recent local save
+  // Efecto para inicializar y sincronizar el estado `rawOutputs` del componente padre.
   useEffect(() => {
-    if (!localCurrentAmountHistory.includes(serverCurrentAmount)) {
-      console.log(
-        "AddOutput: serverCurrentAmount changed externally to",
-        serverCurrentAmount,
-        "not in history",
-        localCurrentAmountHistory,
-        ". Syncing."
-      );
-      setLocalCurrentAmount(serverCurrentAmount);
-      setAmount(String(serverCurrentAmount)); // Also update input field
-      humanInteractionDetectedRef.current = false; // This was not a local human interaction
-    }
-  }, [serverCurrentAmount]);
+    // Convierte los outputs del servidor (formato DocumentSnapshot<outputType>) al formato rawOutput[].
+    const newRawOutputs = outputsFromServer.map(outputDocToRawOutput);
 
-  // Effect to refresh the input field if localCurrentAmount changes (e.g., after a save)
-  // and the user hasn't made newer changes.
-  useEffect(() => {
-    if (
-      Number(amount) !== localCurrentAmount &&
-      !humanInteractionDetectedRef.current
-    ) {
-      console.log(
-        "AddOutput: localCurrentAmount changed to",
-        localCurrentAmount,
-        ". Syncing input field."
-      );
-      setAmount(String(localCurrentAmount));
+    // Compara con el estado actual para evitar re-renderizados innecesarios.
+    // Si no son iguales, actualiza el estado en el componente padre (`Product.tsx`).
+    if (!isEqual(newRawOutputs, rawOutputs)) {
+      setRawOutputs(newRawOutputs);
     }
-  }, [localCurrentAmount, amount]); // Removed humanInteractionDetectedRef from deps to avoid potential loop, logic relies on its current value
+  }, [outputsFromServer, setRawOutputs, rawOutputs]);
 
   // Effect to reset state when productDoc.id changes
   useEffect(() => {
     console.log(
       "AddOutput: Product changed to",
       productDoc.id,
-      ". Resetting state.",
-      customPrice
+      ". Resetting interaction flags."
     );
-    setAmount(String(serverCurrentAmount));
-    setLocalCurrentAmount(serverCurrentAmount);
-    setLocalCurrentAmountHistory([serverCurrentAmount]);
+    // El input 'amountInput' será reseteado por useManageServerAmount llamando a setAmountInput
     lastCustomPriceRef.current = customPrice;
     humanInteractionDetectedRef.current = false;
     isCurrentlySavingRef.current = false;
-  }, [productDoc.id]);
+  }, [productDoc.id, customPrice]);
 
   // The core saving logic
   const saveChangesLogic = useCallback(
@@ -163,7 +146,7 @@ export function AddOutputBase({
       }
 
       if (
-        amountToSave === localCurrentAmount &&
+        amountToSave === currentServerAmount && // Usar valor del hook
         priceToSave === lastCustomPriceRef.current
       ) {
         console.log("AddOutput: No change in amount or price. Skipping save.");
@@ -176,8 +159,8 @@ export function AddOutputBase({
       console.log(
         "AddOutput: Amount to save:",
         amountToSave,
-        "(Local current:",
-        localCurrentAmount,
+        "(Server current:",
+        currentServerAmount, // Usar valor del hook
         ")"
       );
       console.log(
@@ -188,7 +171,6 @@ export function AddOutputBase({
         ")"
       );
 
-      const invoice = await getInvoiceByQuery();
       if (!invoice) {
         console.error("AddOutput: Invoice not found, aborting save.");
         isCurrentlySavingRef.current = false;
@@ -197,39 +179,27 @@ export function AddOutputBase({
 
       let success = false;
       try {
-        if (
-          amountToSave === localCurrentAmount &&
-          priceToSave !== lastCustomPriceRef.current
-        ) {
-          console.log("AddOutput: Price change detected.");
+        lastDebouncedOperationToCancel.current();
 
-          await updatePrice(
-            invoice,
-            productDoc,
-            defaultCustomPrices,
-            outputs,
-            amountToSave,
-            parentStock,
-            setRawOutputs,
-            priceToSave
-          );
-          success = true;
-        } else if (amountToSave < localCurrentAmount) {
+        if (amountToSave < currentServerAmount) {
+          // Usar valor del hook
           console.log("AddOutput: Resta (decrease) detected.");
-          await restaOutputs(
+          lastDebouncedOperationToCancel.current = restaOutputs(
             invoice,
             productDoc,
-            outputs,
+            outputsFromServer, // Usar valor del hook
             defaultCustomPrices,
             amountToSave,
-            localCurrentAmount,
+            currentServerAmount, // Usar valor del hook
             parentStock,
             setRawOutputs,
             priceToSave
           );
           success = true;
-        } else if (amountToSave > localCurrentAmount) {
-          if (currentStock < amountToSave - localCurrentAmount) {
+        } else if (amountToSave > currentServerAmount) {
+          // Usar valor del hook
+          if (currentStock < amountToSave - currentServerAmount) {
+            // Usar valor del hook
             console.log(
               "Addoutput: Suma (Increase) Not enough stock. Skipping save and showing warning.",
               currentStock,
@@ -243,11 +213,11 @@ export function AddOutputBase({
           }
 
           console.log("AddOutput: Suma (increase) detected.");
-          await sumaOutputs(
+          lastDebouncedOperationToCancel.current = sumaOutputs(
             invoice,
             productDoc,
             amountToSave,
-            localCurrentAmount,
+            currentServerAmount, // Usar valor del hook
             defaultCustomPrices,
             parentStock,
             setRawOutputs,
@@ -258,37 +228,32 @@ export function AddOutputBase({
 
         if (success) {
           console.log("AddOutput: Save operation successful.");
-          setLocalCurrentAmount(amountToSave);
-          setLocalCurrentAmountHistory((prev) =>
-            [...prev, amountToSave].slice(-10)
-          );
+          // El hook se encargará de actualizar el serverCurrentAmount y el input si es necesario
           lastCustomPriceRef.current = priceToSave;
           humanInteractionDetectedRef.current = false;
         } else {
           console.log(
             "AddOutput: Save operation did not result in a change or was skipped."
           );
-          if (
-            amountToSave === localCurrentAmount &&
-            priceToSave === lastCustomPriceRef.current
-          ) {
-            humanInteractionDetectedRef.current = false;
-          }
         }
       } catch (error) {
         console.error("AddOutput: Error during save operation:", error);
       } finally {
         isCurrentlySavingRef.current = false;
-        console.log("AddOutput: -------- Debounced save finished --------");
+        console.log(
+          "AddOutput: -------- Debounced save finished | saving in process --------"
+        );
       }
     },
     [
       setOverflowWarning,
-      localCurrentAmount,
+      currentServerAmount, // Usar valor del hook
+      invoice, // Add invoice to dependencies
       currentStock,
       productDoc,
       defaultCustomPrices,
-      outputs,
+      outputsFromServer, // Usar valor del hook
+      parentStock, // setRawOutputs is no longer passed to save functions
     ]
   );
 
@@ -311,45 +276,81 @@ export function AddOutputBase({
     }
   }, [customPrice]);
 
-  // Effect to trigger debounced save on amount (from input) or customPrice (from prop) change
+  // No longer trigger save on every amountInput change.
+  // Save will be triggered onBlur or when customPrice changes.
+  // The useEffect below handles customPrice changes.
+
+  // Effect to trigger debounced save when customPrice changes
+  // or when a human interaction (onBlur) has occurred.
   useEffect(() => {
-    const amountParsedToNumber = Number(amount);
-
-    if (isNaN(amountParsedToNumber)) {
-      console.log("Invalid amount detected, maybe is a decimal number?");
-      return;
+    // If customPrice has changed, it's a human-initiated change (or external prop change)
+    // that should trigger a save.
+    if (customPrice !== lastCustomPriceRef.current) {
+      // This condition is already handled by the customPrice useEffect above,
+      // which sets humanInteractionDetectedRef.current = true.
+      // So, we just need to ensure saveChangesLogic is called.
+      // The checkHasNextInvoice will debounce it.
+      if (humanInteractionDetectedRef.current) {
+        // Only if a human change was detected
+        console.log(
+          `AddOutput: Custom price change detected. Scheduling save with amount: ${amountInput}, customPrice: ${customPrice}`
+        );
+        checkHasNextInvoice(
+          () => saveChangesLogic(Number(amountInput), customPrice),
+          true, // Always treat price changes as human-initiated for save trigger
+          productDoc.id
+        );
+      }
+    } else if (humanInteractionDetectedRef.current) {
+      // This branch handles the case where humanInteractionDetectedRef.current is true
+      // but customPrice hasn't changed (meaning it was an amount input change).
+      // This will be triggered by the onBlur handler.
+      // This useEffect will now primarily react to customPrice changes that set the flag.
+      // The onBlur handler will directly call checkHasNextInvoice.
     }
-
-    if (humanInteractionDetectedRef.current) {
-      console.log(
-        `AddOutput: Interaction detected. Scheduling save with amount: ${amount}, customPrice: ${customPrice}`
-      );
-      checkHasNextInvoice(
-        () => saveChangesLogic(amountParsedToNumber, customPrice),
-        humanInteractionDetectedRef.current,
-        productDoc.id
-      );
-    }
-  }, [amount, customPrice, saveChangesLogic]);
+  }, [
+    amountInput,
+    customPrice,
+    saveChangesLogic,
+    checkHasNextInvoice,
+    productDoc.id,
+  ]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    parseNumberInput(setAmount, e, { min: 0 });
-
+    // Only update the input state and notify the hook that user is typing.
+    parseNumberInput(setAmountInput, e, { min: 0 });
+    notifyIsWritting(); // Notificar al hook que el input está siendo utilizado.
     humanInteractionDetectedRef.current = true;
+    // Do NOT set humanInteractionDetectedRef.current = true here.
+    // Do NOT set someHumanChangesDetected.current.addOutput = true here.
+    // These flags will be set onBlur.
+  };
+
+  const handleInputBlur = () => {
+    // When the input loses focus, trigger the save logic.
+    // This is where we mark the human interaction for saving.
+    humanInteractionDetectedRef.current = true; // Mark as human interaction
     if (someHumanChangesDetected?.current) {
       someHumanChangesDetected.current.addOutput = true;
     }
+    // Trigger the save logic immediately on blur.
+    checkHasNextInvoice(
+      () => saveChangesLogic(Number(amountInput), customPrice),
+      true,
+      productDoc.id
+    );
   };
 
   return (
     <Column>
       <Container className="show-print" styles={{ textAlign: "center" }}>
-        {numberParser(Number(amount))}
+        {numberParser(Number(amountInput))}
       </Container>
       <Container className="hide-print">
         <Input
-          value={amount} // Controlled component
+          value={amountInput} // Controlled component
           onChange={handleInputChange}
+          onBlur={handleInputBlur}
         />
       </Container>
     </Column>

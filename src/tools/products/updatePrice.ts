@@ -26,25 +26,27 @@ async function saveNewOutputs(
 
   // Crear nuevos outputs
   await addOutputs(invoice, productDoc, outputsToCreate);
+
+  console.log("Cambio de precio efectuado");
 }
 
 const debouceSaveNewOutputs = debounce(saveNewOutputs, 1000);
 
-export async function updatePrice(
+export function updatePrice(
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
   defaulCustomPrices: DocumentSnapshot<defaultCustomPrice> | undefined,
   outputs: DocumentSnapshot<outputType>[],
   amount: number,
   parentStock: stockType[],
-  setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>,
+  setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>, // Re-added
   customPrice?: number
 ) {
   console.log("Solo cambia el precio, actualizando outputs");
 
   if (outputs.length === 0) {
     console.log("No hay outputs para actualizar");
-    return;
+    return () => {};
   }
 
   const data = productDoc.data();
@@ -69,8 +71,14 @@ export async function updatePrice(
     newPrice
   );
 
-  // Guardar los nuevos outputs
+  // Update the rawOutputs state immediately for UI responsiveness
   setRawOutputs(outputsToCreate);
 
+  console.log("Se esta guardando el cambio de precio");
   debouceSaveNewOutputs(outputs, invoice, productDoc, outputsToCreate);
+
+  return () => {
+    debouceSaveNewOutputs.cancel();
+    console.log("Cambio de precio cancelado");
+  };
 }

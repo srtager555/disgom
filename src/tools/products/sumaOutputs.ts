@@ -16,7 +16,6 @@ import { outputParser } from "./addOutputs";
 import { DocumentWithTheOutputs } from "@/hooks/invoice/getProductOutputsByID";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
-import { Dispatch, SetStateAction } from "react";
 import { debounce } from "lodash";
 import { stockType } from "./addToStock";
 
@@ -72,11 +71,13 @@ async function saveNewOutputs(
       outputs: newOutputs,
     });
   }
+
+  console.log("Proceso de suma completado");
 }
 
 const debouceSaveNewOutputs = debounce(saveNewOutputs, 1000);
 
-export async function sumaOutputs(
+export function sumaOutputs(
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
   amount: number,
@@ -85,7 +86,7 @@ export async function sumaOutputs(
     | DocumentSnapshot<defaultCustomPrice>
     | undefined = undefined,
   parentStock: stockType[],
-  setRawOutputs: Dispatch<SetStateAction<rawOutput[]>>,
+  setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>, // Re-added
   customPrice?: number
 ) {
   const data = productDoc.data();
@@ -97,6 +98,13 @@ export async function sumaOutputs(
 
   // 2. Calcular la diferencia que necesitamos agregar
   const difference = amount - currentAmount;
+  console.log(
+    "The new amount is:",
+    amount,
+    "the current amount in the server is:",
+    currentAmount
+  );
+  console.log("The diff is:", difference);
 
   // 3. Usar amountListener para obtener los outputs a crear y el stock restante
   const { outputsToCreate, remainingStocks } = amountListener(
@@ -107,10 +115,14 @@ export async function sumaOutputs(
     customPrice
   );
 
-  // ** save the new outputs to manage the devolution correctly
-  setRawOutputs(outputsToCreate);
+  // Update the rawOutputs state immediately for UI responsiveness
+  setRawOutputs((prev) => prev.concat(outputsToCreate));
 
+  console.log("Proceso de suma esta esperando para ser guardado");
   debouceSaveNewOutputs(productDoc, outputsToCreate, remainingStocks, invoice);
 
-  console.log("Proceso de suma completado");
+  return () => {
+    debouceSaveNewOutputs.cancel();
+    console.log("Proceso de suma cancelado");
+  };
 }

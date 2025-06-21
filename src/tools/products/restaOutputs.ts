@@ -6,7 +6,6 @@ import { createStockFromOutputType, amountListener } from "./ManageSaves";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
-import { Dispatch, SetStateAction } from "react";
 import { stockType } from "./addToStock";
 import { debounce } from "lodash";
 
@@ -63,11 +62,13 @@ async function saveNewOutputs(
 
   // 9. Guardar los nuevos outputs
   await addOutputs(invoice, productDoc, newOutputs);
+
+  console.log("Proceso de resta completado");
 }
 
 const debouceSaveNewOutputs = debounce(saveNewOutputs, 1000);
 
-export async function restaOutputs(
+export function restaOutputs(
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
   outputs: DocumentSnapshot<outputType>[],
@@ -75,11 +76,10 @@ export async function restaOutputs(
   amount: number,
   currentAmount: number,
   parentStock: stockType[],
-  setRawOutputs: Dispatch<SetStateAction<rawOutput[]>>,
+  // setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>, // Removed
+  setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>, // Re-added
   customPrice?: number
 ) {
-  // debugger;
-
   const data = productDoc.data();
   const parentStockIsReal = data?.product_parent ? parentStock : null;
 
@@ -102,8 +102,10 @@ export async function restaOutputs(
       customPrice
     );
 
-  // ** save the new outputs to manage the devolution correctly
+  // Update the rawOutputs state immediately for UI responsiveness
   setRawOutputs(newOutputs);
+
+  console.log("Proceso de resta esta esperando para ser guardado");
 
   debouceSaveNewOutputs(
     parentStockIsReal,
@@ -114,5 +116,8 @@ export async function restaOutputs(
     productDoc
   );
 
-  console.log("Proceso de resta completado");
+  return () => {
+    debouceSaveNewOutputs.cancel();
+    console.log("Proceso de resta cancelado");
+  };
 }

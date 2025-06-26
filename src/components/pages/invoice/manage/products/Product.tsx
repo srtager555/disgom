@@ -9,7 +9,7 @@ import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Column } from "../../Product";
 
 import { SellersDoc } from "@/tools/sellers/create";
-import { AddOutput, rawOutput } from "./AddOutput";
+import { AddOutput } from "./AddOutput";
 import { ProductSold } from "./ProductSold";
 import { Price } from "./Price";
 import { isEqual, isPlainObject } from "lodash";
@@ -23,19 +23,13 @@ import { getInventoryByProduct } from "@/tools/invoices/getInventoryByProduct";
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { numberParser } from "@/tools/numberPaser";
 import { useInvoice } from "@/contexts/InvoiceContext";
-import { useGetProductOutputByID } from "@/hooks/invoice/getProductOutputsByID";
 import { getDefaultCustomPrice } from "@/tools/sellers/customPrice/getDefaultCustomPrice";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
 import { stockType } from "@/tools/products/addToStock";
-import { useGetCurrentDevolutionByProduct } from "@/hooks/invoice/getCurrentDevolution";
-import {
-  amountListener,
-  createStockFromOutputType,
-  rawOutputToStock,
-} from "@/tools/products/ManageSaves";
 import { ProductOutputsProvider } from "@/contexts/ProductOutputsContext";
-import { outputType } from "@/tools/products/addOutputs";
-import { updatePrice } from "@/tools/products/updatePrice";
+import { useManageOutputs } from "@/hooks/invoice/useManageOutputs";
+import { useManageDevolutions } from "@/hooks/invoice/useManageDevolutions";
+import { useCalculateProductTotals } from "@/hooks/invoice/useCalculateProductTotals";
 
 // サラマンダー
 export type props = {
@@ -70,39 +64,58 @@ export const MemoProduct = memo(Product, (prev, next) => {
   return true;
 });
 
-export function Product({
+export function BaseProduct({
   doc,
   selectedSeller,
   hideProductWithoutStock,
   allInventory,
   setProductsResults,
 }: props) {
-  const outputs = useGetProductOutputByID(doc.id);
-  const { outputs: currentDevolutionOutputs } =
-    useGetCurrentDevolutionByProduct(doc.id);
-  const currentServerDevolution =
-    currentDevolutionOutputs?.reduce((acc, el) => acc + el.data().amount, 0) ||
-    0;
   const { invoice } = useInvoice();
   const [defaultCustomPrice, setDefaultCustomPrice] = useState<
-    DocumentSnapshot<defaultCustomPrice> | undefined
+    QueryDocumentSnapshot<defaultCustomPrice> | undefined
   >();
-  const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
   const [isFolded, setIsFolded] = useState(true);
   const [rtDoc, setRtDoc] = useState<DocumentSnapshot<productDoc>>(doc);
   const [warn, setWarn] = useState(false);
-  const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
   const [stockOverflowWarning, setStockOverflowWarning] = useState(false);
   const [stockFromParent, setStockFromParent] = useState<stockType[]>();
-  const [remainStockTotals, setRemainStockTotals] = useState<productResult>({
-    amount: 0,
-    cost: 0,
-    sold: 0,
-    profit: 0,
-    seller_sold: 0,
-    seller_profit: 0,
+
+  // --- State for Inputs ---
+  const [amountInput, setAmountInput] = useState<string>("0");
+  const [devoInput, setDevoInput] = useState<string>("0");
+  const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
+
+  // --- Ref for Human Interaction ---
+  const someHumanChangesDetected = useRef<someHumanChangesDetected>({
+    addOutput: false,
+    devolution: false,
+    price: false,
   });
-  const [rawOutputs, setRawOutputs] = useState<rawOutput[]>([]);
+
+  // --- Custom Hooks for Core Logic ---
+  const { rawOutputs, currentOutputsServerAmount } = useManageOutputs({
+    invoice,
+    productDoc: rtDoc,
+    defaultCustomPrices: defaultCustomPrice,
+    parentStock: stockFromParent || [],
+    amountInput,
+    customPriceInput: customPrice,
+    humanInteractionDetectedRef: someHumanChangesDetected,
+  });
+  const { remainStock, currentDevolutionServerAmount } = useManageDevolutions({
+    invoice,
+    productDoc: rtDoc,
+    seletedSeller: selectedSeller,
+    inventoryOutputs: getInventoryByProduct(allInventory, doc.ref).outputs,
+    rawOutputs,
+    devoInput,
+    customPriceInput: customPrice,
+    humanInteractionDetectedRef: someHumanChangesDetected,
+  });
+  const remainStockTotals = useCalculateProductTotals(remainStock);
+
+  // --- Memos for derived data ---
   const rtDocData = rtDoc.data();
   const inventory = useMemo(() => {
     return getInventoryByProduct(allInventory, doc.ref);
@@ -130,12 +143,6 @@ export function Product({
     return defaultCustomPrice?.data();
   }, [defaultCustomPrice]);
 
-  const someHumanChangesDetected = useRef<someHumanChangesDetected>({
-    addOutput: false,
-    devolution: false,
-    price: false,
-  });
-
   // effect to get the realtime parent to get him stock
   useEffect(() => {
     if (!rtDocData?.product_parent) return;
@@ -147,76 +154,6 @@ export function Product({
     return () => unsubcribe();
   }, [rtDoc]);
 
-  // Effect to initialize and sync remainStock based on rawOutputs and devolutions
-  useEffect(() => {
-    // This effect ensures that remainStock is always correctly calculated
-    // based on the total sold items (rawOutputs) minus the current server devolution.
-
-    // 1. Combine all sources of stock for this product in this invoice context.
-    // This includes items sold (rawOutputs) and any pre-existing devolution inventory.
-    const soldStocks = rawOutputs.map((raw) => rawOutputToStock(raw));
-    const inventoryStocks = inventory.outputs.map((invDoc) =>
-      createStockFromOutputType(invDoc.data() as outputType)
-    );
-    // Combine and remove duplicates if any (though unlikely with this logic).
-    const combinedStocks = [...soldStocks, ...inventoryStocks];
-
-    // 2. Use amountListener to "return" the devolved amount from the sold stock.
-    // The `remainingStocks` will be what's truly left after the devolution.
-    const { remainingStocks } = amountListener(
-      currentServerDevolution,
-      combinedStocks,
-      undefined, // defaultCustomPrices not needed for this calculation
-      doc,
-      undefined // customPrice not needed for this calculation
-    );
-
-    // 3. Update the remainStock state.
-    // This will run on initial load and whenever rawOutputs or currentServerDevolution changes.
-    if (!isEqual(remainingStocks, remainStock)) {
-      setRemainStock(remainingStocks);
-    }
-  }, [rawOutputs, currentServerDevolution, doc, inventory.outputs]); // Dependencies: sold items, returned items, and initial inventory.
-  // `remainStock` is not in dependencies to avoid loops.
-
-  // Effect to handle price updates
-  useEffect(() => {
-    // This effect is triggered when the customPrice state changes.
-    // It's responsible for updating the rawOutputs with the new price,
-    // which in turn updates remainStock and the totals.
-
-    // We use a ref to track if this is the initial render to avoid running on mount.
-    // The `someHumanChangesDetected` flag ensures we only run this after a user action.
-    if (!someHumanChangesDetected.current.price || !invoice) {
-      return;
-    }
-
-    console.log(
-      `Product: Detected price change to ${customPrice}. Triggering update.`
-    );
-
-    // The amount to use is the current total from rawOutputs
-    const currentAmount = rawOutputs.reduce((acc, o) => acc + o.amount, 0);
-
-    // If there's nothing to update the price on, do nothing.
-    if (currentAmount === 0) return;
-
-    // Call the updatePrice tool function. It will update the rawOutputs for immediate UI feedback
-    // and debounce the actual save to Firestore.
-    // Note: updatePrice returns a cancel function, but we don't need to manage it here
-    // because each new price change will trigger a new debounced save, implicitly cancelling the old one.
-    updatePrice(
-      invoice,
-      doc,
-      defaultCustomPrice,
-      outputs, // The original server outputs
-      currentAmount,
-      stockFromParent || [],
-      setRawOutputs, // Pass the setter to update UI
-      customPrice
-    );
-  }, [customPrice]); // This effect runs only when customPrice changes.
-
   // effect to get the real time data from the product
   useEffect(() => {
     const unsubcribe = onSnapshot(doc.ref, (snap) => {
@@ -226,44 +163,13 @@ export function Product({
     return () => unsubcribe();
   }, [doc.ref]);
 
-  // effect to calculate the invoice result
+  // Effect to update the parent component with the calculated totals
   useEffect(() => {
-    const results = remainStock.reduce<productResult>(
-      (acc, stock) => {
-        const multiplicator =
-          invoice?.data().invoice_type === "normal" ? 1 : -1;
-        const amount = stock.amount;
-        const cost = stock.purchase_price * amount * multiplicator;
-        const sold = stock.sale_price * amount * multiplicator;
-        const profit = sold - cost;
-        const seller_profit = stock.commission * amount * multiplicator;
-        const seller_sold = sold + seller_profit;
-
-        return {
-          amount: acc.amount + amount,
-          cost: acc.cost + cost,
-          sold: acc.sold + sold,
-          profit: acc.profit + profit,
-          seller_sold: acc.seller_sold + seller_sold,
-          seller_profit: acc.seller_profit + seller_profit,
-        };
-      },
-      {
-        amount: 0,
-        cost: 0,
-        sold: 0,
-        profit: 0,
-        seller_sold: 0,
-        seller_profit: 0,
-      }
-    );
-
-    setRemainStockTotals(results);
     setProductsResults((prev) => ({
       ...prev,
-      [doc.id]: results,
+      [doc.id]: remainStockTotals,
     }));
-  }, [remainStock, doc.id, setProductsResults, invoice]);
+  }, [remainStockTotals, doc.id, setProductsResults]);
 
   // effect to get the last defaultCustomPrice
   useEffect(() => {
@@ -289,102 +195,104 @@ export function Product({
     };
   }, [selectedSeller, doc.id]);
 
-  if (hideProductWithoutStock && currentStock === 0) return <></>;
+  if (hideProductWithoutStock && currentStock === 0 && rawOutputs.length === 0)
+    return <></>;
 
   return (
-    <ProductOutputsProvider productDocId={doc.id}>
-      <ProductContainer
-        $hide={false}
-        $hasInventory={selectedSellerData?.hasInventory}
-        $withoutStock={currentStock || outputs.length}
-        $fold={!isFolded}
-        className={warn || stockOverflowWarning ? "alert" : ""}
-        $highlight={
-          isPlainObject(invoice?.data().refresh_data)
-            ? typeof (invoice?.data().refresh_data as Record<string, boolean>)[
-                doc.id
-              ] === "boolean"
-            : false
+    <ProductContainer
+      $hide={false}
+      $hasInventory={selectedSellerData?.hasInventory}
+      $withoutStock={currentStock || rawOutputs.length}
+      $fold={!isFolded}
+      className={warn || stockOverflowWarning ? "alert" : ""}
+      $highlight={
+        isPlainObject(invoice?.data().refresh_data)
+          ? typeof (invoice?.data().refresh_data as Record<string, boolean>)[
+              doc.id
+            ] === "boolean"
+          : false
+      }
+    >
+      <Column title={numberParser(currentStock)} className="hide-print">
+        {numberParser(currentStock)}
+      </Column>
+
+      <Column
+        gridColumn="2 / 5"
+        printGridColumn={
+          selectedSeller?.data()?.hasInventory ? "1 / 5" : "1 / 7"
         }
       >
-        <Column title={numberParser(currentStock)} className="hide-print">
-          {numberParser(currentStock)}
-        </Column>
+        {rtDocData?.name}
+      </Column>
 
-        <Column
-          gridColumn="2 / 5"
-          printGridColumn={
-            selectedSeller?.data()?.hasInventory ? "1 / 5" : "1 / 7"
-          }
-        >
-          {rtDocData?.name}
+      {/* ここから下は、src/components/pages/invoice/manage/products/Product.tsx のコード */}
+      {selectedSellerData?.hasInventory && (
+        <Column $textAlign="center">
+          {numberParser(inventory.totalAmount)}
         </Column>
+      )}
+      <AddOutput
+        amountInput={amountInput}
+        setAmountInput={setAmountInput}
+        productDoc={rtDoc}
+        currentStock={currentStock}
+        someHumanChangesDetected={someHumanChangesDetected}
+        setOverflowWarning={setStockOverflowWarning}
+        currentServerAmount={currentOutputsServerAmount}
+      />
+      <Devolution
+        devoInput={devoInput}
+        setDevoInput={setDevoInput}
+        productDoc={rtDoc}
+        sellerHasInventory={selectedSellerData?.hasInventory}
+        someHumanChangesDetected={someHumanChangesDetected}
+        currentDevolutionServerAmount={currentDevolutionServerAmount}
+      />
+      <ProductSold
+        remainStock={remainStock}
+        remainStockTotals={remainStockTotals}
+        seletedSeller={selectedSeller}
+        product_doc={doc}
+        setWarn={setWarn}
+        sellerHasInventory={selectedSellerData?.hasInventory}
+        someHumanChangesDetected={someHumanChangesDetected}
+      />
+      <Price
+        sellerHasInventory={selectedSellerData?.hasInventory}
+        product_doc={doc}
+        product_ref={doc.ref}
+        defaultCustomPrice={defaultPriceData?.price}
+        outputs={rawOutputs}
+        setCustomPrice={setCustomPrice}
+        someHumanChangesDetected={someHumanChangesDetected}
+      />
+      <TotalSold
+        remainStockTotals={remainStockTotals}
+        sellerHasInventory={selectedSellerData?.hasInventory}
+      />
+      <Profit
+        sellerHasInventory={selectedSellerData?.hasInventory}
+        remainStockTotals={remainStockTotals}
+      />
+      <Commission
+        remainStockTotals={remainStockTotals}
+        sellerHasInventory={selectedSellerData?.hasInventory}
+      />
+      <Fold
+        isFolded={isFolded}
+        setIsFolded={setIsFolded}
+        selectedSellerData={selectedSellerData}
+        product_ref={doc.ref}
+      />
+    </ProductContainer>
+  );
+}
 
-        {/* ここから下は、src/components/pages/invoice/manage/products/Product.tsx のコード */}
-        {selectedSellerData?.hasInventory && (
-          <Column $textAlign="center">
-            {numberParser(inventory.totalAmount)}
-          </Column>
-        )}
-        <AddOutput
-          productDoc={rtDoc}
-          customPrice={customPrice}
-          currentStock={currentStock}
-          someHumanChangesDetected={someHumanChangesDetected}
-          setOverflowWarning={setStockOverflowWarning}
-          defaultCustomPrices={defaultCustomPrice}
-          rawOutputs={rawOutputs}
-          setRawOutputs={setRawOutputs}
-          parentStock={stockFromParent || []}
-        />
-        <Devolution
-          productDoc={doc}
-          sellerHasInventory={selectedSellerData?.hasInventory}
-          setRemainStock={setRemainStock}
-          customPrice={customPrice}
-          seletedSeller={selectedSeller}
-          someHumanChangesDetected={someHumanChangesDetected}
-          inventory={inventory.outputs}
-          rawOutputs={rawOutputs}
-        />
-        <ProductSold
-          remainStock={remainStock}
-          remainStockTotals={remainStockTotals}
-          seletedSeller={selectedSeller}
-          product_doc={doc}
-          setWarn={setWarn}
-          sellerHasInventory={selectedSellerData?.hasInventory}
-          someHumanChangesDetected={someHumanChangesDetected}
-        />
-        <Price
-          sellerHasInventory={selectedSellerData?.hasInventory}
-          product_doc={doc}
-          product_ref={doc.ref}
-          defaultCustomPrice={defaultPriceData?.price}
-          // normalPrice={rtDocData?.stock[0]?.sale_price || 0}
-          outputs={outputs}
-          setCustomPrice={setCustomPrice}
-          someHumanChangesDetected={someHumanChangesDetected}
-        />
-        <TotalSold
-          remainStockTotals={remainStockTotals}
-          sellerHasInventory={selectedSellerData?.hasInventory}
-        />
-        <Profit
-          sellerHasInventory={selectedSellerData?.hasInventory}
-          remainStockTotals={remainStockTotals}
-        />
-        <Commission
-          remainStockTotals={remainStockTotals}
-          sellerHasInventory={selectedSellerData?.hasInventory}
-        />
-        <Fold
-          isFolded={isFolded}
-          setIsFolded={setIsFolded}
-          selectedSellerData={selectedSellerData}
-          product_ref={doc.ref}
-        />
-      </ProductContainer>
+export function Product(props: props) {
+  return (
+    <ProductOutputsProvider productDocId={props.doc.id}>
+      <BaseProduct {...props} />
     </ProductOutputsProvider>
   );
 }

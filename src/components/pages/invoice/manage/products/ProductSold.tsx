@@ -25,6 +25,7 @@ import { rawOutput } from "./AddOutput";
 import { someHumanChangesDetected } from "./Product";
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { useInvoice } from "@/contexts/InvoiceContext";
+import { getAuth } from "firebase/auth";
 
 type props = {
   product_doc: QueryDocumentSnapshot<productDoc>;
@@ -112,7 +113,17 @@ export function ProductSoldBase({
         }
 
         // outputs totalSold
-        await addOutputs(invoice, product_doc, currentRemainStock, coll);
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        if (!currentUser) return;
+        await addOutputs(
+          invoice,
+          product_doc,
+          currentRemainStock,
+          coll,
+          false,
+          currentUser.uid
+        );
 
         console.log("######## outputs solds saved ########");
       } catch (error) {

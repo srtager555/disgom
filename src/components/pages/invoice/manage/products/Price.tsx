@@ -11,21 +11,20 @@ import { Container } from "@/styles/index.styles";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { someHumanChangesDetected } from "./Product";
 import { useNewDefaultCustomPricesContext } from "@/hooks/invoice/useNewDefaultCustomPricesContext";
-import { outputType } from "@/tools/products/addOutputs";
 import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { isEqual } from "lodash";
 import { parseNumberInput } from "@/tools/parseNumericInput";
-import { getParentStock } from "@/tools/products/getParentStock";
 import { numberParser } from "@/tools/numberPaser";
+import { rawOutput } from "./AddOutput";
 
 type props = {
   product_doc: DocumentSnapshot<productDoc>;
   product_ref: DocumentReference<productDoc>;
   defaultCustomPrice: number | undefined;
-  outputs: DocumentSnapshot<outputType>[];
+  outputs: rawOutput[];
   sellerHasInventory: boolean | undefined;
-  setCustomPrice: Dispatch<SetStateAction<number | undefined>>;
+  setCustomPrice: Dispatch<SetStateAction<number | undefined>>; // Keep this prop for now, it's an input to useManageOutputs
   someHumanChangesDetected: MutableRefObject<someHumanChangesDetected>;
 };
 
@@ -54,25 +53,21 @@ export function BasePrice({
   const { invoice } = useInvoice(); // Get invoice context
   const invoiceType = invoice?.data()?.invoice_type;
   const priceMultiplier = invoiceType !== "normal" ? -1 : 1; // Determine multiplier
-  const [normalPrice, setNormalPrice] = useState(0);
+  const [normalPrice, setNormalPrice] = useState(0); // This is the product's base price
   const [priceValue, setPriceValue] = useState("0");
   const { setNewDefaultCustomPrices } = useNewDefaultCustomPricesContext();
 
   // --- Effects ---
   // get the normalPrice
   useEffect(() => {
-    async function getNormalPrice() {
-      const parent = product_doc.data()?.product_parent;
-      const productData = product_doc.data();
-
-      if (parent) {
-        const parentDoc = await getParentStock(parent);
-        parentDoc.sort(
-          (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
-        );
-
-        const price = parentDoc[0]?.sale_price || 0;
-        setNormalPrice(price * priceMultiplier);
+    const productData = product_doc.data();
+    if (productData) {
+      if (productData.product_parent) {
+        // If it has a parent, its price comes from the parent's stock
+        // This logic might need to be moved to a shared hook if parent stock is dynamic
+        // For now, assuming product_doc.data()?.stock is the source for normal price
+        const price = productData.stock[0]?.sale_price || 0; // Assuming first stock item has the sale price
+        setNormalPrice(price);
       } else {
         const productStock =
           productData?.stock.sort(
@@ -82,8 +77,6 @@ export function BasePrice({
         setNormalPrice(price * priceMultiplier);
       }
     }
-
-    getNormalPrice();
   }, [priceMultiplier, product_doc]);
 
   // Effect to set the initial price based on existing outputs or normal price
@@ -99,7 +92,7 @@ export function BasePrice({
 
       // Getting the price from the outputs
       if (outputs.length > 0) {
-        const output = outputs[0].data();
+        const output = outputs[0];
         const priceFromOutput = output?.sale_price as number;
 
         // check if the price a default custom price
@@ -124,7 +117,7 @@ export function BasePrice({
     manageThePrice();
   }, [outputs, normalPrice, priceMultiplier, defaultCustomPrice]); // Add dependencies
 
-  // --- Handlers ---
+  // --- Handlers (only update local state and human interaction flag) ---
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseNumberInput(() => {}, e, { returnRaw: true });
     if (value === undefined) return;
@@ -142,6 +135,7 @@ export function BasePrice({
     const effectiveNormalPrice = normalPrice * priceMultiplier;
     const tolerance = 0.001;
 
+    // Update customPrice state, which is an input to useManageOutputs
     if (Math.abs(numericValue - effectiveNormalPrice) < tolerance) {
       setCustomPrice(undefined);
     } else {

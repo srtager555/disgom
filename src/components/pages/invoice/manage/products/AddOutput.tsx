@@ -1,4 +1,4 @@
-import React, { useEffect, RefObject } from "react";
+import React, { useEffect, RefObject, useState } from "react";
 import { Column, Input } from "../../Product";
 import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
@@ -61,6 +61,8 @@ export function AddOutputBase({
   setAmountInput,
   currentServerAmount,
 }: AddOutputBaseProps) {
+  const [localInputAmount, setLocalInputAmount] = useState("0");
+
   // Effect to reset state when productDoc.id changes
   useEffect(() => {
     console.log(
@@ -70,37 +72,40 @@ export function AddOutputBase({
     );
     // Reset amountInput to server amount when product changes or server amount updates
     setAmountInput(String(currentServerAmount));
+    setLocalInputAmount(String(currentServerAmount));
   }, [productDoc.id, currentServerAmount, setAmountInput]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("typing");
 
     // Only update the input state and notify the hook that user is typing.
-    parseNumberInput(setAmountInput, e, { min: 0 });
+    parseNumberInput(setLocalInputAmount, e, { min: 0 });
   };
 
   const handleInputBlur = () => {
+    if (Number(amountInput) > currentStock) {
+      setOverflowWarning(true);
+      return;
+    }
+
     // When the input loses focus, trigger the save logic.
     // This is where we mark the human interaction for saving.
     if (someHumanChangesDetected?.current) {
       someHumanChangesDetected.current.addOutput = true;
     }
 
-    if (Number(amountInput) > currentStock) {
-      setOverflowWarning(true);
-      return;
-    }
+    setAmountInput(localInputAmount);
     setOverflowWarning(false); // Reset warning on blur
   };
 
   return (
     <Column>
       <Container className="show-print" styles={{ textAlign: "center" }}>
-        {numberParser(Number(amountInput))}
+        {numberParser(Number(localInputAmount))}
       </Container>
       <Container className="hide-print">
         <Input
-          value={amountInput} // Controlled component
+          value={localInputAmount} // Controlled component
           onChange={handleInputChange}
           onBlur={handleInputBlur}
         />

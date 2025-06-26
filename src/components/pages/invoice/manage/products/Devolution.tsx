@@ -1,26 +1,27 @@
-import React, { useEffect, memo, MutableRefObject } from "react";
+import React, { useEffect, memo, MutableRefObject, useState } from "react";
 import { Column, Input } from "../../Product";
-import { DocumentSnapshot, QueryDocumentSnapshot } from "firebase/firestore";
-import { SellersDoc } from "@/tools/sellers/create";
-import { inventory_output } from "@/tools/sellers/invetory/addProduct";
+import { DocumentSnapshot } from "firebase/firestore";
 import { someHumanChangesDetected } from "./Product";
-import { isEqual } from "lodash";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { parseNumberInput } from "@/tools/parseNumericInput";
 import { Container } from "@/styles/index.styles";
 import { numberParser } from "@/tools/numberPaser";
 import { productDoc } from "@/tools/products/create";
+import { rawOutput } from "./AddOutput";
+import { isEqual } from "lodash";
 
 // --- Tipos ---
 
 type props = {
+  rawOutputs: rawOutput[];
+  inventoryAmount: number;
   devoInput: string;
   setDevoInput: React.Dispatch<React.SetStateAction<string>>;
+  setOverflowWarning: React.Dispatch<React.SetStateAction<boolean>>;
   productDoc: DocumentSnapshot<productDoc>;
   sellerHasInventory: boolean | undefined;
   someHumanChangesDetected: MutableRefObject<someHumanChangesDetected>;
-  currentDevolutionServerAmount: number;
 };
 
 type devolutionBase = props & {
@@ -43,8 +44,8 @@ export const DevolutionMemo = memo(DevolutionBase, (prev, next) => {
   if (prev.productDoc.id !== next.productDoc.id) return false;
   if (prev.invoiceDoc?.id !== next.invoiceDoc?.id) return false;
   if (prev.devoInput !== next.devoInput) return false;
-  if (prev.currentDevolutionServerAmount !== next.currentDevolutionServerAmount)
-    return false;
+  if (prev.inventoryAmount !== next.inventoryAmount) return false;
+  if (!isEqual(prev.rawOutputs, next.rawOutputs)) return false;
 
   return true; // Si todo es igual, no re-renderizar
 });
@@ -55,30 +56,41 @@ function DevolutionBase({
   productDoc,
   sellerHasInventory,
   someHumanChangesDetected,
-  devoInput,
+  rawOutputs,
+  inventoryAmount,
   setDevoInput,
-  currentDevolutionServerAmount,
+  setOverflowWarning,
+  devoInput,
 }: devolutionBase) {
   // --- Estados y Refs ---
+  const [localDevoInput, setLocalDevoInput] = useState("0");
 
   // --- Efectos ---
   // Effect to reset state on product change
   useEffect(() => {
     // Reset devoInput to server amount when product changes or server amount updates
-    setDevoInput(String(currentDevolutionServerAmount));
-  }, [productDoc.id, currentDevolutionServerAmount, setDevoInput]);
+    setLocalDevoInput(String(devoInput));
+  }, [productDoc.id, devoInput]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    parseNumberInput(setDevoInput, e, { min: 0 });
+    console.log("typing in devo");
+    parseNumberInput(setLocalDevoInput, e, { min: 0 });
   };
 
   const handleInputBlur = () => {
+    const amount = rawOutputs.reduce((acc, next) => acc + next.amount, 0);
+
+    if (Number(localDevoInput) > amount + inventoryAmount) {
+      setOverflowWarning(true);
+      return;
+    }
+
     if (someHumanChangesDetected.current) {
       someHumanChangesDetected.current.devolution = true;
     }
-    // The useManageDevolutions hook will detect the change in devoInput
-    // combined with humanInteractionDetectedRef and trigger the save.
-    // No direct call to checkHasNextInvoice here.
+
+    setDevoInput(localDevoInput);
+    setOverflowWarning(false); // Reset warning on blur
   };
 
   // --- Renderizado ---
@@ -88,11 +100,11 @@ function DevolutionBase({
     return (
       <Column>
         <Container className="show-print" styles={{ textAlign: "center" }}>
-          {numberParser(Number(devoInput))}
+          {numberParser(Number(localDevoInput))}
         </Container>
         <Container className="hide-print">
           <Input
-            value={devoInput}
+            value={localDevoInput}
             onChange={handleInputChange}
             onBlur={handleInputBlur}
           />

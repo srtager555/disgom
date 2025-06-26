@@ -83,7 +83,6 @@ export function BaseProduct({
 
   // --- State for Inputs ---
   const [amountInput, setAmountInput] = useState<string>("0");
-  const [devoInput, setDevoInput] = useState<string>("0");
   const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
 
   // --- Ref for Human Interaction ---
@@ -103,13 +102,16 @@ export function BaseProduct({
     customPriceInput: customPrice,
     humanInteractionDetectedRef: someHumanChangesDetected,
   });
-  const { remainStock, currentDevolutionServerAmount } = useManageDevolutions({
+  const {
+    remainStock,
+    setLocalDevoInput: setDevoInput,
+    localDevoInput: devoInput,
+  } = useManageDevolutions({
     invoice,
     productDoc: rtDoc,
     seletedSeller: selectedSeller,
     inventoryOutputs: getInventoryByProduct(allInventory, doc.ref).outputs,
     rawOutputs,
-    devoInput,
     customPriceInput: customPrice,
     humanInteractionDetectedRef: someHumanChangesDetected,
   });
@@ -242,12 +244,14 @@ export function BaseProduct({
         currentServerAmount={currentOutputsServerAmount}
       />
       <Devolution
-        devoInput={devoInput}
+        rawOutputs={rawOutputs}
+        inventoryAmount={inventory.totalAmount}
+        setOverflowWarning={setStockOverflowWarning}
         setDevoInput={setDevoInput}
         productDoc={rtDoc}
         sellerHasInventory={selectedSellerData?.hasInventory}
         someHumanChangesDetected={someHumanChangesDetected}
-        currentDevolutionServerAmount={currentDevolutionServerAmount}
+        devoInput={devoInput}
       />
       <ProductSold
         remainStock={remainStock}

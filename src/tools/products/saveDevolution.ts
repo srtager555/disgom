@@ -1,146 +1,104 @@
 import {
-  DocumentSnapshot,
-  QueryDocumentSnapshot,
-  query,
   collection,
-  where,
+  DocumentSnapshot,
   getDocs,
-  updateDoc,
-  orderBy,
-  limit,
-  DocumentReference,
-  CollectionReference,
-  Timestamp,
+  query,
+  where,
+  writeBatch,
+  getFirestore,
 } from "firebase/firestore";
 import { invoiceType } from "../invoices/createInvoice";
-import { SellersDoc } from "../sellers/create";
-import {
-  addInventoryProduct,
-  inventory_output,
-} from "../sellers/invetory/addProduct";
-import { createInventory, inventory } from "../sellers/invetory/create";
-import { outputType } from "./addOutputs";
-import { createStockFromOutputType, amountListener } from "./ManageSaves";
 import { productDoc } from "./create";
+import { SellersDoc } from "../sellers/create";
+import { inventory_output } from "../sellers/invetory/addProduct";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
-import { Dispatch, SetStateAction } from "react";
+import { amountListener, createStockFromOutputType } from "./ManageSaves";
+import { getDevolutionInventory } from "./getDevolutionInventoryRef";
+import { addInventoryProduct } from "../sellers/invetory/addProduct";
+import { outputParser, outputType } from "./addOutputs";
 import { SellersCollection } from "../firestore/CollectionTyping";
-import { debounce } from "lodash";
 
-async function saveNewDevolution(
-  invoiceDoc: DocumentSnapshot<invoiceType>,
-  selectedSeller: DocumentSnapshot<SellersDoc>,
-  productDoc: DocumentSnapshot<productDoc>,
-  outputsWorked: { outputsToCreate: rawOutput[]; remainingStocks: rawOutput[] }
-) {
-  let inventoryRef: DocumentReference<inventory>;
-  const devoFromInvo = invoiceDoc.data()?.devolution;
-
-  // first check in the invoices
-  if (devoFromInvo) {
-    inventoryRef = devoFromInvo;
-  } else {
-    // search in the seller coll
-    const coll = collection(
-      selectedSeller.ref,
-      SellersCollection.inventories.root
-    ) as CollectionReference<inventory>;
-    const q = query(
-      coll,
-      where("invoice_ref", "==", invoiceDoc.ref),
-      where("disabled", "==", false),
-      orderBy("created_at", "desc"),
-      limit(1)
-    );
-
-    const devo = await getDocs(q);
-
-    if (devo.size > 0) {
-      inventoryRef = devo.docs[0].ref;
-    } else {
-      inventoryRef = await createInventory(invoiceDoc.ref, selectedSeller?.ref);
-    }
-  }
-
-  const q = query(
-    collection(inventoryRef, "products"),
-    where("product_ref", "==", productDoc.ref)
-  );
-
-  const oldDevo = await getDocs(q);
-  if (oldDevo.size > 0) {
-    console.log("disable old devolution");
-
-    oldDevo.forEach(async (el) => {
-      await updateDoc(el.ref, {
-        disabled: true,
-      });
-    });
-  }
-
-  const newInventory = outputsWorked.outputsToCreate.map(
-    async (el) =>
-      await addInventoryProduct(inventoryRef, {
-        ...el,
-        inventory_ref: inventoryRef,
-        disabled: false,
-        created_at: Timestamp.fromDate(new Date()),
-      } as inventory_output)
-  );
-
-  await Promise.all(newInventory);
-
-  await updateDoc(invoiceDoc.ref, {
-    devolution: inventoryRef,
-  });
-
-  console.log("Devolution saved successfully");
-}
-
-const debounceSaveNewDevo = debounce(saveNewDevolution, 1000);
-
-export function saveDevolution(
-  invoiceDoc: DocumentSnapshot<invoiceType>,
+/**
+ * Saves the devolution amount for a product in an invoice.
+ * This is a direct, non-debounced function.
+ * @param uid The UID of the user performing the action.
+ */
+export async function saveDevolution(
+  invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
   seletedSeller: DocumentSnapshot<SellersDoc>,
-  inventory_outputs: DocumentSnapshot<outputType>[],
-  outputs: outputType[],
+  inventory_outputs: DocumentSnapshot<inventory_output>[], // from seller inventory
+  rawOutputs: rawOutput[], // from current invoice sale
   amountToSave: number,
   customPrice: number | undefined,
-  setRemainStock: Dispatch<SetStateAction<rawOutput[]>>
+  uid: string
 ) {
-  const inv = inventory_outputs.map((el) => el.data() as outputType);
-  const allOutputs = [...inv, ...[...outputs].reverse()];
-  const stock = allOutputs.map((el) => createStockFromOutputType(el));
+  if (!seletedSeller.data()?.hasInventory) {
+    console.log("Seller does not have inventory, skipping devolution save.");
+    return;
+  }
 
-  const amountToAmountListener = seletedSeller.data()?.hasInventory
-    ? amountToSave
-    : 0;
+  // 1. Get or create the devolution inventory reference for this invoice.
+  const devolutionInventoryDoc = await getDevolutionInventory(
+    invoice,
+    seletedSeller
+  );
 
-  const outputsWorked = amountListener(
-    amountToAmountListener,
-    stock,
+  const devolutionInventoryRef = devolutionInventoryDoc.ref;
+
+  // 2. Disable old devolution outputs for this product in this inventory.
+  const coll = collection(
+    devolutionInventoryRef,
+    SellersCollection.inventories.products
+  );
+  const oldDevolutionOutputsQuery = query(
+    coll,
+    where("product_ref", "==", productDoc.ref),
+    where("disabled", "==", false)
+  );
+
+  const oldDevolutionOutputsSnap = await getDocs(oldDevolutionOutputsQuery);
+  const batch = writeBatch(getFirestore());
+
+  oldDevolutionOutputsSnap.forEach((doc) => {
+    batch.update(doc.ref, { disabled: true });
+  });
+
+  await batch.commit();
+
+  // 3. Combine all stocks (sold items + seller inventory items) to determine what can be returned.
+  const soldStocks = rawOutputs.map((raw) =>
+    createStockFromOutputType(outputParser(invoice, productDoc, raw))
+  );
+  const inventoryStocks = inventory_outputs.map((invDoc) =>
+    createStockFromOutputType(invDoc.data() as outputType)
+  );
+  const combinedStocks = [...soldStocks, ...inventoryStocks];
+
+  // 4. Use amountListener to calculate which items are being returned.
+  const { outputsToCreate: devolutionToSave } = amountListener(
+    amountToSave,
+    combinedStocks,
     undefined,
-    productDoc as QueryDocumentSnapshot<productDoc>,
+    productDoc,
     customPrice
   );
 
-  // save sold product
-  setRemainStock(outputsWorked.remainingStocks);
+  // 5. Save the new devolution outputs.
+  const devolutionOutputsToSave = devolutionToSave.map((raw) => ({
+    ...outputParser(invoice, productDoc, raw),
+    inventory_ref: devolutionInventoryRef,
+    uid,
+    disabled: false,
+  }));
+  await Promise.all(
+    devolutionOutputsToSave.map((devoOutput) =>
+      addInventoryProduct(
+        devolutionInventoryRef,
+        devoOutput as inventory_output
+      )
+    )
+  );
 
-  console.log("------- starting to save the DEVOLUTION ========-");
-
-  try {
-    console.log("Waiting to save devolution...");
-
-    debounceSaveNewDevo(invoiceDoc, seletedSeller, productDoc, outputsWorked);
-
-    return () => {
-      debounceSaveNewDevo.cancel();
-      console.log("Devolution saved canceled");
-    };
-  } catch (error) {
-    console.error("Hubo un error", error);
-    return () => {};
-  }
+  console.log("Devolution saved successfully.");
 }

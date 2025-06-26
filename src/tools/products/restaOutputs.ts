@@ -1,4 +1,9 @@
-import { DocumentSnapshot, updateDoc, Timestamp } from "firebase/firestore";
+import {
+  DocumentSnapshot,
+  updateDoc,
+  Timestamp,
+  getFirestore,
+} from "firebase/firestore";
 import { productDoc } from "./create";
 import { addOutputs, outputType } from "./addOutputs";
 import { disableOutput } from "./disableOutput";
@@ -7,14 +12,15 @@ import { invoiceType } from "@/tools/invoices/createInvoice";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 import { stockType } from "./addToStock";
-import { debounce } from "lodash";
+import { getAuth } from "firebase/auth"; // Import getAuth
 
 async function saveNewOutputs(
   parentStockIsReal: stockType[] | null,
   outputs: DocumentSnapshot<outputType>[],
   invoice: DocumentSnapshot<invoiceType>,
   newStockToSave: rawOutput[],
-  newOutputs: rawOutput[],
+  newOutputs: rawOutput[], // These are the rawOutputs that will be saved as new outputs
+  currentUid: string, // Add currentUid parameter
   productDoc: DocumentSnapshot<productDoc>
 ) {
   const data = productDoc.data();
@@ -61,12 +67,17 @@ async function saveNewOutputs(
   });
 
   // 9. Guardar los nuevos outputs
-  await addOutputs(invoice, productDoc, newOutputs);
+  await addOutputs(
+    invoice,
+    productDoc,
+    newOutputs,
+    undefined,
+    false,
+    currentUid
+  ); // Pass currentUid
 
   console.log("Proceso de resta completado");
 }
-
-const debouceSaveNewOutputs = debounce(saveNewOutputs, 1000);
 
 export function restaOutputs(
   invoice: DocumentSnapshot<invoiceType>,
@@ -76,8 +87,7 @@ export function restaOutputs(
   amount: number,
   currentAmount: number,
   parentStock: stockType[],
-  // setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>, // Removed
-  setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>, // Re-added
+  setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>,
   customPrice?: number
 ) {
   const data = productDoc.data();
@@ -105,19 +115,23 @@ export function restaOutputs(
   // Update the rawOutputs state immediately for UI responsiveness
   setRawOutputs(newOutputs);
 
-  console.log("Proceso de resta esta esperando para ser guardado");
+  const currentUser = getAuth(getFirestore().app).currentUser;
+  const currentUid = currentUser?.uid;
+  if (!currentUid) {
+    console.error("User not authenticated. Cannot save outputs.");
+    return () => {}; // Return a no-op cleanup function
+  }
 
-  debouceSaveNewOutputs(
+  saveNewOutputs(
+    // Call directly, no debounce
     parentStockIsReal,
     outputs,
     invoice,
     newStockToSave,
     newOutputs,
+    currentUid, // Pass currentUid
     productDoc
   );
 
-  return () => {
-    debouceSaveNewOutputs.cancel();
-    console.log("Proceso de resta cancelado");
-  };
+  return () => {}; // No cleanup needed for direct call
 }

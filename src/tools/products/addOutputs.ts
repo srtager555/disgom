@@ -1,11 +1,12 @@
 import {
+  arrayUnion,
   collection,
   CollectionReference,
   doc,
   DocumentReference,
   DocumentSnapshot,
+  setDoc,
   Timestamp,
-  updateDoc,
   writeBatch,
 } from "firebase/firestore";
 import { ProductsCollection } from "../firestore/CollectionTyping";
@@ -29,6 +30,7 @@ export type outputType = {
   product_ref: DocumentReference<productDoc>;
   default_custom_price_ref: DocumentReference<defaultCustomPrice> | null;
   followed: boolean;
+  uid: string;
   disabled: boolean;
 };
 
@@ -56,6 +58,7 @@ export const outputParser = (
     product_ref: product_doc.ref,
     disabled: false,
     followed: product_doc.data()?.followed || false,
+    uid: "", // Placeholder, will be set on save
   };
 };
 
@@ -64,7 +67,8 @@ export async function addOutputs(
   product_doc: DocumentSnapshot<productDoc>,
   rawOutputs: rawOutput[],
   outputColl: CollectionReference<outputType> | undefined = undefined,
-  returnOutputs: boolean = false
+  returnOutputs: boolean = false,
+  uid: string
 ) {
   const docRef = doc(invoice.ref, "outputs", product_doc.ref.id);
   const normalColl = collection(
@@ -77,16 +81,26 @@ export async function addOutputs(
   if (rawOutputs.length === 0 && !outputColl) {
     if (returnOutputs) return [];
 
-    await updateDoc(docRef, {
-      outputs: [],
-    });
+    await setDoc(
+      docRef,
+      {
+        outputs: [],
+      },
+      { merge: true }
+    );
 
     return;
   }
 
-  const outputsReady = rawOutputs.map((el) =>
-    outputParser(invoice, product_doc, el)
-  );
+  if (!uid) {
+    console.error("UID is required to add outputs.");
+    throw new Error("User UID not provided for saving outputs.");
+  }
+
+  const outputsReady = rawOutputs.map((el) => ({
+    ...outputParser(invoice, product_doc, el),
+    uid,
+  }));
 
   if (returnOutputs) return outputsReady;
 
@@ -104,9 +118,14 @@ export async function addOutputs(
 
     // Solo si no se pasó un outputColl externo, se actualiza la referencia de outputs en el invoice
     if (!outputColl) {
-      await updateDoc(docRef, {
-        outputs: createdRefs.map((entry) => entry.ref),
-      });
+      const refs = createdRefs.map((entry) => entry.ref);
+      await setDoc(
+        docRef,
+        {
+          outputs: arrayUnion(...refs),
+        },
+        { merge: true }
+      );
     }
   } catch (error) {
     console.error("Error al procesar el batch de outputs:", error);

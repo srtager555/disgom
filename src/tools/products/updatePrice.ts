@@ -8,14 +8,15 @@ import { amountListener } from "./ManageSaves";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
-import { debounce } from "lodash";
 import { stockType } from "./addToStock";
+import { getAuth } from "firebase/auth";
 
 async function saveNewOutputs(
   outputs: DocumentSnapshot<outputType>[],
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
-  outputsToCreate: rawOutput[]
+  outputsToCreate: rawOutput[],
+  currentUid: string
 ) {
   // Deshabilitar outputs anteriores
   await Promise.all(
@@ -25,12 +26,17 @@ async function saveNewOutputs(
   );
 
   // Crear nuevos outputs
-  await addOutputs(invoice, productDoc, outputsToCreate);
+  await addOutputs(
+    invoice,
+    productDoc,
+    outputsToCreate,
+    undefined,
+    false,
+    currentUid
+  );
 
   console.log("Cambio de precio efectuado");
 }
-
-const debouceSaveNewOutputs = debounce(saveNewOutputs, 1000);
 
 export function updatePrice(
   invoice: DocumentSnapshot<invoiceType>,
@@ -74,11 +80,22 @@ export function updatePrice(
   // Update the rawOutputs state immediately for UI responsiveness
   setRawOutputs(outputsToCreate);
 
+  const currentUser = getAuth().currentUser;
+  if (!currentUser?.uid) {
+    console.error("User not authenticated. Cannot save outputs.");
+    return () => {};
+  }
+
   console.log("Se esta guardando el cambio de precio");
-  debouceSaveNewOutputs(outputs, invoice, productDoc, outputsToCreate);
+  saveNewOutputs(
+    outputs,
+    invoice,
+    productDoc,
+    outputsToCreate,
+    currentUser.uid
+  );
 
   return () => {
-    debouceSaveNewOutputs.cancel();
-    console.log("Cambio de precio cancelado");
+    // No-op cleanup
   };
 }

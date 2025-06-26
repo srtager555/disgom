@@ -9,15 +9,20 @@ import {
   where,
   QueryDocumentSnapshot,
   onSnapshot,
+  DocumentChange,
 } from "firebase/firestore";
 import { Firestore } from "@/tools/firestore";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
 
 export function useGetCurrentDevolutionByProduct(product_id: string) {
   const { invoice } = useInvoice();
-  const [devolutionOutputs, setDevolutionOutputs] =
-    useState<QueryDocumentSnapshot<inventory_output>[]>();
+  const [devolutionOutputs, setDevolutionOutputs] = useState<
+    QueryDocumentSnapshot<inventory_output>[]
+  >([]);
   const [amount, setAmount] = useState(0);
+  const [docsChanges, setDocsChanges] = useState<
+    DocumentChange<inventory_output>[]
+  >([]);
 
   useEffect(() => {
     const db = Firestore();
@@ -45,6 +50,7 @@ export function useGetCurrentDevolutionByProduct(product_id: string) {
 
       setAmount(amount || 0);
       setDevolutionOutputs(snap.docs);
+      setDocsChanges(snap.docChanges());
     });
 
     return () => {
@@ -52,5 +58,5 @@ export function useGetCurrentDevolutionByProduct(product_id: string) {
     };
   }, [invoice, product_id]);
 
-  return { amount, outputs: devolutionOutputs };
+  return { amount, outputs: devolutionOutputs, docsChanges };
 }

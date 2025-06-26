@@ -23,7 +23,7 @@ interface UseManageDevolutionsProps {
   seletedSeller: DocumentSnapshot<SellersDoc> | undefined;
   inventoryOutputs: DocumentSnapshot<inventory_output>[];
   rawOutputs: rawOutput[]; // Raw outputs from useManageOutputs
-  devoInput: string; // Raw input value from Devolution component
+  // devoInput: string; // Raw input value from Devolution component - Este prop será gestionado internamente
   customPriceInput: number | undefined; // Raw input value from Price
   humanInteractionDetectedRef: React.MutableRefObject<someHumanChangesDetected>;
 }
@@ -34,11 +34,13 @@ export function useManageDevolutions({
   seletedSeller,
   inventoryOutputs,
   rawOutputs,
-  devoInput,
+  // devoInput, // Eliminado ya que ahora se gestiona internamente
   customPriceInput,
   humanInteractionDetectedRef,
 }: UseManageDevolutionsProps) {
   const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
+  const [verifiedDevolutionAmount, setVerifiedDevolutionAmount] = useState(0);
+  const [localDevoInput, setLocalDevoInput] = useState<string>(""); // Nuevo estado para el valor del campo de entrada
   const {
     amount: currentDevolutionServerAmount,
     outputs: currentDevolutionOutputs,
@@ -51,6 +53,28 @@ export function useManageDevolutions({
     console.log("devo in outputs", currentDevolutionOutputs);
   }, [currentDevolutionOutputs]);
 
+  // Effect to sync the verified amount with the server state.
+  // This ensures that the initial load and changes from other users are correctly reflected.
+  useEffect(() => {
+    const serverAmount = currentDevolutionServerAmount || 0;
+    // This condition is key. We update our "verified" state from the server
+    // ONLY if it's different from what we already have. This handles the initial
+    // load (0 -> server value) and changes from other users.
+    if (serverAmount !== verifiedDevolutionAmount) {
+      setVerifiedDevolutionAmount(serverAmount);
+    }
+  }, [currentDevolutionServerAmount, verifiedDevolutionAmount]);
+
+  // NUEVO EFECTO: Sincronizar localDevoInput con verifiedDevolutionAmount
+  useEffect(() => {
+    // Solo actualizar localDevoInput desde el servidor si no se detecta interacción humana.
+    // Si humanInteractionDetectedRef.current.devolution es true, significa que el usuario está escribiendo,
+    // por lo que dejamos que su entrada controle el localDevoInput.
+    if (!humanInteractionDetectedRef.current.devolution) {
+      setLocalDevoInput(String(verifiedDevolutionAmount));
+    }
+  }, [verifiedDevolutionAmount, humanInteractionDetectedRef]);
+
   // Effect to calculate remainStock based on rawOutputs and currentDevolutionServerAmount
   useEffect(() => {
     const soldStocks = rawOutputs.map(rawOutputToStock);
@@ -60,7 +84,7 @@ export function useManageDevolutions({
     const combinedStocks = [...soldStocks, ...inventoryStocks];
 
     const { remainingStocks } = amountListener(
-      currentDevolutionServerAmount || 0, // Use the server amount for calculation
+      Number(localDevoInput), // Siempre usar localDevoInput para el cálculo
       combinedStocks,
       undefined,
       productDoc,
@@ -72,7 +96,7 @@ export function useManageDevolutions({
     }
   }, [
     rawOutputs,
-    currentDevolutionServerAmount,
+    localDevoInput, // Usar localDevoInput aquí
     inventoryOutputs,
     productDoc,
     remainStock,
@@ -82,7 +106,7 @@ export function useManageDevolutions({
   useEffect(() => {
     if (!invoice || !seletedSeller || !currentUid) return;
 
-    const amountToSave = Number(devoInput);
+    const amountToSave = Number(localDevoInput); // Usar localDevoInput para guardar
 
     // Only trigger save if human interaction is detected AND there's an actual change
     console.log("conditional devo");
@@ -119,7 +143,7 @@ export function useManageDevolutions({
       humanInteractionDetectedRef.current.devolution = false;
     }
   }, [
-    devoInput,
+    localDevoInput, // Dependencia
     customPriceInput,
     invoice,
     productDoc,
@@ -134,6 +158,8 @@ export function useManageDevolutions({
 
   return {
     remainStock,
-    currentDevolutionServerAmount: currentDevolutionServerAmount || 0,
+    // currentDevolutionServerAmount: verifiedDevolutionAmount, // Ya no es necesario retornar de esta manera
+    localDevoInput, // Retornar el estado local para el campo de entrada
+    setLocalDevoInput, // Retornar el setter para el campo de entrada
   };
 }

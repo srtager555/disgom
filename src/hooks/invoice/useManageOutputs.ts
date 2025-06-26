@@ -10,6 +10,7 @@ import { restaOutputs } from "@/tools/products/restaOutputs"; // Assuming restaO
 import { sumaOutputs } from "@/tools/products/sumaOutputs"; // Assuming sumaOutputs is now direct
 import { useProductOutputs } from "@/contexts/ProductOutputsContext";
 import { someHumanChangesDetected } from "@/components/pages/invoice/manage/products/Product";
+import { updatePrice } from "@/tools/products/updatePrice";
 
 interface UseManageOutputsProps {
   invoice: DocumentSnapshot<invoiceType> | undefined;
@@ -36,11 +37,19 @@ export function useManageOutputs({
     useState(0);
   const lastProcessedAmount = useRef(0); // To track the amount that was last saved/synced
   const lastProcessedPrice = useRef<number | undefined>(undefined); // To track the price that was last saved/synced
+  const firstTimeLoad = useRef(true);
 
   const currentUid = getAuth(getFirestore().app).currentUser?.uid;
 
   // Effect to sync rawOutputs and currentOutputsServerAmount from Firestore
   useEffect(() => {
+    // check if all outputs are maded by the same user
+    const isTheSameUser = serverOutputsSnapshots.some((output) => {
+      return output.data()?.uid === currentUid;
+    });
+
+    if (isTheSameUser && !firstTimeLoad) return;
+
     if (!serverOutputsSnapshots || serverOutputsSnapshots.length === 0) {
       setRawOutputs([]);
       setCurrentOutputsServerAmount(0);
@@ -161,7 +170,19 @@ export function useManageOutputs({
           setRawOutputs, // Pass setRawOutputs to update UI immediately
           priceToSave
         );
+      } else if (amountToSave === currentOutputsServerAmount) {
+        updatePrice(
+          invoice,
+          productDoc,
+          defaultCustomPrices,
+          serverOutputsSnapshots,
+          amountToSave,
+          parentStock,
+          setRawOutputs,
+          customPriceInput
+        );
       }
+
       // After triggering save, update last processed values and reset human interaction flag
       lastProcessedAmount.current = amountToSave;
       lastProcessedPrice.current = priceToSave;

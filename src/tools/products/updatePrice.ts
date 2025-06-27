@@ -32,7 +32,8 @@ async function saveNewOutputs(
     outputsToCreate,
     undefined,
     false,
-    currentUid
+    currentUid,
+    true
   );
 
   console.log("Cambio de precio efectuado");

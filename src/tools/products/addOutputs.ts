@@ -68,7 +68,8 @@ export async function addOutputs(
   rawOutputs: rawOutput[],
   outputColl: CollectionReference<outputType> | undefined = undefined,
   returnOutputs: boolean = false,
-  uid: string
+  uid: string,
+  remplaceOutputs: boolean = false
 ) {
   const docRef = doc(invoice.ref, "outputs", product_doc.ref.id);
   const normalColl = collection(
@@ -122,7 +123,7 @@ export async function addOutputs(
       await setDoc(
         docRef,
         {
-          outputs: arrayUnion(...refs),
+          outputs: remplaceOutputs ? refs : arrayUnion(...refs),
         },
         { merge: true }
       );

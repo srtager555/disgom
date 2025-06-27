@@ -112,6 +112,46 @@ export function useManageOutputs({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawOutputs]);
 
+  // Effect to trigger the logic to save the new price
+  useEffect(() => {
+    if (!invoice || !currentUid) return;
+
+    const amountToSave = Number(amountInput);
+    const priceToSave = customPriceInput;
+
+    console.log("conditional (price)");
+    console.log(
+      "the price has been changed? local, server",
+      priceToSave,
+      lastProcessedPrice.current
+    );
+
+    if (!humanInteractionDetectedRef.current.price) {
+      console.log("Human no dectected");
+      return;
+    }
+
+    console.log("Human dectected, Saving changes...");
+
+    if (priceToSave !== lastProcessedPrice.current) {
+      console.log("Updating price...");
+
+      updatePrice(
+        invoice,
+        productDoc,
+        defaultCustomPrices,
+        serverOutputsSnapshots,
+        amountToSave,
+        parentStock,
+        setRawOutputs,
+        customPriceInput
+      );
+    }
+
+    lastProcessedPrice.current = priceToSave;
+    humanInteractionDetectedRef.current.price = false;
+  }, [customPriceInput]);
+
   // Effect to trigger save logic when amountInput or customPriceInput changes due to human interaction
   useEffect(() => {
     if (!invoice || !currentUid) return;
@@ -132,21 +172,18 @@ export function useManageOutputs({
       amountToSave,
       currentOutputsServerAmount
     );
-    console.log(
-      "the price has been changed? local, server",
-      priceToSave,
-      lastProcessedPrice.current
-    );
 
-    if (
-      humanInteractionDetectedRef.current.addOutput &&
-      (amountToSave !== currentOutputsServerAmount ||
-        priceToSave !== lastProcessedPrice.current)
-    ) {
-      console.log("Human dectected, Saving changes...");
+    if (!humanInteractionDetectedRef.current.addOutput) {
+      console.log("Human no dectected");
+      return;
+    }
 
+    console.log("Human dectected, Saving changes...");
+
+    if (amountToSave !== currentOutputsServerAmount) {
       if (amountToSave < currentOutputsServerAmount) {
         console.log("restando outputs...");
+
         restaOutputs(
           invoice,
           productDoc,
@@ -160,6 +197,7 @@ export function useManageOutputs({
         ); // Increase amount
       } else if (amountToSave > currentOutputsServerAmount) {
         console.log("Increasing outputs...");
+
         sumaOutputs(
           invoice,
           productDoc,
@@ -170,24 +208,12 @@ export function useManageOutputs({
           setRawOutputs, // Pass setRawOutputs to update UI immediately
           priceToSave
         );
-      } else if (amountToSave === currentOutputsServerAmount) {
-        updatePrice(
-          invoice,
-          productDoc,
-          defaultCustomPrices,
-          serverOutputsSnapshots,
-          amountToSave,
-          parentStock,
-          setRawOutputs,
-          customPriceInput
-        );
       }
-
-      // After triggering save, update last processed values and reset human interaction flag
-      lastProcessedAmount.current = amountToSave;
-      lastProcessedPrice.current = priceToSave;
-      humanInteractionDetectedRef.current.addOutput = false;
     }
+
+    // After triggering save, update last processed values and reset human interaction flag
+    lastProcessedAmount.current = amountToSave;
+    humanInteractionDetectedRef.current.addOutput = false;
   }, [
     amountInput,
     customPriceInput,

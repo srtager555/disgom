@@ -46,6 +46,7 @@ export type someHumanChangesDetected = {
   addOutput: boolean;
   devolution: boolean;
   price: boolean;
+  outputsSolds: boolean;
 };
 
 export const MemoProduct = memo(Product, (prev, next) => {
@@ -90,6 +91,7 @@ export function BaseProduct({
     addOutput: false,
     devolution: false,
     price: false,
+    outputsSolds: false,
   });
 
   // --- Custom Hooks for Core Logic ---

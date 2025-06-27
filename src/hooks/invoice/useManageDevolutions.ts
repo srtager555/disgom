@@ -141,6 +141,7 @@ export function useManageDevolutions({
 
       lastProcessedDevoAmount.current = amountToSave;
       humanInteractionDetectedRef.current.devolution = false;
+      humanInteractionDetectedRef.current.outputsSolds = true;
     }
   }, [
     localDevoInput, // Dependencia

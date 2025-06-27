@@ -77,12 +77,8 @@ export function ProductSoldBase({
       else refresh_data = {};
 
       try {
-        const isHumanChanges = Object.values(
-          someHumanChangesDetected.current
-        ).some((v) => v);
-
         if (!refresh_data[product_doc.id])
-          if (!isHumanChanges) {
+          if (!someHumanChangesDetected.current.outputsSolds) {
             console.log(
               "No human changes detected, skipping save outputs solds"
             );
@@ -141,11 +137,7 @@ export function ProductSoldBase({
             [`refresh_data.${product_doc.id}`]: true,
           });
 
-        someHumanChangesDetected.current = {
-          addOutput: false,
-          devolution: false,
-          price: false,
-        };
+        someHumanChangesDetected.current.outputsSolds = false;
       }
     }, 1500), // Debounce de 1.5 segundos
     [invoice, product_doc.id, someHumanChangesDetected]

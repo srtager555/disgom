@@ -150,6 +150,7 @@ export function useManageOutputs({
 
     lastProcessedPrice.current = priceToSave;
     humanInteractionDetectedRef.current.price = false;
+    humanInteractionDetectedRef.current.outputsSolds = true;
   }, [customPriceInput]);
 
   // Effect to trigger save logic when amountInput or customPriceInput changes due to human interaction
@@ -214,6 +215,7 @@ export function useManageOutputs({
     // After triggering save, update last processed values and reset human interaction flag
     lastProcessedAmount.current = amountToSave;
     humanInteractionDetectedRef.current.addOutput = false;
+    humanInteractionDetectedRef.current.outputsSolds = true;
   }, [
     amountInput,
     customPriceInput,

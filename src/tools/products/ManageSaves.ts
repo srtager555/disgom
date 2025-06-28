@@ -123,9 +123,15 @@ function stockToRawOutput(
 export async function saveNewOutputs(
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
-  outputs: Array<rawOutput>
+  outputs: Array<rawOutput>,
+  uid: string
 ) {
-  await addOutputs(invoice, productDoc, outputs);
+  await addOutputs({
+    invoice,
+    product_doc: productDoc,
+    rawOutputs: outputs,
+    uid,
+  });
 }
 
 export function rawOutputToStock(output: rawOutput): stockType {

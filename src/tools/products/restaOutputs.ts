@@ -67,14 +67,12 @@ async function saveNewOutputs(
   });
 
   // 9. Guardar los nuevos outputs
-  await addOutputs(
+  await addOutputs({
     invoice,
-    productDoc,
-    newOutputs,
-    undefined,
-    false,
-    currentUid
-  ); // Pass currentUid
+    product_doc: productDoc,
+    rawOutputs: newOutputs,
+    uid: currentUid,
+  }); // Pass currentUid
 
   console.log("Proceso de resta completado");
 }

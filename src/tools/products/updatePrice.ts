@@ -26,15 +26,13 @@ async function saveNewOutputs(
   );
 
   // Crear nuevos outputs
-  await addOutputs(
+  await addOutputs({
     invoice,
-    productDoc,
-    outputsToCreate,
-    undefined,
-    false,
-    currentUid,
-    true
-  );
+    product_doc: productDoc,
+    rawOutputs: outputsToCreate,
+    uid: currentUid,
+    remplaceOutputs: true,
+  });
 
   console.log("Cambio de precio efectuado");
 }

@@ -15,6 +15,7 @@ import { entryDoc } from "./addEntry";
 import { invoiceType } from "../invoices/createInvoice";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
+import { inventory } from "../sellers/invetory/create";
 
 export type outputType = {
   created_at: Timestamp;
@@ -28,17 +29,25 @@ export type outputType = {
   entry_ref: DocumentReference<entryDoc>;
   invoice_ref: DocumentReference<invoiceType>;
   product_ref: DocumentReference<productDoc>;
+  inventory_ref: DocumentReference<inventory> | null;
+  output_ref: DocumentReference<outputType> | null;
   default_custom_price_ref: DocumentReference<defaultCustomPrice> | null;
   followed: boolean;
   uid: string;
   disabled: boolean;
 };
 
-export const outputParser = (
-  invoice: DocumentSnapshot<invoiceType>,
-  product_doc: DocumentSnapshot<productDoc>,
-  rawOutput: rawOutput
-): outputType => {
+export const outputParser = ({
+  invoice,
+  product_doc,
+  rawOutput,
+  output_ref = null,
+}: {
+  invoice: DocumentSnapshot<invoiceType>;
+  product_doc: DocumentSnapshot<productDoc>;
+  rawOutput: rawOutput;
+  output_ref?: DocumentReference<outputType> | null;
+}): outputType => {
   const purchase_value = rawOutput.amount * rawOutput.purchase_price;
   const sale_value = rawOutput.amount * rawOutput.sale_price;
   const commission_value = rawOutput.amount * rawOutput.commission;
@@ -59,18 +68,30 @@ export const outputParser = (
     disabled: false,
     followed: product_doc.data()?.followed || false,
     uid: "", // Placeholder, will be set on save
+    output_ref: output_ref,
+    inventory_ref: null,
   };
 };
 
-export async function addOutputs(
-  invoice: DocumentSnapshot<invoiceType>,
-  product_doc: DocumentSnapshot<productDoc>,
-  rawOutputs: rawOutput[],
-  outputColl: CollectionReference<outputType> | undefined = undefined,
-  returnOutputs: boolean = false,
-  uid: string,
-  remplaceOutputs: boolean = false
-) {
+export async function addOutputs({
+  invoice,
+  product_doc,
+  rawOutputs,
+  uid,
+  outputColl = undefined,
+  returnOutputs = false,
+  remplaceOutputs = false,
+  output_ref = undefined,
+}: {
+  invoice: DocumentSnapshot<invoiceType>;
+  product_doc: DocumentSnapshot<productDoc>;
+  rawOutputs: rawOutput[];
+  uid: string;
+  outputColl?: CollectionReference<outputType> | undefined;
+  returnOutputs?: boolean;
+  remplaceOutputs?: boolean;
+  output_ref?: DocumentReference<outputType> | undefined;
+}) {
   const docRef = doc(invoice.ref, "outputs", product_doc.ref.id);
   const normalColl = collection(
     product_doc.ref,
@@ -98,8 +119,8 @@ export async function addOutputs(
     throw new Error("User UID not provided for saving outputs.");
   }
 
-  const outputsReady = rawOutputs.map((el) => ({
-    ...outputParser(invoice, product_doc, el),
+  const outputsReady = rawOutputs.map((rawOutput) => ({
+    ...outputParser({ invoice, product_doc, rawOutput, output_ref }),
     uid,
   }));
 

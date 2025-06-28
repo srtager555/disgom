@@ -23,14 +23,12 @@ async function saveNewOutputs(
   });
 
   // 5. Agregar los nuevos outputs a firestore
-  await addOutputs(
+  await addOutputs({
     invoice,
-    productDoc,
-    outputsToCreate,
-    undefined,
-    false,
-    currentUid
-  );
+    product_doc: productDoc,
+    rawOutputs: outputsToCreate,
+    uid: currentUid,
+  });
 
   console.log("Proceso de suma completado");
 }
@@ -51,7 +49,7 @@ export function sumaOutputs(
 
   // 1. Obtener el stock actual del producto
   const currentStock = data?.product_parent
-    ? parentStock
+    ? parentStock || []
     : productDoc.data()?.stock || [];
 
   // 2. Calcular la diferencia que necesitamos agregar

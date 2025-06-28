@@ -3,7 +3,6 @@ import { DocumentSnapshot, getFirestore } from "firebase/firestore";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { productDoc } from "@/tools/products/create";
 import { SellersDoc } from "@/tools/sellers/create";
-import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 import { getAuth } from "firebase/auth";
 import { isEqual } from "lodash";
@@ -21,7 +20,7 @@ interface UseManageDevolutionsProps {
   invoice: DocumentSnapshot<invoiceType> | undefined;
   productDoc: DocumentSnapshot<productDoc>;
   seletedSeller: DocumentSnapshot<SellersDoc> | undefined;
-  inventoryOutputs: DocumentSnapshot<inventory_output>[];
+  inventoryOutputs: DocumentSnapshot<outputType>[];
   rawOutputs: rawOutput[]; // Raw outputs from useManageOutputs
   // devoInput: string; // Raw input value from Devolution component - Este prop será gestionado internamente
   customPriceInput: number | undefined; // Raw input value from Price

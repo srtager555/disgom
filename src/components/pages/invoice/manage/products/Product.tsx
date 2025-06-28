@@ -18,7 +18,6 @@ import { Commission } from "./Commission";
 import { Profit } from "./Profit";
 import { Fold } from "./fold";
 import { Devolution } from "./Devolution";
-import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 import { getInventoryByProduct } from "@/tools/invoices/getInventoryByProduct";
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { numberParser } from "@/tools/numberPaser";
@@ -30,13 +29,14 @@ import { ProductOutputsProvider } from "@/contexts/ProductOutputsContext";
 import { useManageOutputs } from "@/hooks/invoice/useManageOutputs";
 import { useManageDevolutions } from "@/hooks/invoice/useManageDevolutions";
 import { useCalculateProductTotals } from "@/hooks/invoice/useCalculateProductTotals";
+import { outputType } from "@/tools/products/addOutputs";
 
 // サラマンダー
 export type props = {
   doc: QueryDocumentSnapshot<productDoc>;
   selectedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
   hideProductWithoutStock: boolean;
-  allInventory: DocumentSnapshot<inventory_output>[];
+  allInventory: DocumentSnapshot<outputType>[];
   setProductsResults: React.Dispatch<
     React.SetStateAction<Record<string, productResult>>
   >;
@@ -256,6 +256,7 @@ export function BaseProduct({
         devoInput={devoInput}
       />
       <ProductSold
+        invOutputs={inventory.outputs}
         remainStock={remainStock}
         remainStockTotals={remainStockTotals}
         seletedSeller={selectedSeller}

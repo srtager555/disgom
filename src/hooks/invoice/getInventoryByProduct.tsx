@@ -1,6 +1,6 @@
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
+import { outputType } from "@/tools/products/addOutputs";
 import { productDoc } from "@/tools/products/create";
-import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 import { inventory } from "@/tools/sellers/invetory/create";
 import {
   collection,
@@ -19,7 +19,7 @@ export function useGetInventoryByProduct(
 ) {
   const [inventoriesProducts, setInventoriesProducts] = useState<{
     totalAmount: number;
-    inv: inventory_output[];
+    inv: outputType[];
   }>({ totalAmount: 0, inv: [] });
   const [lastInventoryRef, setlastInventoryRef] = useState(last_inventory_ref);
   const [lastProductRef, setlastProductRef] = useState(product_ref);
@@ -40,7 +40,7 @@ export function useGetInventoryByProduct(
       const coll = collection(
         last_inventory_ref,
         SellersCollection.inventories.products
-      ) as CollectionReference<inventory_output>;
+      ) as CollectionReference<outputType>;
 
       const q = query(
         coll,

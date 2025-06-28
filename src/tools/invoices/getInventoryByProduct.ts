@@ -1,9 +1,9 @@
 import { DocumentSnapshot, DocumentReference } from "firebase/firestore";
-import { inventory_output } from "../sellers/invetory/addProduct";
 import { productDoc } from "../products/create";
+import { outputType } from "../products/addOutputs";
 
 export function getInventoryByProduct(
-  inventory: DocumentSnapshot<inventory_output>[] = [],
+  inventory: DocumentSnapshot<outputType>[] = [],
   product_ref: DocumentReference<productDoc>
 ) {
   const outputs = inventory.filter((output) => {

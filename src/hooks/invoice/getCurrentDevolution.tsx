@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useInvoice } from "@/contexts/InvoiceContext";
-import { inventory_output } from "@/tools/sellers/invetory/addProduct";
 import {
   collection,
   CollectionReference,
@@ -13,16 +12,17 @@ import {
 } from "firebase/firestore";
 import { Firestore } from "@/tools/firestore";
 import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
+import { outputType } from "@/tools/products/addOutputs";
 
 export function useGetCurrentDevolutionByProduct(product_id: string) {
   const { invoice } = useInvoice();
   const [devolutionOutputs, setDevolutionOutputs] = useState<
-    QueryDocumentSnapshot<inventory_output>[]
+    QueryDocumentSnapshot<outputType>[]
   >([]);
   const [amount, setAmount] = useState(0);
-  const [docsChanges, setDocsChanges] = useState<
-    DocumentChange<inventory_output>[]
-  >([]);
+  const [docsChanges, setDocsChanges] = useState<DocumentChange<outputType>[]>(
+    []
+  );
 
   useEffect(() => {
     const db = Firestore();
@@ -36,7 +36,7 @@ export function useGetCurrentDevolutionByProduct(product_id: string) {
     const coll = collection(
       inventoryRef,
       "products"
-    ) as CollectionReference<inventory_output>;
+    ) as CollectionReference<outputType>;
 
     const q = query(
       coll,

@@ -1,5 +1,5 @@
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
-import { inventory_output } from "@/tools/sellers/invetory/addProduct";
+import { outputType } from "@/tools/products/addOutputs";
 import { inventory } from "@/tools/sellers/invetory/create";
 import {
   collection,
@@ -17,7 +17,7 @@ export function useGetAllInventory(
   last_inventory_ref: DocumentReference<inventory> | undefined
 ) {
   const [inventoriesProducts, setInventoriesProducts] = useState<
-    QueryDocumentSnapshot<inventory_output>[]
+    QueryDocumentSnapshot<outputType>[]
   >([]);
   const [lastInventoryRef, setlastInventoryRef] = useState<
     DocumentReference<inventory> | undefined
@@ -34,7 +34,7 @@ export function useGetAllInventory(
       const coll = collection(
         last_inventory_ref,
         SellersCollection.inventories.products
-      ) as CollectionReference<inventory_output>;
+      ) as CollectionReference<outputType>;
 
       const q = query(coll, where("disabled", "==", false));
       const invent_products = await getDocs(q);

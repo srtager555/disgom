@@ -10,7 +10,6 @@ import {
 import { invoiceType } from "../invoices/createInvoice";
 import { productDoc } from "./create";
 import { SellersDoc } from "../sellers/create";
-import { inventory_output } from "../sellers/invetory/addProduct";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 import { amountListener, createStockFromOutputType } from "./ManageSaves";
 import { getDevolutionInventory } from "./getDevolutionInventoryRef";
@@ -27,7 +26,7 @@ export async function saveDevolution(
   invoice: DocumentSnapshot<invoiceType>,
   productDoc: DocumentSnapshot<productDoc>,
   seletedSeller: DocumentSnapshot<SellersDoc>,
-  inventory_outputs: DocumentSnapshot<inventory_output>[], // from seller inventory
+  inventory_outputs: DocumentSnapshot<outputType>[], // from seller inventory
   rawOutputs: rawOutput[], // from current invoice sale
   amountToSave: number,
   customPrice: number | undefined,
@@ -67,8 +66,10 @@ export async function saveDevolution(
   await batch.commit();
 
   // 3. Combine all stocks (sold items + seller inventory items) to determine what can be returned.
-  const soldStocks = rawOutputs.map((raw) =>
-    createStockFromOutputType(outputParser(invoice, productDoc, raw))
+  const soldStocks = rawOutputs.map((rawOutput) =>
+    createStockFromOutputType(
+      outputParser({ invoice, product_doc: productDoc, rawOutput })
+    )
   );
   const inventoryStocks = inventory_outputs.map((invDoc) =>
     createStockFromOutputType(invDoc.data() as outputType)
@@ -85,18 +86,15 @@ export async function saveDevolution(
   );
 
   // 5. Save the new devolution outputs.
-  const devolutionOutputsToSave = devolutionToSave.map((raw) => ({
-    ...outputParser(invoice, productDoc, raw),
+  const devolutionOutputsToSave = devolutionToSave.map((rawOutput) => ({
+    ...outputParser({ invoice, product_doc: productDoc, rawOutput }),
     inventory_ref: devolutionInventoryRef,
     uid,
     disabled: false,
   }));
   await Promise.all(
     devolutionOutputsToSave.map((devoOutput) =>
-      addInventoryProduct(
-        devolutionInventoryRef,
-        devoOutput as inventory_output
-      )
+      addInventoryProduct(devolutionInventoryRef, devoOutput as outputType)
     )
   );
 

@@ -12,6 +12,7 @@ import { addOutputs, outputType } from "@/tools/products/addOutputs";
 import {
   collection,
   CollectionReference,
+  DocumentSnapshot,
   getDocs,
   query,
   QueryDocumentSnapshot,
@@ -26,6 +27,7 @@ import { someHumanChangesDetected } from "./Product";
 import { productResult } from "@/components/pages/invoice/ProductList";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { getAuth } from "firebase/auth";
+import { checkInventoryInOutputsSold } from "@/tools/invoices/checkInventoryInOutputsSold";
 
 type props = {
   product_doc: QueryDocumentSnapshot<productDoc>;
@@ -35,6 +37,9 @@ type props = {
   setWarn: Dispatch<SetStateAction<boolean>>;
   sellerHasInventory: boolean | undefined;
   seletedSeller: QueryDocumentSnapshot<SellersDoc> | undefined;
+  invOutputs: DocumentSnapshot<outputType>[];
+  amount: number;
+  devoAmount: number;
 };
 
 export const ProductSold = (props: Omit<props, "outputs">) => {
@@ -46,17 +51,21 @@ export const MemoProductSold = memo(ProductSoldBase, (prev, next) => {
   if (!isEqual(prev.product_doc.id, next.product_doc.id)) return false;
   if (!isEqual(prev.remainStock, next.remainStock)) return false;
   if (!isEqual(prev.remainStockTotals, next.remainStockTotals)) return false;
+  if (!isEqual(prev.invOutputs, next.invOutputs)) return false;
 
   return true;
 });
 
 export function ProductSoldBase({
+  invOutputs,
   remainStock,
   product_doc,
   remainStockTotals,
   setWarn,
   sellerHasInventory,
   someHumanChangesDetected,
+  amount,
+  devoAmount,
 }: props) {
   const { invoice } = useInvoice();
 
@@ -77,13 +86,30 @@ export function ProductSoldBase({
       else refresh_data = {};
 
       try {
+        const onlyInvSetted = amount && devoAmount && invOutputs.length > 0;
+        let invIsAlreadySavedAsSold = false;
+
+        if (onlyInvSetted) {
+          invIsAlreadySavedAsSold = await checkInventoryInOutputsSold(
+            invoice,
+            invOutputs
+          );
+        }
+
+        console.log(
+          "&&&&&& Hay inventario para guradar como vendido? &&&&&",
+          invIsAlreadySavedAsSold
+        );
+
         if (!refresh_data[product_doc.id])
-          if (!someHumanChangesDetected.current.outputsSolds) {
-            console.log(
-              "No human changes detected, skipping save outputs solds"
-            );
-            return;
-          }
+          if (!onlyInvSetted && invIsAlreadySavedAsSold)
+            // if only the inv is setted and there
+            if (!someHumanChangesDetected.current.outputsSolds) {
+              console.log(
+                "No human changes detected, skipping save outputs solds"
+              );
+              return;
+            }
 
         console.log("######## saving outputs solds ########");
 
@@ -112,14 +138,14 @@ export function ProductSoldBase({
         const auth = getAuth();
         const currentUser = auth.currentUser;
         if (!currentUser) return;
-        await addOutputs(
+        await addOutputs({
           invoice,
           product_doc,
-          currentRemainStock,
-          coll,
-          false,
-          currentUser.uid
-        );
+          rawOutputs: currentRemainStock,
+          outputColl: coll,
+          uid: currentUser.uid,
+          output_ref: !onlyInvSetted ? invOutputs[0].ref : undefined,
+        });
 
         console.log("######## outputs solds saved ########");
       } catch (error) {

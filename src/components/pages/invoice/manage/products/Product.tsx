@@ -256,6 +256,8 @@ export function BaseProduct({
         devoInput={devoInput}
       />
       <ProductSold
+        amount={Number(amountInput)}
+        devoAmount={Number(devoInput)}
         invOutputs={inventory.outputs}
         remainStock={remainStock}
         remainStockTotals={remainStockTotals}

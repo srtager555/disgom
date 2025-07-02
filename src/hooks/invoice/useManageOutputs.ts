@@ -10,7 +10,6 @@ import { restaOutputs } from "@/tools/products/restaOutputs"; // Assuming restaO
 import { sumaOutputs } from "@/tools/products/sumaOutputs"; // Assuming sumaOutputs is now direct
 import { useProductOutputs } from "@/contexts/ProductOutputsContext";
 import { someHumanChangesDetected } from "@/components/pages/invoice/manage/products/Product";
-import { updatePrice } from "@/tools/products/updatePrice";
 
 interface UseManageOutputsProps {
   invoice: DocumentSnapshot<invoiceType> | undefined;

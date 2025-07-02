@@ -1,4 +1,4 @@
-import { DocumentSnapshot, updateDoc } from "firebase/firestore";
+import { DocumentSnapshot, writeBatch } from "firebase/firestore";
 import { productDoc } from "./create";
 import { amountListener, rawOutputToStock } from "./ManageSaves";
 import { invoiceType } from "../invoices/createInvoice";
@@ -7,30 +7,45 @@ import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPr
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 import { stockType } from "./addToStock";
 import { getAuth } from "firebase/auth";
+import { MutableRefObject } from "react";
+import { someHumanChangesDetected } from "@/components/pages/invoice/manage/products/Product";
 
 async function saveNewOutputs(
   productDoc: DocumentSnapshot<productDoc>,
   outputsToCreate: rawOutput[],
   remainingStocks: rawOutput[],
   invoice: DocumentSnapshot<invoiceType>,
-  currentUid: string
+  currentUid: string,
+  humanInteractionDetectedRef: MutableRefObject<someHumanChangesDetected>
 ) {
-  const data = productDoc.data();
+  try {
+    const data = productDoc.data();
+    const batch = writeBatch(productDoc.ref.firestore);
 
-  // 4. Actualizar el stock del producto con los stocks restantes
-  await updateDoc(data?.product_parent || productDoc.ref, {
-    stock: remainingStocks.map(rawOutputToStock),
-  });
+    // 4. Actualizar el stock del producto con los stocks restantes
+    batch.update(data?.product_parent || productDoc.ref, {
+      stock: remainingStocks.map(rawOutputToStock),
+    });
 
-  // 5. Agregar los nuevos outputs a firestore
-  await addOutputs({
-    invoice,
-    product_doc: productDoc,
-    rawOutputs: outputsToCreate,
-    uid: currentUid,
-  });
+    // 5. Agregar los nuevos outputs a firestore
+    await addOutputs({
+      invoice,
+      product_doc: productDoc,
+      rawOutputs: outputsToCreate,
+      uid: currentUid,
+      batch,
+    });
 
-  console.log("Proceso de suma completado");
+    await batch.commit();
+
+    console.log("Proceso de suma completado");
+  } catch (error) {
+    console.error(
+      "ocurrio un error al guardar la consignacion, se cancelo la operacion atomica"
+    );
+    humanInteractionDetectedRef.current.outputsSolds = false;
+    console.error(error);
+  }
 }
 
 export function sumaOutputs(
@@ -43,6 +58,7 @@ export function sumaOutputs(
     | undefined = undefined,
   parentStock: stockType[] | undefined,
   setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>, // Re-added
+  humanInteractionDetectedRef: MutableRefObject<someHumanChangesDetected>,
   customPrice?: number
 ) {
   const data = productDoc.data();
@@ -86,7 +102,8 @@ export function sumaOutputs(
     outputsToCreate,
     remainingStocks,
     invoice,
-    currentUser.uid
+    currentUser.uid,
+    humanInteractionDetectedRef
   );
 
   return () => {}; // No-op cleanup

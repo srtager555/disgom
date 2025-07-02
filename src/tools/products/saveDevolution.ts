@@ -6,6 +6,7 @@ import {
   where,
   writeBatch,
   getFirestore,
+  doc,
 } from "firebase/firestore";
 import { invoiceType } from "../invoices/createInvoice";
 import { productDoc } from "./create";
@@ -13,7 +14,6 @@ import { SellersDoc } from "../sellers/create";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 import { amountListener, createStockFromOutputType } from "./ManageSaves";
 import { getDevolutionInventory } from "./getDevolutionInventoryRef";
-import { addInventoryProduct } from "../sellers/invetory/addProduct";
 import { outputParser, outputType } from "./addOutputs";
 import { SellersCollection } from "../firestore/CollectionTyping";
 
@@ -63,8 +63,6 @@ export async function saveDevolution(
     batch.update(doc.ref, { disabled: true });
   });
 
-  await batch.commit();
-
   // 3. Combine all stocks (sold items + seller inventory items) to determine what can be returned.
   const soldStocks = rawOutputs.map((rawOutput) =>
     createStockFromOutputType(
@@ -92,11 +90,14 @@ export async function saveDevolution(
     uid,
     disabled: false,
   }));
-  await Promise.all(
-    devolutionOutputsToSave.map((devoOutput) =>
-      addInventoryProduct(devolutionInventoryRef, devoOutput as outputType)
-    )
-  );
+
+  devolutionOutputsToSave.forEach((devoOutput) => {
+    // La colección ya fue definida arriba, la reutilizamos.
+    const newDocRef = doc(coll);
+    batch.set(newDocRef, devoOutput as outputType);
+  });
+
+  await batch.commit();
 
   console.log("Devolution saved successfully.");
 }

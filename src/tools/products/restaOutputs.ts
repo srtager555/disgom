@@ -1,12 +1,11 @@
 import {
   DocumentSnapshot,
-  updateDoc,
   Timestamp,
   getFirestore,
+  writeBatch,
 } from "firebase/firestore";
 import { productDoc } from "./create";
 import { addOutputs, outputType } from "./addOutputs";
-import { disableOutput } from "./disableOutput";
 import { createStockFromOutputType, amountListener } from "./ManageSaves";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
@@ -23,58 +22,75 @@ async function saveNewOutputs(
   currentUid: string, // Add currentUid parameter
   productDoc: DocumentSnapshot<productDoc>
 ) {
-  const data = productDoc.data();
-  const parentPrice = parentStockIsReal?.[0].sale_price;
+  try {
+    const data = productDoc.data();
+    const parentPrice = parentStockIsReal?.[0].sale_price;
+    const batch = writeBatch(productDoc.ref.firestore);
 
-  // 6. Deshabilitar outputs anteriores
-  await Promise.all(
-    outputs.map((doc: DocumentSnapshot<outputType>) => disableOutput(doc.ref))
-  );
+    // 6. Deshabilitar outputs anteriores
+    outputs.forEach((doc) => {
+      batch.update(doc.ref, { disabled: true });
+    });
+    // await Promise.all(
+    //   outputs.map((doc: DocumentSnapshot<outputType>) => disableOutput(doc.ref))
+    // );
 
-  // return;
-  // 7. Consolidar los stocks basados en entry_ref y precio de venta
-  const currentProductStock = parentStockIsReal || data?.stock || [];
-  const consolidatedStocks = [...currentProductStock];
+    // return;
+    // 7. Consolidar los stocks basados en entry_ref y precio de venta
+    const currentProductStock = parentStockIsReal || data?.stock || [];
+    const consolidatedStocks = [...currentProductStock];
 
-  for (const newStock of newStockToSave) {
-    const existingStockIndex = consolidatedStocks.findIndex(
-      (stock) =>
-        stock.entry_ref.path === newStock.entry_ref.path &&
-        stock.sale_price === newStock.sale_price
-    );
+    for (const newStock of newStockToSave) {
+      const existingStockIndex = consolidatedStocks.findIndex(
+        (stock) =>
+          stock.entry_ref.path === newStock.entry_ref.path &&
+          stock.sale_price === newStock.sale_price
+      );
 
-    if (existingStockIndex !== -1) {
-      // Si encontramos un stock con el mismo entry_ref y precio de venta, sumamos la cantidad
-      consolidatedStocks[existingStockIndex].amount += newStock.amount;
-    } else {
-      // Si no encontramos un stock con el mismo entry_ref o tiene diferente precio, lo agregamos como nuevo
-      consolidatedStocks.push({
-        created_at: Timestamp.now(),
-        amount: parentPrice || newStock.amount,
-        product_ref: newStock.product_ref,
-        entry_ref: newStock.entry_ref,
-        purchase_price: newStock.purchase_price,
-        sale_price: newStock.sale_price,
-        seller_commission: newStock.commission,
-      });
+      if (existingStockIndex !== -1) {
+        // Si encontramos un stock con el mismo entry_ref y precio de venta, sumamos la cantidad
+        consolidatedStocks[existingStockIndex].amount += newStock.amount;
+      } else {
+        // Si no encontramos un stock con el mismo entry_ref o tiene diferente precio, lo agregamos como nuevo
+        consolidatedStocks.push({
+          created_at: Timestamp.now(),
+          amount: parentPrice || newStock.amount,
+          product_ref: newStock.product_ref,
+          entry_ref: newStock.entry_ref,
+          purchase_price: newStock.purchase_price,
+          sale_price: newStock.sale_price,
+          seller_commission: newStock.commission,
+        });
+      }
     }
+
+    // 8. Actualizar el stock del producto con los stocks consolidados
+    // si tiene un padre se dara el stock a el
+    batch.update(data?.product_parent || productDoc.ref, {
+      stock: consolidatedStocks,
+    });
+    // await updateDoc(data?.product_parent || productDoc.ref, {
+    //   stock: consolidatedStocks,
+    // });
+
+    // 9. Guardar los nuevos outputs
+    await addOutputs({
+      invoice,
+      product_doc: productDoc,
+      rawOutputs: newOutputs,
+      uid: currentUid,
+      batch,
+    }); // Pass currentUid
+
+    await batch.commit();
+
+    console.log("Proceso de resta completado");
+  } catch (error) {
+    console.error(
+      "ocurrio un error al guardar la consignacion (resta), se cancelo la operacion atomica"
+    );
+    console.error(error);
   }
-
-  // 8. Actualizar el stock del producto con los stocks consolidados
-  // si tiene un padre se dara el stock a el
-  await updateDoc(data?.product_parent || productDoc.ref, {
-    stock: consolidatedStocks,
-  });
-
-  // 9. Guardar los nuevos outputs
-  await addOutputs({
-    invoice,
-    product_doc: productDoc,
-    rawOutputs: newOutputs,
-    uid: currentUid,
-  }); // Pass currentUid
-
-  console.log("Proceso de resta completado");
 }
 
 export function restaOutputs(

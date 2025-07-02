@@ -112,47 +112,6 @@ export function useManageOutputs({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawOutputs]);
 
-  // Effect to trigger the logic to save the new price
-  useEffect(() => {
-    if (!invoice || !currentUid) return;
-
-    const amountToSave = Number(amountInput);
-    const priceToSave = customPriceInput;
-
-    console.log("conditional (price)");
-    console.log(
-      "the price has been changed? local, server",
-      priceToSave,
-      lastProcessedPrice.current
-    );
-
-    if (!humanInteractionDetectedRef.current.price) {
-      console.log("Human no dectected");
-      return;
-    }
-
-    console.log("Human dectected, Saving changes...");
-
-    if (priceToSave !== lastProcessedPrice.current) {
-      console.log("Updating price...");
-
-      updatePrice(
-        invoice,
-        productDoc,
-        defaultCustomPrices,
-        serverOutputsSnapshots,
-        amountToSave,
-        parentStock,
-        setRawOutputs,
-        customPriceInput
-      );
-    }
-
-    lastProcessedPrice.current = priceToSave;
-    humanInteractionDetectedRef.current.price = false;
-    humanInteractionDetectedRef.current.outputsSolds = true;
-  }, [customPriceInput]);
-
   // Effect to trigger save logic when amountInput or customPriceInput changes due to human interaction
   useEffect(() => {
     if (!invoice || !currentUid) return;
@@ -207,6 +166,7 @@ export function useManageOutputs({
           defaultCustomPrices,
           parentStock,
           setRawOutputs, // Pass setRawOutputs to update UI immediately
+          humanInteractionDetectedRef,
           priceToSave
         );
       }
@@ -218,7 +178,7 @@ export function useManageOutputs({
     humanInteractionDetectedRef.current.outputsSolds = true;
   }, [
     amountInput,
-    customPriceInput,
+    // customPriceInput,
     invoice,
     productDoc,
     serverOutputsSnapshots,

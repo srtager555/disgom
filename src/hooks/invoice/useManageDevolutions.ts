@@ -76,6 +76,7 @@ export function useManageDevolutions({
 
   // Effect to calculate remainStock based on rawOutputs and currentDevolutionServerAmount
   useEffect(() => {
+    console.log("upgrading the remainStock");
     const soldStocks = rawOutputs.map(rawOutputToStock);
     const inventoryStocks = inventoryOutputs.map((invDoc) =>
       createStockFromOutputType(invDoc.data() as outputType)
@@ -87,7 +88,7 @@ export function useManageDevolutions({
       combinedStocks,
       undefined,
       productDoc,
-      undefined
+      customPriceInput
     );
 
     if (!isEqual(remainingStocks, remainStock)) {
@@ -144,7 +145,7 @@ export function useManageDevolutions({
     }
   }, [
     localDevoInput, // Dependencia
-    customPriceInput,
+    // customPriceInput,
     invoice,
     productDoc,
     seletedSeller,

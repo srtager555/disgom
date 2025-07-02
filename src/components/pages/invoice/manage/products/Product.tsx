@@ -30,6 +30,8 @@ import { useManageOutputs } from "@/hooks/invoice/useManageOutputs";
 import { useManageDevolutions } from "@/hooks/invoice/useManageDevolutions";
 import { useCalculateProductTotals } from "@/hooks/invoice/useCalculateProductTotals";
 import { outputType } from "@/tools/products/addOutputs";
+import { useApplyPriceToStock } from "@/hooks/invoice/useApplyPriceToStock";
+import { useManagePrice } from "@/hooks/invoice/useManagePrice";
 
 // サラマンダー
 export type props = {
@@ -84,7 +86,6 @@ export function BaseProduct({
 
   // --- State for Inputs ---
   const [amountInput, setAmountInput] = useState<string>("0");
-  const [customPrice, setCustomPrice] = useState<number | undefined>(undefined);
 
   // --- Ref for Human Interaction ---
   const someHumanChangesDetected = useRef<someHumanChangesDetected>({
@@ -93,8 +94,26 @@ export function BaseProduct({
     price: false,
     outputsSolds: false,
   });
+  const defaultPriceData = useMemo(() => {
+    return defaultCustomPrice?.data();
+  }, [defaultCustomPrice]);
 
   // --- Custom Hooks for Core Logic ---
+  const {
+    isPriceLoading,
+    customPrice,
+    priceValue,
+    normalPrice,
+    priceMultiplier,
+    isDefaultCustomPrice,
+    handlePriceChange,
+    handlePriceBlur,
+  } = useManagePrice({
+    product_doc: doc,
+    product_ref: doc.ref,
+    defaultCustomPrice: defaultPriceData?.price,
+    someHumanChangesDetected,
+  });
   const { rawOutputs, currentOutputsServerAmount } = useManageOutputs({
     invoice,
     productDoc: rtDoc,
@@ -105,7 +124,7 @@ export function BaseProduct({
     humanInteractionDetectedRef: someHumanChangesDetected,
   });
   const {
-    remainStock,
+    remainStock: devoRemainStock,
     setLocalDevoInput: setDevoInput,
     localDevoInput: devoInput,
   } = useManageDevolutions({
@@ -116,6 +135,13 @@ export function BaseProduct({
     rawOutputs,
     customPriceInput: customPrice,
     humanInteractionDetectedRef: someHumanChangesDetected,
+  });
+  const { remainStock } = useApplyPriceToStock({
+    customPriceInput: customPrice,
+    devoRemainStock,
+    humanInteractionDetectedRef: someHumanChangesDetected,
+    isLoadingPrice: isPriceLoading,
+    productDoc: doc,
   });
   const remainStockTotals = useCalculateProductTotals(remainStock);
 
@@ -143,9 +169,6 @@ export function BaseProduct({
     () => selectedSeller?.data(),
     [selectedSeller]
   );
-  const defaultPriceData = useMemo(() => {
-    return defaultCustomPrice?.data();
-  }, [defaultCustomPrice]);
 
   // effect to get the realtime parent to get him stock
   useEffect(() => {
@@ -269,12 +292,12 @@ export function BaseProduct({
       />
       <Price
         sellerHasInventory={selectedSellerData?.hasInventory}
-        product_doc={doc}
-        product_ref={doc.ref}
-        defaultCustomPrice={defaultPriceData?.price}
-        outputs={rawOutputs}
-        setCustomPrice={setCustomPrice}
-        someHumanChangesDetected={someHumanChangesDetected}
+        priceValue={priceValue}
+        normalPrice={normalPrice}
+        priceMultiplier={priceMultiplier}
+        isDefaultCustomPrice={isDefaultCustomPrice}
+        handlePriceChange={handlePriceChange}
+        handlePriceBlur={handlePriceBlur}
       />
       <TotalSold
         remainStockTotals={remainStockTotals}

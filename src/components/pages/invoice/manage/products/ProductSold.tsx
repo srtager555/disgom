@@ -86,13 +86,14 @@ export function ProductSoldBase({
       else refresh_data = {};
 
       try {
-        const onlyInvSetted = amount && devoAmount && invOutputs.length > 0;
+        const onlyInvSetted = !amount && !devoAmount && invOutputs.length > 0;
         let invIsAlreadySavedAsSold = false;
 
         if (onlyInvSetted) {
           invIsAlreadySavedAsSold = await checkInventoryInOutputsSold(
             invoice,
-            invOutputs
+            invOutputs,
+            product_doc.ref
           );
         }
 
@@ -101,15 +102,19 @@ export function ProductSoldBase({
           invIsAlreadySavedAsSold
         );
 
-        if (!refresh_data[product_doc.id])
-          if (!onlyInvSetted && invIsAlreadySavedAsSold)
-            // if only the inv is setted and there
-            if (!someHumanChangesDetected.current.outputsSolds) {
-              console.log(
-                "No human changes detected, skipping save outputs solds"
-              );
-              return;
-            }
+        // --- Lógica de Decisión de Guardado Refactorizada ---
+        const hasHumanChanges = someHumanChangesDetected.current.outputsSolds;
+        const needsForceRefresh = refresh_data[product_doc.id] === false;
+        // Venta implícita: Solo hay inventario seteado y este aún NO ha sido guardado como vendido.
+        const isImplicitSale = onlyInvSetted && !invIsAlreadySavedAsSold;
+
+        // Si no hay cambios humanos, ni se necesita forzar refresco, ni es una venta implícita, entonces no guardamos.
+        if (!hasHumanChanges && !needsForceRefresh && !isImplicitSale) {
+          console.log(
+            "No changes detected (human, refresh, or implicit), skipping save outputs solds"
+          );
+          return;
+        }
 
         console.log("######## saving outputs solds ########");
 
@@ -144,7 +149,6 @@ export function ProductSoldBase({
           rawOutputs: currentRemainStock,
           outputColl: coll,
           uid: currentUser.uid,
-          output_ref: !onlyInvSetted ? invOutputs[0].ref : undefined,
         });
 
         console.log("######## outputs solds saved ########");

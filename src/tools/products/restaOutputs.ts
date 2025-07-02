@@ -80,6 +80,7 @@ async function saveNewOutputs(
       rawOutputs: newOutputs,
       uid: currentUid,
       batch,
+      remplaceOutputs: true,
     }); // Pass currentUid
 
     await batch.commit();

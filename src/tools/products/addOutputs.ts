@@ -5,9 +5,9 @@ import {
   doc,
   DocumentReference,
   DocumentSnapshot,
-  setDoc,
   Timestamp,
   writeBatch,
+  WriteBatch,
 } from "firebase/firestore";
 import { ProductsCollection } from "../firestore/CollectionTyping";
 import { productDoc } from "./create";
@@ -30,7 +30,6 @@ export type outputType = {
   invoice_ref: DocumentReference<invoiceType>;
   product_ref: DocumentReference<productDoc>;
   inventory_ref: DocumentReference<inventory> | null;
-  output_ref: DocumentReference<outputType> | null;
   default_custom_price_ref: DocumentReference<defaultCustomPrice> | null;
   followed: boolean;
   uid: string;
@@ -41,12 +40,10 @@ export const outputParser = ({
   invoice,
   product_doc,
   rawOutput,
-  output_ref = null,
 }: {
   invoice: DocumentSnapshot<invoiceType>;
   product_doc: DocumentSnapshot<productDoc>;
   rawOutput: rawOutput;
-  output_ref?: DocumentReference<outputType> | null;
 }): outputType => {
   const purchase_value = rawOutput.amount * rawOutput.purchase_price;
   const sale_value = rawOutput.amount * rawOutput.sale_price;
@@ -68,7 +65,6 @@ export const outputParser = ({
     disabled: false,
     followed: product_doc.data()?.followed || false,
     uid: "", // Placeholder, will be set on save
-    output_ref: output_ref,
     inventory_ref: null,
   };
 };
@@ -82,6 +78,7 @@ export async function addOutputs({
   returnOutputs = false,
   remplaceOutputs = false,
   output_ref = undefined,
+  batch: externalBatch,
 }: {
   invoice: DocumentSnapshot<invoiceType>;
   product_doc: DocumentSnapshot<productDoc>;
@@ -91,6 +88,7 @@ export async function addOutputs({
   returnOutputs?: boolean;
   remplaceOutputs?: boolean;
   output_ref?: DocumentReference<outputType> | undefined;
+  batch?: WriteBatch;
 }) {
   const docRef = doc(invoice.ref, "outputs", product_doc.ref.id);
   const normalColl = collection(
@@ -99,18 +97,17 @@ export async function addOutputs({
   ) as CollectionReference<outputType>;
   const coll = outputColl || normalColl;
 
+  const batch = externalBatch || writeBatch(coll.firestore);
+
   // if the outputColl isn't undefined, so the outputs don't be reseted
   if (rawOutputs.length === 0 && !outputColl) {
     if (returnOutputs) return [];
 
-    await setDoc(
-      docRef,
-      {
-        outputs: [],
-      },
-      { merge: true }
-    );
-
+    // Usar set con merge para asegurar que el subdocumento exista y su array de outputs se limpie.
+    batch.set(docRef, { outputs: [] }, { merge: true });
+    if (!externalBatch) {
+      await batch.commit();
+    }
     return;
   }
 
@@ -126,31 +123,32 @@ export async function addOutputs({
 
   if (returnOutputs) return outputsReady;
 
-  const batch = writeBatch(coll.firestore);
-  const createdRefs: { ref: ReturnType<typeof doc>; data: outputType }[] = [];
+  const createdRefs: DocumentReference<outputType>[] = [];
 
-  try {
-    for (const output of outputsReady) {
-      const newRef = doc(coll); // genera ID automático
-      batch.set(newRef, output);
-      createdRefs.push({ ref: newRef, data: output });
-    }
+  for (const output of outputsReady) {
+    const newRef = doc(coll); // genera ID automático
+    batch.set(newRef, output);
+    createdRefs.push(newRef as DocumentReference<outputType>);
+  }
 
-    await batch.commit();
-
-    // Solo si no se pasó un outputColl externo, se actualiza la referencia de outputs en el invoice
-    if (!outputColl) {
-      const refs = createdRefs.map((entry) => entry.ref);
-      await setDoc(
+  // Solo si no se pasó un outputColl externo, se actualiza la referencia de outputs en el invoice
+  if (!outputColl) {
+    if (remplaceOutputs) {
+      // Esto reemplazará todo el campo 'outputs'.
+      // Usar set con merge es más seguro si el subdocumento 'outputs' podría no existir.
+      batch.set(docRef, { outputs: createdRefs }, { merge: true });
+    } else {
+      // Esto agregará los nuevos outputs al array existente.
+      batch.set(
         docRef,
-        {
-          outputs: remplaceOutputs ? refs : arrayUnion(...refs),
-        },
+        { outputs: arrayUnion(...createdRefs) },
         { merge: true }
       );
     }
-  } catch (error) {
-    console.error("Error al procesar el batch de outputs:", error);
-    throw new Error("No se pudieron guardar los outputs. Intenta de nuevo.");
+  }
+
+  // Solo ejecutar commit si el batch se creó en esta función
+  if (!externalBatch) {
+    await batch.commit();
   }
 }

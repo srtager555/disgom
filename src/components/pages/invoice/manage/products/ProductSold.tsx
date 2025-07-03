@@ -97,11 +97,6 @@ export function ProductSoldBase({
           );
         }
 
-        console.log(
-          "&&&&&& Hay inventario para guradar como vendido? &&&&&",
-          invIsAlreadySavedAsSold
-        );
-
         // --- Lógica de Decisión de Guardado Refactorizada ---
         const hasHumanChanges = someHumanChangesDetected.current.outputsSolds;
         const needsForceRefresh = refresh_data[product_doc.id] === false;

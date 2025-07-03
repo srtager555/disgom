@@ -42,6 +42,8 @@ export function useHasNextInvoice() {
     ) => {
       if (creditBundle.data()?.next_bundle) {
         await checkHasNextInvoice(callback, true, creditBundle.id);
+      } else {
+        await callback();
       }
     },
     [checkHasNextInvoice]

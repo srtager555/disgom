@@ -15,6 +15,11 @@ export type productUnits = "LB" | "KG" | "1/4" | "1/2" | "U";
 export type productDoc = {
   name: string;
   product_parent: DocumentReference<productDoc>;
+  last_sales_amounts: {
+    purchase_price: number;
+    sale_price: number;
+    seller_commission: number;
+  };
   created_at: Timestamp;
   units: productUnits;
   tags: string[];

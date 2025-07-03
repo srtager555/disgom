@@ -6,6 +6,7 @@ import { useNewDefaultCustomPricesContext } from "@/hooks/invoice/useNewDefaultC
 import { parseNumberInput } from "@/tools/parseNumericInput";
 import { getTheOutputsSoldByID } from "@/tools/invoices/getTheOutputsSoldByID";
 import { someHumanChangesDetected } from "@/components/pages/invoice/manage/products/Product";
+import { getParentStock } from "@/tools/products/getParentStock";
 
 type props = {
   product_doc: DocumentSnapshot<productDoc>;
@@ -37,15 +38,32 @@ export function useManagePrice({
 
   // Effect 1: Get normal price from product doc. Stores the raw, positive price.
   useEffect(() => {
-    const productData = product_doc.data();
-    if (productData) {
-      const stock =
-        productData.stock.sort(
-          (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
-        ) ?? [];
-      const price = stock[0]?.sale_price || 0;
-      setNormalPrice(price);
+    async function getNormalPrice() {
+      const productData = product_doc.data();
+      if (productData) {
+        let stock;
+
+        if (productData.product_parent) {
+          stock = productData.product_parent;
+
+          stock = await getParentStock(productData.product_parent);
+
+          stock =
+            stock.sort(
+              (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
+            ) ?? [];
+        } else {
+          stock =
+            productData.stock.sort(
+              (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
+            ) ?? [];
+        }
+
+        const price = stock[0]?.sale_price || 0;
+        setNormalPrice(price);
+      }
     }
+    getNormalPrice();
   }, [product_doc]);
 
   // Effect 2: Set initial price from history, defaults, or normal price.

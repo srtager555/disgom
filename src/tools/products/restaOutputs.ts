@@ -15,6 +15,7 @@ import { getAuth } from "firebase/auth"; // Import getAuth
 
 async function saveNewOutputs(
   parentStockIsReal: stockType[] | null,
+  productParent: productDoc | undefined,
   outputs: DocumentSnapshot<outputType>[],
   invoice: DocumentSnapshot<invoiceType>,
   newStockToSave: rawOutput[],
@@ -24,18 +25,20 @@ async function saveNewOutputs(
 ) {
   try {
     const data = productDoc.data();
-    const parentPrice = parentStockIsReal?.[0].sale_price;
     const batch = writeBatch(productDoc.ref.firestore);
+
+    const persistentPrices = data?.product_parent
+      ? productParent?.last_sales_amounts
+      : data?.last_sales_amounts;
+
+    const sale_price = persistentPrices?.sale_price;
+    const purchase_price = persistentPrices?.purchase_price;
 
     // 6. Deshabilitar outputs anteriores
     outputs.forEach((doc) => {
       batch.update(doc.ref, { disabled: true });
     });
-    // await Promise.all(
-    //   outputs.map((doc: DocumentSnapshot<outputType>) => disableOutput(doc.ref))
-    // );
 
-    // return;
     // 7. Consolidar los stocks basados en entry_ref y precio de venta
     const currentProductStock = parentStockIsReal || data?.stock || [];
     const consolidatedStocks = [...currentProductStock];
@@ -54,11 +57,11 @@ async function saveNewOutputs(
         // Si no encontramos un stock con el mismo entry_ref o tiene diferente precio, lo agregamos como nuevo
         consolidatedStocks.push({
           created_at: Timestamp.now(),
-          amount: parentPrice || newStock.amount,
+          amount: newStock.amount,
           product_ref: newStock.product_ref,
           entry_ref: newStock.entry_ref,
-          purchase_price: newStock.purchase_price,
-          sale_price: newStock.sale_price,
+          purchase_price: purchase_price || newStock.purchase_price,
+          sale_price: sale_price || newStock.sale_price,
           seller_commission: newStock.commission,
         });
       }
@@ -69,9 +72,6 @@ async function saveNewOutputs(
     batch.update(data?.product_parent || productDoc.ref, {
       stock: consolidatedStocks,
     });
-    // await updateDoc(data?.product_parent || productDoc.ref, {
-    //   stock: consolidatedStocks,
-    // });
 
     // 9. Guardar los nuevos outputs
     await addOutputs({
@@ -101,11 +101,12 @@ export function restaOutputs(
   defaultCustomPrice: DocumentSnapshot<defaultCustomPrice> | undefined,
   amount: number,
   currentAmount: number,
-  parentStock: stockType[],
+  productParent: productDoc | undefined,
   setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>,
   customPrice?: number
 ) {
   const data = productDoc.data();
+  const parentStock = data?.product_parent ? productParent?.stock || [] : null;
   const parentStockIsReal = data?.product_parent ? parentStock : null;
 
   // 1. Comprobar que amount no sea menor que 0
@@ -140,6 +141,7 @@ export function restaOutputs(
   saveNewOutputs(
     // Call directly, no debounce
     parentStockIsReal,
+    productParent,
     outputs,
     invoice,
     newStockToSave,

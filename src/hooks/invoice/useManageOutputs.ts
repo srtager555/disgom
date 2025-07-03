@@ -3,7 +3,6 @@ import { DocumentSnapshot, getFirestore } from "firebase/firestore";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { productDoc } from "@/tools/products/create";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
-import { stockType } from "@/tools/products/addToStock";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 import { getAuth } from "firebase/auth";
 import { restaOutputs } from "@/tools/products/restaOutputs"; // Assuming restaOutputs is now direct
@@ -15,7 +14,7 @@ interface UseManageOutputsProps {
   invoice: DocumentSnapshot<invoiceType> | undefined;
   productDoc: DocumentSnapshot<productDoc>;
   defaultCustomPrices: DocumentSnapshot<defaultCustomPrice> | undefined;
-  parentStock: stockType[];
+  productParent: DocumentSnapshot<productDoc> | undefined;
   amountInput: string; // Raw input value from AddOutput
   customPriceInput: number | undefined; // Raw input value from Price
   humanInteractionDetectedRef: React.MutableRefObject<someHumanChangesDetected>;
@@ -25,7 +24,7 @@ export function useManageOutputs({
   invoice,
   productDoc,
   defaultCustomPrices,
-  parentStock,
+  productParent,
   amountInput,
   customPriceInput,
   humanInteractionDetectedRef,
@@ -134,6 +133,7 @@ export function useManageOutputs({
     if (!humanInteractionDetectedRef.current.addOutput) {
       return;
     }
+    const productParentData = productParent?.data();
 
     if (amountToSave !== currentOutputsServerAmount) {
       if (amountToSave < currentOutputsServerAmount) {
@@ -146,7 +146,7 @@ export function useManageOutputs({
           defaultCustomPrices,
           amountToSave,
           currentOutputsServerAmount,
-          parentStock,
+          productParentData,
           setRawOutputs, // Pass setRawOutputs to update UI immediately
           priceToSave
         ); // Increase amount
@@ -159,7 +159,7 @@ export function useManageOutputs({
           amountToSave,
           currentOutputsServerAmount,
           defaultCustomPrices,
-          parentStock,
+          productParentData,
           setRawOutputs, // Pass setRawOutputs to update UI immediately
           humanInteractionDetectedRef,
           priceToSave
@@ -178,10 +178,11 @@ export function useManageOutputs({
     productDoc,
     serverOutputsSnapshots,
     defaultCustomPrices,
-    parentStock,
+    productParent,
     currentOutputsServerAmount,
     currentUid,
     humanInteractionDetectedRef,
+    productParent,
   ]);
 
   return { rawOutputs, currentOutputsServerAmount, setRawOutputs };

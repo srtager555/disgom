@@ -5,7 +5,6 @@ import { invoiceType } from "../invoices/createInvoice";
 import { addOutputs } from "./addOutputs";
 import { defaultCustomPrice } from "../sellers/customPrice/createDefaultCustomPrice";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
-import { stockType } from "./addToStock";
 import { getAuth } from "firebase/auth";
 import { MutableRefObject } from "react";
 import { someHumanChangesDetected } from "@/components/pages/invoice/manage/products/Product";
@@ -56,12 +55,13 @@ export function sumaOutputs(
   defaulCustomPrices:
     | DocumentSnapshot<defaultCustomPrice>
     | undefined = undefined,
-  parentStock: stockType[] | undefined,
+  productParent: productDoc | undefined,
   setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>, // Re-added
   humanInteractionDetectedRef: MutableRefObject<someHumanChangesDetected>,
   customPrice?: number
 ) {
   const data = productDoc.data();
+  const parentStock = data?.product_parent ? productParent?.stock || [] : null;
 
   // 1. Obtener el stock actual del producto
   const currentStock = data?.product_parent

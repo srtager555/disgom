@@ -1,5 +1,9 @@
 import { MutableRefObject, useEffect, useRef, useState } from "react";
-import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
+import {
+  DocumentReference,
+  DocumentSnapshot,
+  getDoc,
+} from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { useNewDefaultCustomPricesContext } from "@/hooks/invoice/useNewDefaultCustomPricesContext";
@@ -41,25 +45,38 @@ export function useManagePrice({
     async function getNormalPrice() {
       const productData = product_doc.data();
       if (productData) {
-        let stock;
+        let price: number;
 
         if (productData.product_parent) {
-          stock = productData.product_parent;
+          const parentProduct = await getDoc(productData.product_parent);
+          const data = parentProduct.data();
 
-          stock = await getParentStock(productData.product_parent);
+          // if the persistent price arent available check the stock
+          if (!data?.last_sales_amounts) {
+            const stock = await getParentStock(productData.product_parent);
 
-          stock =
-            stock.sort(
-              (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
-            ) ?? [];
+            const stockSorted =
+              stock.sort(
+                (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
+              ) ?? [];
+
+            price = stockSorted[0]?.sale_price || 0;
+          } else {
+            // if the persistent price are up, set it!
+            price = data.last_sales_amounts.sale_price;
+          }
         } else {
-          stock =
-            productData.stock.sort(
-              (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
-            ) ?? [];
-        }
+          if (productData.last_sales_amounts) {
+            price = productData.last_sales_amounts.sale_price;
+          } else {
+            const stockSorted =
+              productData.stock.sort(
+                (a, b) => b.created_at.toMillis() - a.created_at.toMillis()
+              ) ?? [];
 
-        const price = stock[0]?.sale_price || 0;
+            price = stockSorted[0]?.sale_price || 0;
+          }
+        }
         setNormalPrice(price);
       }
     }

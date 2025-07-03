@@ -115,29 +115,25 @@ export function useManageOutputs({
   useEffect(() => {
     if (!invoice || !currentUid) return;
 
-    console.log("Starting to save...");
-
     const amountToSave = Number(amountInput);
     const priceToSave = customPriceInput;
 
     // Only trigger save if human interaction is detected AND there's an actual change
-    console.log("conditional");
     console.log(
-      "is a human interaction?",
-      humanInteractionDetectedRef.current.addOutput
-    );
-    console.log(
-      "the amount has been changed? local, server",
-      amountToSave,
-      currentOutputsServerAmount
+      `conditional AddOutputs: ${
+        humanInteractionDetectedRef.current.addOutput
+          ? "Human detected"
+          : "Human NO detected"
+      } ${
+        amountToSave === currentOutputsServerAmount
+          ? "NO CHANGE"
+          : `local (${amountToSave}) and server (${currentOutputsServerAmount})`
+      }`
     );
 
     if (!humanInteractionDetectedRef.current.addOutput) {
-      console.log("Human no dectected");
       return;
     }
-
-    console.log("Human dectected, Saving changes...");
 
     if (amountToSave !== currentOutputsServerAmount) {
       if (amountToSave < currentOutputsServerAmount) {

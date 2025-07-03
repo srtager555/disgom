@@ -76,7 +76,6 @@ export function useManageDevolutions({
 
   // Effect to calculate remainStock based on rawOutputs and currentDevolutionServerAmount
   useEffect(() => {
-    console.log("upgrading the remainStock");
     const soldStocks = rawOutputs.map(rawOutputToStock);
     const inventoryStocks = inventoryOutputs.map((invDoc) =>
       createStockFromOutputType(invDoc.data() as outputType)
@@ -109,15 +108,16 @@ export function useManageDevolutions({
     const amountToSave = Number(localDevoInput); // Usar localDevoInput para guardar
 
     // Only trigger save if human interaction is detected AND there's an actual change
-    console.log("conditional devo");
     console.log(
-      "is a human interaction?",
-      humanInteractionDetectedRef.current.devolution
-    );
-    console.log(
-      "the amount has been changed? local, server",
-      amountToSave,
-      currentDevolutionServerAmount
+      `conditional devo: ${
+        humanInteractionDetectedRef.current.devolution
+          ? "Human detected"
+          : "Human NO detected"
+      } ${
+        amountToSave === currentDevolutionServerAmount
+          ? "NO CHANGE"
+          : `local (${amountToSave}) and server (${currentDevolutionServerAmount})`
+      }`
     );
 
     if (

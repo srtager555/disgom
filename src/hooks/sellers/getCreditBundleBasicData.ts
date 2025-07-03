@@ -15,7 +15,7 @@ import {
   getDocs,
   onSnapshot,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function useGetCreditBundleBasicData() {
   const { invoice } = useInvoice();
@@ -34,6 +34,7 @@ export function useGetCreditBundleBasicData() {
   const [clients, setClients] = useState<
     QueryDocumentSnapshot<clientCreditBundleDocType>[]
   >([]);
+  const invoiceID = useRef<string>(undefined);
 
   // effect to get the current bundle doc and bundle container
   useEffect(() => {
@@ -54,6 +55,9 @@ export function useGetCreditBundleBasicData() {
         });
       });
     }
+
+    if (invoiceID.current === invoice?.id) return;
+    invoiceID.current = invoice?.id;
 
     getBundle();
 

@@ -3,7 +3,6 @@ import { numberParser } from "@/tools/numberPaser";
 import { DocumentSnapshot } from "firebase/firestore";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Column, Input } from "../../Product";
-import { debounce } from "lodash";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 import { AnalyzedCreditItem } from "@/tools/sellers/credits/analyzeCreditSnapshots";
 import { createOrUpdateCreditInBundle } from "@/tools/sellers/credits/createOrUpdateCreditInBundle";
@@ -25,9 +24,8 @@ export const CreditClient = ({ credit, bundleSnap }: CreditClientProps) => {
   const humanDetected = useRef(false);
 
   // --- Lógica para guardar el crédito con Debounce (sin cambios) ---
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedSaveCredit = useCallback(
-    debounce(async (newAmount: number) => {
+  const saveCredit = useCallback(
+    async (newAmount: number) => {
       if (!humanDetected.current) {
         console.log("Guardado omitido: No es humano");
         return;
@@ -66,7 +64,7 @@ export const CreditClient = ({ credit, bundleSnap }: CreditClientProps) => {
       } finally {
         humanDetected.current = false;
       }
-    }, 1000),
+    },
     [invoice, currentCredit, credit.client.id]
   );
 
@@ -84,23 +82,27 @@ export const CreditClient = ({ credit, bundleSnap }: CreditClientProps) => {
         checkHasNextInvoiceCreditSection(
           bundleSnap,
 
-          () => debouncedSaveCredit(numericAmount)
+          () => saveCredit(numericAmount)
         );
       }
     }
   }, [
     amount,
     currentCredit,
-    debouncedSaveCredit,
+    saveCredit,
     checkHasNextInvoiceCreditSection,
     bundleSnap,
   ]);
 
   // Handler para el input
-  const handleAmountChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleOnBlurAmount = async (e: React.ChangeEvent<HTMLInputElement>) => {
     humanDetected.current = true;
     const amount = parseNumberInput(setAmount, e, { returnRaw: true });
-    debouncedSaveCredit(Number(amount));
+    await saveCredit(Number(amount));
+  };
+
+  const hanleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    parseNumberInput(setAmount, e, { returnRaw: true });
   };
 
   // Renderizado
@@ -115,7 +117,8 @@ export const CreditClient = ({ credit, bundleSnap }: CreditClientProps) => {
           type="text"
           value={amount}
           name="amount"
-          onChange={handleAmountChange}
+          onChange={hanleOnChange}
+          onBlur={handleOnBlurAmount}
         />
       </Column>
       <Column>{numberParser(credit.difference)}</Column>

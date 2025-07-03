@@ -24,7 +24,6 @@ import { numberParser } from "@/tools/numberPaser";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { getDefaultCustomPrice } from "@/tools/sellers/customPrice/getDefaultCustomPrice";
 import { defaultCustomPrice } from "@/tools/sellers/customPrice/createDefaultCustomPrice";
-import { stockType } from "@/tools/products/addToStock";
 import { ProductOutputsProvider } from "@/contexts/ProductOutputsContext";
 import { useManageOutputs } from "@/hooks/invoice/useManageOutputs";
 import { useManageDevolutions } from "@/hooks/invoice/useManageDevolutions";
@@ -82,7 +81,8 @@ export function BaseProduct({
   const [rtDoc, setRtDoc] = useState<DocumentSnapshot<productDoc>>(doc);
   const [warn, setWarn] = useState(false);
   const [stockOverflowWarning, setStockOverflowWarning] = useState(false);
-  const [stockFromParent, setStockFromParent] = useState<stockType[]>();
+  const [parentProduct, setParentProduct] =
+    useState<DocumentSnapshot<productDoc>>();
 
   // --- State for Inputs ---
   const [amountInput, setAmountInput] = useState<string>("0");
@@ -118,7 +118,7 @@ export function BaseProduct({
     invoice,
     productDoc: rtDoc,
     defaultCustomPrices: defaultCustomPrice,
-    parentStock: stockFromParent || [],
+    productParent: parentProduct,
     amountInput,
     customPriceInput: customPrice,
     humanInteractionDetectedRef: someHumanChangesDetected,
@@ -155,16 +155,18 @@ export function BaseProduct({
     const data = rtDoc.data();
     if (!data) return 0;
 
-    if (stockFromParent) {
-      return stockFromParent.reduce((acc, stock) => {
-        return acc + stock.amount;
-      }, 0);
+    if (parentProduct) {
+      return (
+        parentProduct.data()?.stock.reduce((acc, stock) => {
+          return acc + stock.amount;
+        }, 0) || 0
+      );
     }
 
     return data.stock.reduce((acc, stock) => {
       return acc + stock.amount;
     }, 0);
-  }, [rtDoc, stockFromParent]);
+  }, [rtDoc, parentProduct]);
   const selectedSellerData = useMemo(
     () => selectedSeller?.data(),
     [selectedSeller]
@@ -175,7 +177,7 @@ export function BaseProduct({
     if (!rtDocData?.product_parent) return;
 
     const unsubcribe = onSnapshot(rtDocData?.product_parent, (snap) => {
-      setStockFromParent(snap.data()?.stock);
+      setParentProduct(snap);
     });
 
     return () => unsubcribe();

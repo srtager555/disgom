@@ -123,7 +123,7 @@ export function FormToAddStock({ stock, entryToEdit, setEntryToEdit }: props) {
       setEntryToEdit(undefined);
     } else {
       console.log("!!!!");
-      await addEntry(selectedProduct?.ref, {
+      await addEntry(selectedProduct, {
         amount,
         purchase_price: purchase_price,
         sale_price,

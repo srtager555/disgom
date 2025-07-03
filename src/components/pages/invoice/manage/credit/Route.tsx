@@ -340,6 +340,7 @@ export function Route({
         invoice_snapshot: invoice, // invoice es QueryDocumentSnapshot<invoiceType>
         seller_ref: sellerRef,
         bundle_container_ref: bundleContainerRef,
+        pendingPreviousBundleId,
       });
       // Si tiene éxito, el bundle pendiente se convierte en el aplicado
       setSelectedPreviousBundleId(pendingPreviousBundleId);

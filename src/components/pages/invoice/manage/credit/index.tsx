@@ -49,14 +49,16 @@ export function Credit({ setCreditResult, creditResult }: props) {
       <h2 style={{ textAlign: "center" }}>Creditos</h2>
 
       <Route bundle_container_ref={bundleContainer?.ref} />
-      <FlexContainer
-        className="hide-print"
-        styles={{ justifyContent: "center", marginBottom: "10px" }}
-      >
-        <Button onClick={() => setShowForm(!showForm)}>
-          {showForm ? "Ocultar" : "Agregar nuevo"}
-        </Button>
-      </FlexContainer>
+      {bundleContainer && creditBundle && (
+        <FlexContainer
+          className="hide-print"
+          styles={{ justifyContent: "center", marginBottom: "10px" }}
+        >
+          <Button onClick={() => setShowForm(!showForm)}>
+            {showForm ? "Ocultar" : "Agregar nuevo"}
+          </Button>
+        </FlexContainer>
+      )}
       {showForm && bundleContainer && creditBundle && (
         <CreditForm
           bundleContainerRef={bundleContainer.ref}

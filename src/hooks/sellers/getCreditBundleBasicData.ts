@@ -34,7 +34,7 @@ export function useGetCreditBundleBasicData() {
   const [clients, setClients] = useState<
     QueryDocumentSnapshot<clientCreditBundleDocType>[]
   >([]);
-  const invoiceID = useRef<string>(undefined);
+  const invoiceBundleID = useRef<string>(undefined);
 
   // effect to get the current bundle doc and bundle container
   useEffect(() => {
@@ -56,8 +56,9 @@ export function useGetCreditBundleBasicData() {
       });
     }
 
-    if (invoiceID.current === invoice?.id) return;
-    invoiceID.current = invoice?.id;
+    if (invoiceBundleID.current === invoice?.data().credit_bundle_ref?.id)
+      return;
+    invoiceBundleID.current = invoice?.data().credit_bundle_ref?.id;
 
     getBundle();
 

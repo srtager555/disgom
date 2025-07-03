@@ -381,7 +381,7 @@ function InvoiceManager() {
                         onPointerUp={debouncedDeleteInvoice.cancel}
                         onMouseLeave={debouncedDeleteInvoice.cancel} // Cancela si el cursor sale mientras está presionado>
                       >
-                        Eleminar factura
+                        Eliminar factura
                       </Button>
                     </Container>
                   </FlexContainer>

@@ -61,11 +61,6 @@ export function useGetCreditBundleBasicData() {
     invoiceBundleID.current = invoice?.data().credit_bundle_ref?.id;
 
     getBundle();
-
-    return () => {
-      setCreditBundle(undefined);
-      setPreviusCreditBundle(undefined);
-    };
   }, [invoice]);
 
   // effect to get the clients from the current bundle container in real time

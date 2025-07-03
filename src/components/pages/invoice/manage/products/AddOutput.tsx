@@ -83,19 +83,25 @@ export function AddOutputBase({
   };
 
   const handleInputBlur = () => {
-    if (Number(amountInput) > currentStock) {
+    const diff = Number(localInputAmount) - Number(amountInput);
+    const overflow = diff > currentStock;
+    console.log("blur", diff, currentStock, overflow);
+
+    if (overflow) {
       setOverflowWarning(true);
-      return;
-    }
+      if (someHumanChangesDetected?.current) {
+        someHumanChangesDetected.current.addOutput = false;
+      }
+    } else {
+      // When the input loses focus, trigger the save logic.
+      // This is where we mark the human interaction for saving.
+      if (someHumanChangesDetected?.current) {
+        someHumanChangesDetected.current.addOutput = true;
+      }
 
-    // When the input loses focus, trigger the save logic.
-    // This is where we mark the human interaction for saving.
-    if (someHumanChangesDetected?.current) {
-      someHumanChangesDetected.current.addOutput = true;
+      setAmountInput(localInputAmount);
+      setOverflowWarning(false); // Reset warning on blur
     }
-
-    setAmountInput(localInputAmount);
-    setOverflowWarning(false); // Reset warning on blur
   };
 
   return (

@@ -5,12 +5,14 @@ import { useEffect, useMemo, useState } from "react";
 import {
   collection,
   CollectionReference,
+  DocumentReference,
   onSnapshot,
   query,
   QueryDocumentSnapshot,
   Timestamp,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { Firestore } from "@/tools/firestore";
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
@@ -19,22 +21,63 @@ import { numberParser } from "@/tools/numberPaser";
 import { Button } from "@/styles/Form.styles";
 import { debounce } from "lodash";
 import { Days } from "./Data";
+import styled from "styled-components";
+import { globalCSSVars } from "@/styles/colors";
 
 const gridTemplateColumns = "100px 98px";
+
+const HideButton = styled(Button)`
+  display: block;
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  opacity: 0;
+  border: none;
+  border-radius: 0;
+  background-color: ${globalCSSVars["--background"]};
+  text-decoration: underline;
+
+  &:hover {
+    opacity: 1;
+  }
+`;
 
 export function MissingList() {
   const [docs, setDocs] = useState<QueryDocumentSnapshot<invoiceType>[]>([]);
   const { invoice } = useInvoice();
 
   async function checkAllHandler() {
-    const arr = docs.map(async (doc) => {
-      await updateDoc(doc.ref, {
+    try {
+      const batch = writeBatch(Firestore());
+
+      docs.forEach((doc) => {
+        batch.update(doc.ref, {
+          "diff.paid": true,
+          "diff.paid_at": new Date(),
+        });
+      });
+
+      console.log("Setting each invoice has paid");
+      await batch.commit();
+    } catch (error) {
+      console.error("Atomic operation failed");
+      console.error(error);
+    }
+  }
+
+  async function checkOneHandler(ref: DocumentReference<invoiceType>) {
+    try {
+      await updateDoc(ref, {
         "diff.paid": true,
         "diff.paid_at": new Date(),
       });
-    });
-
-    await Promise.all(arr);
+    } catch (error) {
+      console.error("Paid operation failed");
+      console.error(error);
+    }
   }
 
   const debounceCheckAll = debounce(checkAllHandler, 5000);
@@ -59,7 +102,8 @@ export function MissingList() {
       coll,
       where("diff.amount", "<", 0),
       where("diff.paid", "==", false),
-      where("disabled", "==", false)
+      where("disabled", "==", false),
+      where("seller_ref", "==", invoice?.data().seller_ref)
     );
 
     const unsubcribe = onSnapshot(q, (snap) => {
@@ -106,7 +150,15 @@ export function MissingList() {
                   ? "Esta factura"
                   : Days[doc.data().created_at?.toDate().getDay() ?? 0]}
               </Column>
-              <Column>{numberParser(doc.data().diff.amount)}</Column>
+              <Column>
+                <Container>
+                  {numberParser(doc.data().diff.amount)}
+
+                  <HideButton onClick={() => checkOneHandler(doc.ref)}>
+                    Pagado
+                  </HideButton>
+                </Container>
+              </Column>
             </GridContainer>
           ))
         )}

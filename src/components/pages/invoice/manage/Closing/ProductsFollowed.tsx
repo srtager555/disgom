@@ -89,6 +89,7 @@ function ProductFolledTotalAmount({
   setTotalCommission: Dispatch<SetStateAction<Record<string, number>>>;
 }) {
   const [invoiceCommission, setInvoiceCommission] = useState(0);
+  const { invoice: currentInvoice } = useInvoice();
 
   // effect to get the outputs solds from the products followed
   useEffect(() => {
@@ -123,7 +124,9 @@ function ProductFolledTotalAmount({
   return (
     <GridContainer $gridTemplateColumns={GridSizes}>
       <Column title={invoice.data().created_at?.toDate().toLocaleDateString()}>
-        {Days[invoice.data().created_at?.toDate().getDay() ?? 0]}
+        {currentInvoice?.ref.id === invoice.ref.id
+          ? "Esta factura"
+          : Days[invoice.data().created_at?.toDate().getDay() ?? 0]}
       </Column>
       <Column>{numberParser(invoiceCommission)}</Column>
     </GridContainer>

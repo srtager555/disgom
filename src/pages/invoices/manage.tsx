@@ -52,6 +52,7 @@ import { RefreshData } from "@/components/pages/invoice/RefreshData";
 import { disabled } from "../../tools/invoices/disabled";
 import { PrintInvoiceHeader } from "@/components/print/InvoiceHeader";
 import { client } from "@/tools/sellers/createClient";
+import { refreshAllProduct } from "@/tools/invoices/refreshAllProduct";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -220,9 +221,15 @@ function InvoiceManager() {
         }
       }
 
+      let refresh_data: invoiceType["refresh_data"] = null;
+      if (prev_invoice_ref?.id != id) {
+        refresh_data = await refreshAllProduct();
+      }
+
       await updateInvoice(id, {
         seller_ref: selectedSeller.ref,
         prev_invoice_ref,
+        refresh_data,
       });
 
       if (prev_invoice_ref?.id === id) return;

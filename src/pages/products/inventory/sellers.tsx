@@ -21,7 +21,7 @@ import { productDoc } from "@/tools/products/create";
 import { SellersDoc } from "@/tools/sellers/create";
 import { useMemo, useState, useEffect } from "react";
 import { Firestore } from "@/tools/firestore"; // Asegúrate que la importación sea correcta
-import { SellersCollection } from "@/tools/firestore/CollectionTyping"; // Importar constantes
+import { InvoiceCollection } from "@/tools/firestore/CollectionTyping"; // Importar constantes
 import { numberParser } from "@/tools/numberPaser"; // Importar para formatear el total
 import { isEqual } from "lodash";
 import { Button } from "@/styles/Form.styles";
@@ -86,32 +86,28 @@ export default function Page() {
         activeSellers.map(async (seller) => {
           const sellerId = seller.id;
           try {
-            // 1. Referencia a la subcolección 'inventories' del vendedor
-            const inventoriesColRef = collection(
-              db,
-              SellersCollection.root,
-              sellerId,
-              SellersCollection.inventories.root
-            );
-            // 2. Query para obtener el último inventario
-            const latestInventoryQuery = query(
-              inventoriesColRef,
-              where("disabled", "==", false),
-              orderBy("created_at", "desc"),
-              limit(1)
-            );
-            const inventorySnapshot = await getDocs(latestInventoryQuery);
+            // 1. First create the invoice coll
+            const coll = collection(db, InvoiceCollection.root);
 
-            if (!inventorySnapshot.empty) {
-              const latestInventoryDoc = inventorySnapshot.docs[0];
+            // 2. The query must obtain the seller's latest invoice.
+            const q = query(
+              coll,
+              where("seller_ref", "==", seller.ref),
+              where("disabled", "==", false),
+              limit(1),
+              orderBy("created_at", "desc")
+            );
+            const lastedInvoiceQuery = await getDocs(q);
+
+            if (!lastedInvoiceQuery.empty) {
+              const lastedInvoice = lastedInvoiceQuery.docs[0];
               // 3. Referencia a la subcolección 'products' del último inventario
-              const productsColRef = collection(
-                db,
-                latestInventoryDoc.ref.path,
-                SellersCollection.inventories.products
+              const inventoryColl = collection(
+                lastedInvoice.ref,
+                InvoiceCollection.inventory
               );
               // 4. Obtener TODOS los productos de esa subcolección
-              const productsSnapshot = await getDocs(productsColRef);
+              const productsSnapshot = await getDocs(inventoryColl);
 
               // 5. Mapear los documentos a nuestro tipo SellerInventoryProduct
               inventoriesData[sellerId] = productsSnapshot.docs.map((doc) => ({

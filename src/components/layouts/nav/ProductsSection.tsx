@@ -19,10 +19,10 @@ export function ProductNavSection({ sellers }: props) {
           href: "/products/create",
           name: "Añadir o Editar",
         },
-        entriesANDoutputs: {
-          href: "/products/inventory/manage",
-          name: "Entradas y salidas",
-        },
+        // entriesANDoutputs: {
+        //   href: "/products/inventory/manage",
+        //   name: "Entradas y salidas",
+        // },
         currentInventory: {
           href: "/products/inventory",
           name: "Inventario actual",

@@ -9,7 +9,7 @@ import styled from "styled-components";
 const GridContainer = styled(Container)`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  gap: 100px;
   flex: 1;
 `;
 
@@ -26,9 +26,14 @@ const CreditsContainer = styled(FlexContainer)`
   flex: 1;
 `;
 
+const Titles = styled.h3`
+  margin-bottom: 30px;
+`;
+
 const CreditPreview = styled(Container)`
-  border-bottom: 1px solid ${globalCSSVars["--detail"]};
+  border: 1px solid ${globalCSSVars["--detail"]};
   padding: 10px;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -63,21 +68,20 @@ export default function Page() {
       <h1>Resumen de todos los Creditos</h1>
       <Container styles={{ marginBottom: "30px" }}>
         <h2>
-          Hay un total de{" "}
-          <span style={{ textDecoration: "underline" }}>
+          Total en creditos{" "}
+          <span style={{ textDecoration: "underline", color: "red" }}>
             {numberParser(total, true)}
           </span>{" "}
-          creditos en todos los vendedores
         </h2>
       </Container>
       <GridContainer>
         <GetAllAvailableSpace>
-          <h3>
+          <Titles>
             <FlexContainer styles={{ justifyContent: "space-between" }}>
-              <span>Vendedores</span>
+              <span>Creditos Vendedores</span>
               <span>{numberParser(reducedSellerCredits, true)}</span>
             </FlexContainer>
-          </h3>
+          </Titles>
           <GetAllAvailableSpace>
             <CreditsContainer>
               {sellerCreditsTotals.map((seller, i) => (
@@ -90,12 +94,12 @@ export default function Page() {
           </GetAllAvailableSpace>
         </GetAllAvailableSpace>
         <GetAllAvailableSpace>
-          <h3>
+          <Titles>
             <FlexContainer styles={{ justifyContent: "space-between" }}>
-              <span>Clientes</span>
+              <span>Creditos Oficina</span>
               <span>{numberParser(reducedClientsCredits, true)}</span>
             </FlexContainer>
-          </h3>
+          </Titles>
           <GetAllAvailableSpace>
             <CreditsContainer>
               {clientsCreditsTotals.map((client, i) => (

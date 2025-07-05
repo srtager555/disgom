@@ -75,7 +75,11 @@ export function InvoicesList() {
     const unsubcribe = onSnapshot(q, (snap) => {
       const invoices = snap.docs;
       setDocsInvoices(
-        invoices.sort((a, b) => b.data().total_sold - a.data().total_sold)
+        invoices.sort(
+          (a, b) =>
+            (b.data().created_at?.seconds || 0) -
+            (a.data().created_at?.seconds || 0)
+        )
       );
       const totalSoldList = invoices.map((el) => el.data().total_sold);
       const totalSold = invoices.reduce(

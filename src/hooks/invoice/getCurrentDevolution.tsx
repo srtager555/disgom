@@ -11,7 +11,10 @@ import {
   DocumentChange,
 } from "firebase/firestore";
 import { Firestore } from "@/tools/firestore";
-import { ProductsCollection } from "@/tools/firestore/CollectionTyping";
+import {
+  InvoiceCollection,
+  ProductsCollection,
+} from "@/tools/firestore/CollectionTyping";
 import { outputType } from "@/tools/products/addOutputs";
 
 export function useGetCurrentDevolutionByProduct(product_id: string) {
@@ -26,16 +29,14 @@ export function useGetCurrentDevolutionByProduct(product_id: string) {
 
   useEffect(() => {
     const db = Firestore();
-    const data = invoice?.data();
-    const inventoryRef = data?.devolution;
     const productRef = doc(db, ProductsCollection.root, product_id);
 
     // console.log("inventory ref in the server", inventoryRef);
+    if (!invoice) return;
 
-    if (!inventoryRef) return;
     const coll = collection(
-      inventoryRef,
-      "products"
+      invoice.ref,
+      InvoiceCollection.inventory
     ) as CollectionReference<outputType>;
 
     const q = query(

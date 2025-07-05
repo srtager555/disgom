@@ -1,6 +1,6 @@
-import { SellersCollection } from "@/tools/firestore/CollectionTyping";
+import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
+import { invoiceType } from "@/tools/invoices/createInvoice";
 import { outputType } from "@/tools/products/addOutputs";
-import { inventory } from "@/tools/sellers/invetory/create";
 import {
   collection,
   CollectionReference,
@@ -14,27 +14,30 @@ import { isEqual } from "lodash";
 import { useEffect, useState } from "react";
 
 export function useGetAllInventory(
-  last_inventory_ref: DocumentReference<inventory> | undefined
+  last_invoice: DocumentReference<invoiceType> | null
 ) {
   const [inventoriesProducts, setInventoriesProducts] = useState<
     QueryDocumentSnapshot<outputType>[]
   >([]);
-  const [lastInventoryRef, setlastInventoryRef] = useState<
-    DocumentReference<inventory> | undefined
-  >(undefined);
+  const [lastInventoryRef, setlastInventoryRef] =
+    useState<DocumentReference<invoiceType> | null>(null);
 
   // effect to get the inventory
   useEffect(() => {
-    if (isEqual(lastInventoryRef, last_inventory_ref)) return;
-    setlastInventoryRef(last_inventory_ref);
+    if (isEqual(lastInventoryRef, last_invoice)) return;
+    setlastInventoryRef(last_invoice);
 
     async function getInventory() {
-      if (!last_inventory_ref) return;
+      console.log("!!!!");
+      if (!last_invoice) return;
+      console.log("?????");
 
       const coll = collection(
-        last_inventory_ref,
-        SellersCollection.inventories.products
+        last_invoice,
+        InvoiceCollection.inventory
       ) as CollectionReference<outputType>;
+
+      console.log(coll.path);
 
       const q = query(coll, where("disabled", "==", false));
       const invent_products = await getDocs(q);
@@ -43,7 +46,7 @@ export function useGetAllInventory(
     }
 
     getInventory();
-  }, [last_inventory_ref]);
+  }, [last_invoice]);
 
   return inventoriesProducts;
 }

@@ -211,16 +211,22 @@ function InvoiceManager() {
           orderBy("created_at", "desc")
         );
 
-        const docs = await getDocs(q);
-        if (docs.size > 0) {
-          prev_invoice_ref = docs.docs[0].ref;
+        // Get the previus invoice to add their devolution to the current invoice inventory
+        const snap = await getDocs(q);
+        if (snap.size > 0) {
+          if (snap.docs[0].id === id) return;
+
+          prev_invoice_ref = snap.docs[0].ref;
         }
       }
 
-      updateInvoice(id, {
+      await updateInvoice(id, {
         seller_ref: selectedSeller.ref,
         prev_invoice_ref,
       });
+
+      if (prev_invoice_ref?.id === id) return;
+      router.reload();
     }
 
     updateSeller();

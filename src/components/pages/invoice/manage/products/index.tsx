@@ -38,7 +38,7 @@ export function Products({ selectedSeller, setProductsResults }: props) {
   const productsQuery = useGetProducts("position", "asc"); // Revisa esta línea según la definición de tu hook.
   const [hideProductWithoutStock, setHideProductWithoutStock] = useState(false);
   const allInventory = useGetAllInventory(
-    invoice?.data()?.last_inventory_ref || undefined
+    invoice?.data()?.prev_invoice_ref || null
   );
 
   const [displayedProducts, setDisplayedProducts] = useState<

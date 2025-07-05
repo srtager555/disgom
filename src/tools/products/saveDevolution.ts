@@ -13,9 +13,8 @@ import { productDoc } from "./create";
 import { SellersDoc } from "../sellers/create";
 import { rawOutput } from "@/components/pages/invoice/manage/products/AddOutput";
 import { amountListener, createStockFromOutputType } from "./ManageSaves";
-import { getDevolutionInventory } from "./getDevolutionInventoryRef";
 import { outputParser, outputType } from "./addOutputs";
-import { SellersCollection } from "../firestore/CollectionTyping";
+import { InvoiceCollection } from "../firestore/CollectionTyping";
 
 /**
  * Saves the devolution amount for a product in an invoice.
@@ -38,18 +37,15 @@ export async function saveDevolution(
   }
 
   // 1. Get or create the devolution inventory reference for this invoice.
-  const devolutionInventoryDoc = await getDevolutionInventory(
-    invoice,
-    seletedSeller
-  );
+  // const devolutionInventoryDoc = await getDevolutionInventory(
+  //   invoice,
+  //   seletedSeller
+  // );
 
-  const devolutionInventoryRef = devolutionInventoryDoc.ref;
+  // const devolutionInventoryRef = devolutionInventoryDoc.ref;
 
   // 2. Disable old devolution outputs for this product in this inventory.
-  const coll = collection(
-    devolutionInventoryRef,
-    SellersCollection.inventories.products
-  );
+  const coll = collection(invoice.ref, InvoiceCollection.inventory);
   const oldDevolutionOutputsQuery = query(
     coll,
     where("product_ref", "==", productDoc.ref),
@@ -86,7 +82,6 @@ export async function saveDevolution(
   // 5. Save the new devolution outputs.
   const devolutionOutputsToSave = devolutionToSave.map((rawOutput) => ({
     ...outputParser({ invoice, product_doc: productDoc, rawOutput }),
-    inventory_ref: devolutionInventoryRef,
     uid,
     disabled: false,
   }));

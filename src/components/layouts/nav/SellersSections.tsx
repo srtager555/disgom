@@ -74,6 +74,10 @@ export function SellersNavSection({ sellers, clients }: props) {
             name: "Clientes",
             children: clientsChildrenRecord,
           },
+          credit: {
+            href: "/sellers/credits",
+            name: "Resumen de los Creditos",
+          },
         },
       },
     }));

@@ -87,11 +87,14 @@ export function RefreshData({ children }: props) {
                   refresh_data: null,
                 });
 
-              router.push(
+              await router.push(
                 refresh_data
                   ? "/invoices"
-                  : "/invoices/manage?id=" + invoice?.data().next_invoice_ref
+                  : "/invoices/manage?id=" +
+                      invoice?.data().next_invoice_ref?.id
               );
+
+              router.reload();
             }}
           >
             {refresh_data ? "Todo en orden" : "Actualizar factura"}

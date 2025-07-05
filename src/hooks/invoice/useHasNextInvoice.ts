@@ -6,7 +6,7 @@ import { creditBundle } from "@/tools/sellers/credits/createBundle";
 import {
   DocumentSnapshot,
   PartialWithFieldValue,
-  updateDoc,
+  runTransaction,
 } from "firebase/firestore";
 import { useCallback, useContext, useState } from "react";
 
@@ -17,7 +17,7 @@ export function useHasNextInvoice() {
   const [map, setMap] = useState<Map<string, boolean>>(new Map());
 
   const checkHasNextInvoice = useCallback(
-    async (fn: any, humanChange: boolean, product_id: string) => {
+    (fn: any, humanChange: boolean, product_id: string) => {
       const data = invoice?.data();
       if (data?.next_invoice_ref && humanChange) {
         setHasInvoice(true);
@@ -25,9 +25,19 @@ export function useHasNextInvoice() {
         newMap.set(product_id, true);
         setMap(newMap);
 
-        await updateDoc(data.next_invoice_ref, {
-          refresh_data: Object.fromEntries(map),
-        } as PartialWithFieldValue<invoiceType>);
+        runTransaction(
+          data.next_invoice_ref.firestore,
+          async (transaction) => {
+            if (!data.next_invoice_ref) return;
+
+            const doc = await transaction.get(data.next_invoice_ref);
+
+            transaction.update(doc.ref, {
+              refresh_data: Object.fromEntries(map),
+            } as PartialWithFieldValue<invoiceType>);
+          },
+          { maxAttempts: 20 }
+        );
       }
 
       return fn();

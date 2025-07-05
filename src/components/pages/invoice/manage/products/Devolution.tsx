@@ -87,6 +87,15 @@ function DevolutionBase({
 
     if (someHumanChangesDetected.current) {
       someHumanChangesDetected.current.devolution = true;
+    } else {
+      console.error("someHumanChangesDetected is undefined");
+      console.error("Running the function again in 1000ms");
+
+      setTimeout(() => {
+        handleInputBlur();
+      }, 1000);
+
+      return;
     }
 
     setDevoInput(localDevoInput);

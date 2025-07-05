@@ -97,6 +97,15 @@ export function AddOutputBase({
       // This is where we mark the human interaction for saving.
       if (someHumanChangesDetected?.current) {
         someHumanChangesDetected.current.addOutput = true;
+      } else {
+        console.error("someHumanChangesDetected is undefined");
+        console.error("Running the function again in 1000ms");
+
+        setTimeout(() => {
+          handleInputBlur();
+        }, 1000);
+
+        return;
       }
 
       setAmountInput(localInputAmount);

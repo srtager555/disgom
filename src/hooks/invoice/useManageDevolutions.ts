@@ -15,6 +15,7 @@ import { outputType } from "@/tools/products/addOutputs";
 import { saveDevolution } from "@/tools/products/saveDevolution"; // Assuming saveDevolution is now direct
 import { useGetCurrentDevolutionByProduct } from "./getCurrentDevolution";
 import { someHumanChangesDetected } from "@/components/pages/invoice/manage/products/Product";
+import { useHasNextInvoice } from "./useHasNextInvoice";
 
 interface UseManageDevolutionsProps {
   invoice: DocumentSnapshot<invoiceType> | undefined;
@@ -44,6 +45,7 @@ export function useManageDevolutions({
     amount: currentDevolutionServerAmount,
     outputs: currentDevolutionOutputs,
   } = useGetCurrentDevolutionByProduct(productDoc.id);
+  const { checkHasNextInvoice } = useHasNextInvoice();
   const lastProcessedDevoAmount = useRef(0); // To track the amount that was last saved/synced
 
   const currentUid = getAuth(getFirestore().app).currentUser?.uid;
@@ -127,16 +129,22 @@ export function useManageDevolutions({
       console.log("Devolution: Saving changes...");
       // Assuming saveDevolution is now a direct, non-debounced function
       // and accepts a UID.
-      saveDevolution(
-        invoice,
-        productDoc,
-        seletedSeller,
-        inventoryOutputs,
-        rawOutputs, // Pass rawOutputs, saveDevolution should handle parsing
-        amountToSave,
-        customPriceInput,
-        // setRemainStock, // To update UI immediately
-        currentUid // Pass the UID
+
+      checkHasNextInvoice(
+        () =>
+          saveDevolution(
+            invoice,
+            productDoc,
+            seletedSeller,
+            inventoryOutputs,
+            rawOutputs, // Pass rawOutputs, saveDevolution should handle parsing
+            amountToSave,
+            customPriceInput,
+            // setRemainStock, // To update UI immediately
+            currentUid // Pass the UID
+          ),
+        true,
+        productDoc.id
       );
 
       lastProcessedDevoAmount.current = amountToSave;

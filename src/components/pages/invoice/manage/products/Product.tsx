@@ -114,7 +114,12 @@ export function BaseProduct({
     defaultCustomPrice: defaultPriceData?.price,
     someHumanChangesDetected,
   });
-  const { rawOutputs, currentOutputsServerAmount } = useManageOutputs({
+  const {
+    rawOutputs,
+    currentOutputsServerAmount,
+    setRunOnBlurEventAgain: setRunAddOutputsOnBlurAgain,
+    runOnBlurEventAgain: runAddOuputsOnBlurAgain,
+  } = useManageOutputs({
     invoice,
     productDoc: rtDoc,
     defaultCustomPrices: defaultCustomPrice,
@@ -127,6 +132,8 @@ export function BaseProduct({
     remainStock: devoRemainStock,
     setLocalDevoInput: setDevoInput,
     localDevoInput: devoInput,
+    runAgainOnBlurEvent: runDevoOnBlurEvent,
+    setRunAgainOnBlurEvent: setRunDevoOnBlurEvent,
   } = useManageDevolutions({
     invoice,
     productDoc: rtDoc,
@@ -211,9 +218,6 @@ export function BaseProduct({
         invoice?.data().client_ref
       );
 
-      if ("SvlOP05N8Ovk7w6hfcGJ" === doc.id)
-        console.log("lastDefaultCustomPrice", lastDefaultCustomPrice);
-
       setDefaultCustomPrice(lastDefaultCustomPrice);
     }
 
@@ -269,6 +273,8 @@ export function BaseProduct({
         someHumanChangesDetected={someHumanChangesDetected}
         setOverflowWarning={setStockOverflowWarning}
         currentServerAmount={currentOutputsServerAmount}
+        runOnBlurEventAgain={runAddOuputsOnBlurAgain}
+        setRunOnBlurEventAgain={setRunAddOutputsOnBlurAgain}
       />
       <Devolution
         rawOutputs={rawOutputs}
@@ -279,6 +285,8 @@ export function BaseProduct({
         sellerHasInventory={selectedSellerData?.hasInventory}
         someHumanChangesDetected={someHumanChangesDetected}
         devoInput={devoInput}
+        runOnBlurEventAgain={runDevoOnBlurEvent}
+        setRunAgainOnBlurEvent={setRunDevoOnBlurEvent}
       />
       <ProductSold
         amount={Number(amountInput)}

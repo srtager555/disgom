@@ -1,4 +1,10 @@
-import React, { useEffect, memo, MutableRefObject, useState } from "react";
+import React, {
+  useEffect,
+  memo,
+  MutableRefObject,
+  useState,
+  useCallback,
+} from "react";
 import { Column, Input } from "../../Product";
 import { DocumentSnapshot } from "firebase/firestore";
 import { someHumanChangesDetected } from "./Product";
@@ -22,6 +28,8 @@ type props = {
   productDoc: DocumentSnapshot<productDoc>;
   sellerHasInventory: boolean | undefined;
   someHumanChangesDetected: MutableRefObject<someHumanChangesDetected>;
+  runOnBlurEventAgain: boolean;
+  setRunAgainOnBlurEvent: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 type devolutionBase = props & {
@@ -61,26 +69,25 @@ function DevolutionBase({
   setDevoInput,
   setOverflowWarning,
   devoInput,
+  runOnBlurEventAgain,
+  setRunAgainOnBlurEvent,
 }: devolutionBase) {
   // --- Estados y Refs ---
   const [localDevoInput, setLocalDevoInput] = useState("0");
 
-  // --- Efectos ---
-  // Effect to reset state on product change
-  useEffect(() => {
-    // Reset devoInput to server amount when product changes or server amount updates
-    setLocalDevoInput(String(devoInput));
-  }, [productDoc.id, devoInput]);
-
+  // --- Functions
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("typing in devo");
     parseNumberInput(setLocalDevoInput, e, { min: 0 });
   };
 
-  const handleInputBlur = () => {
+  const handleInputBlur = useCallback(() => {
     const amount = rawOutputs.reduce((acc, next) => acc + next.amount, 0);
+    const overflow = Number(localDevoInput) > amount + inventoryAmount;
 
-    if (Number(localDevoInput) > amount + inventoryAmount) {
+    console.log("devo blur triggered", overflow, inventoryAmount, overflow);
+
+    if (overflow) {
       setOverflowWarning(true);
       return;
     }
@@ -100,7 +107,30 @@ function DevolutionBase({
 
     setDevoInput(localDevoInput);
     setOverflowWarning(false); // Reset warning on blur
-  };
+  }, [
+    inventoryAmount,
+    localDevoInput,
+    rawOutputs,
+    setDevoInput,
+    setOverflowWarning,
+    someHumanChangesDetected,
+  ]);
+
+  // --- Efectos ---
+  // Effect to run again the onBlur event
+  useEffect(() => {
+    if (!runOnBlurEventAgain) return;
+
+    handleInputBlur();
+
+    setRunAgainOnBlurEvent(false);
+  }, [handleInputBlur, runOnBlurEventAgain, setRunAgainOnBlurEvent]);
+
+  // Effect to reset state on product change
+  useEffect(() => {
+    // Reset devoInput to server amount when product changes or server amount updates
+    setLocalDevoInput(String(devoInput));
+  }, [productDoc.id, devoInput]);
 
   // --- Renderizado ---
 

@@ -1,4 +1,11 @@
-import React, { useEffect, RefObject, useState } from "react";
+import React, {
+  useEffect,
+  RefObject,
+  useState,
+  Dispatch,
+  SetStateAction,
+  useCallback,
+} from "react";
 import { Column, Input } from "../../Product";
 import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
@@ -18,6 +25,8 @@ type AddOutputBaseProps = {
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
   setOverflowWarning: React.Dispatch<React.SetStateAction<boolean>>;
   currentServerAmount: number;
+  runOnBlurEventAgain: boolean;
+  setRunOnBlurEventAgain: Dispatch<SetStateAction<boolean>>;
 };
 
 export type variations = Array<{
@@ -60,20 +69,10 @@ export function AddOutputBase({
   amountInput,
   setAmountInput,
   currentServerAmount,
+  runOnBlurEventAgain,
+  setRunOnBlurEventAgain,
 }: AddOutputBaseProps) {
   const [localInputAmount, setLocalInputAmount] = useState("0");
-
-  // Effect to reset state when productDoc.id changes
-  useEffect(() => {
-    console.log(
-      "AddOutput: Product changed to",
-      productDoc.id,
-      ". Resetting amount."
-    );
-    // Reset amountInput to server amount when product changes or server amount updates
-    setAmountInput(String(currentServerAmount));
-    setLocalInputAmount(String(currentServerAmount));
-  }, [productDoc.id, currentServerAmount, setAmountInput]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log("typing");
@@ -82,10 +81,10 @@ export function AddOutputBase({
     parseNumberInput(setLocalInputAmount, e, { min: 0 });
   };
 
-  const handleInputBlur = () => {
+  const handleInputBlur = useCallback(() => {
     const diff = Number(localInputAmount) - Number(amountInput);
     const overflow = diff > currentStock;
-    console.log("blur", diff, currentStock, overflow);
+    console.log("Add blur triggered", diff, currentStock, overflow);
 
     if (overflow) {
       setOverflowWarning(true);
@@ -108,10 +107,69 @@ export function AddOutputBase({
         return;
       }
 
-      setAmountInput(localInputAmount);
+      setAmountInput(  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log("typing in devo");
+        parseNumberInput(setLocalDevoInput, e, { min: 0 });
+      };
+    
+      const handleInputBlur = () => {
+        const amount = rawOutputs.reduce((acc, next) => acc + next.amount, 0);
+        const overflow = Number(localDevoInput) > amount + inventoryAmount;
+    
+        console.log("devo blur triggered", overflow, inventoryAmount, overflow);
+    
+        if (overflow) {
+          setOverflowWarning(true);
+          return;
+        }
+    
+        if (someHumanChangesDetected.current) {
+          someHumanChangesDetected.current.devolution = true;
+        } else {
+          console.error("someHumanChangesDetected is undefined");
+          console.error("Running the function again in 1000ms");
+    
+          setTimeout(() => {
+            handleInputBlur();
+          }, 1000);
+    
+          return;
+        }
+    
+        setDevoInput(localDevoInput);
+        setOverflowWarning(false); // Reset warning on blur
+      };);
       setOverflowWarning(false); // Reset warning on blur
     }
-  };
+  }, [
+    amountInput,
+    currentStock,
+    localInputAmount,
+    setAmountInput,
+    setOverflowWarning,
+    someHumanChangesDetected,
+  ]);
+
+  // Effect to verify if the amount reached the save function correctly
+  useEffect(() => {
+    if (!runOnBlurEventAgain) return;
+
+    handleInputBlur();
+
+    setRunOnBlurEventAgain(false);
+  }, [handleInputBlur, runOnBlurEventAgain, setRunOnBlurEventAgain]);
+
+  // Effect to reset state when productDoc.id changes
+  useEffect(() => {
+    console.log(
+      "AddOutput: Product changed to",
+      productDoc.id,
+      ". Resetting amount."
+    );
+    // Reset amountInput to server amount when product changes or server amount updates
+    setAmountInput(String(currentServerAmount));
+    setLocalInputAmount(String(currentServerAmount));
+  }, [productDoc.id, currentServerAmount, setAmountInput]);
 
   return (
     <Column>

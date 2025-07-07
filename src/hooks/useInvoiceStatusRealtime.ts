@@ -115,7 +115,6 @@ export function useInvoiceStatusRealtime(
       q,
       // --- Inicio: Implementación de la Solución 3 ---
       (querySnapshot) => {
-        console.log(`Snapshot received for ${currentDateStr}`);
         // 1. Crear mapa de Seller ID a Invoice ID
         const sellerInvoiceMap = new Map<string, string>();
         querySnapshot.forEach((doc) => {

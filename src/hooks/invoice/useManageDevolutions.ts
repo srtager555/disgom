@@ -34,13 +34,14 @@ export function useManageDevolutions({
   seletedSeller,
   inventoryOutputs,
   rawOutputs,
-  // devoInput, // Eliminado ya que ahora se gestiona internamente
   customPriceInput,
   humanInteractionDetectedRef,
 }: UseManageDevolutionsProps) {
   const [remainStock, setRemainStock] = useState<rawOutput[]>([]);
   const [verifiedDevolutionAmount, setVerifiedDevolutionAmount] = useState(0);
   const [localDevoInput, setLocalDevoInput] = useState<string>(""); // Nuevo estado para el valor del campo de entrada
+  const [runAgainOnBlurEvent, setRunAgainOnBlurEvent] = useState(false);
+  const checkOnBlurEventAgain = useRef(false);
   const {
     amount: currentDevolutionServerAmount,
     // outputs: currentDevolutionOutputs,
@@ -106,42 +107,56 @@ export function useManageDevolutions({
     const amountToSave = Number(localDevoInput); // Usar localDevoInput para guardar
 
     // Only trigger save if human interaction is detected AND there's an actual change
-    if (
-      humanInteractionDetectedRef.current.devolution &&
-      amountToSave !== (currentDevolutionServerAmount || 0)
-    ) {
+    if (humanInteractionDetectedRef.current.devolution) {
       console.log(
         "Human detected (devolution) " +
           `local (${amountToSave}) and server (${currentDevolutionServerAmount})`
       );
-      console.log("Devolution: Saving changes...");
-      // Assuming saveDevolution is now a direct, non-debounced function
-      // and accepts a UID.
 
-      checkHasNextInvoice(
-        () =>
-          saveDevolution(
-            invoice,
-            productDoc,
-            seletedSeller,
-            inventoryOutputs,
-            rawOutputs, // Pass rawOutputs, saveDevolution should handle parsing
-            amountToSave,
-            customPriceInput,
-            // setRemainStock, // To update UI immediately
-            currentUid // Pass the UID
-          ),
-        true,
-        productDoc.id
-      );
+      if (amountToSave === (currentDevolutionServerAmount || 0)) {
+        console.warn(
+          "No change detected, may be a react bug, running the onBlur event again"
+        );
 
-      lastProcessedDevoAmount.current = amountToSave;
-      humanInteractionDetectedRef.current.devolution = false;
-      humanInteractionDetectedRef.current.outputsSolds = true;
+        // if the ref is false the code will run the onBlur event again
+        // to check if the value is correct
+        if (!checkOnBlurEventAgain.current) {
+          setRunAgainOnBlurEvent(true);
+          checkOnBlurEventAgain.current = true;
+        } else {
+          // if the ref is true turn to false
+          // this means that the onBlur event was executed again
+          checkOnBlurEventAgain.current = false;
+        }
+      } else {
+        console.log("Devolution: Saving changes...");
+        // Assuming saveDevolution is now a direct, non-debounced function
+        // and accepts a UID.
+
+        checkHasNextInvoice(
+          () =>
+            saveDevolution(
+              invoice,
+              productDoc,
+              seletedSeller,
+              inventoryOutputs,
+              rawOutputs, // Pass rawOutputs, saveDevolution should handle parsing
+              amountToSave,
+              customPriceInput,
+              // setRemainStock, // To update UI immediately
+              currentUid // Pass the UID
+            ),
+          true,
+          productDoc.id
+        );
+
+        lastProcessedDevoAmount.current = amountToSave;
+        humanInteractionDetectedRef.current.devolution = false;
+        humanInteractionDetectedRef.current.outputsSolds = true;
+      }
     }
   }, [
-    localDevoInput, // Dependencia
-    // customPriceInput,
+    localDevoInput,
     invoice,
     productDoc,
     seletedSeller,
@@ -151,6 +166,8 @@ export function useManageDevolutions({
     currentUid,
     humanInteractionDetectedRef,
     setRemainStock,
+    checkHasNextInvoice,
+    // customPriceInput,
   ]);
 
   return {
@@ -158,5 +175,7 @@ export function useManageDevolutions({
     // currentDevolutionServerAmount: verifiedDevolutionAmount, // Ya no es necesario retornar de esta manera
     localDevoInput, // Retornar el estado local para el campo de entrada
     setLocalDevoInput, // Retornar el setter para el campo de entrada
+    runAgainOnBlurEvent,
+    setRunAgainOnBlurEvent,
   };
 }

@@ -33,9 +33,11 @@ export function useManageOutputs({
   const [rawOutputs, setRawOutputs] = useState<rawOutput[]>([]);
   const [currentOutputsServerAmount, setCurrentOutputsServerAmount] =
     useState(0);
+  const [runOnBlurEventAgain, setRunOnBlurEventAgain] = useState(false);
   const lastProcessedAmount = useRef(0); // To track the amount that was last saved/synced
   const lastProcessedPrice = useRef<number | undefined>(undefined); // To track the price that was last saved/synced
   const firstTimeLoad = useRef(true);
+  const checkOnBlurEventAgain = useRef(false);
 
   const currentUid = getAuth(getFirestore().app).currentUser?.uid;
 
@@ -127,7 +129,22 @@ export function useManageOutputs({
     );
     const productParentData = productParent?.data();
 
-    if (amountToSave !== currentOutputsServerAmount) {
+    if (amountToSave === currentOutputsServerAmount) {
+      console.warn(
+        "No change detected, may be a react bug, running the onBlur event again"
+      );
+
+      // if the ref is false the code will run the onBlur event again
+      // to check if the value is correct
+      if (!checkOnBlurEventAgain.current) {
+        setRunOnBlurEventAgain(true);
+        checkOnBlurEventAgain.current = true;
+      } else {
+        // if the ref is true turn to false
+        // this means that the onBlur event was executed again
+        checkOnBlurEventAgain.current = false;
+      }
+    } else {
       if (amountToSave < currentOutputsServerAmount) {
         console.log("restando outputs...");
 
@@ -157,6 +174,9 @@ export function useManageOutputs({
           priceToSave
         );
       }
+
+      // reset flags
+      checkOnBlurEventAgain.current = false;
     }
 
     // After triggering save, update last processed values and reset human interaction flag
@@ -177,5 +197,11 @@ export function useManageOutputs({
     productParent,
   ]);
 
-  return { rawOutputs, currentOutputsServerAmount, setRawOutputs };
+  return {
+    rawOutputs,
+    currentOutputsServerAmount,
+    setRawOutputs,
+    setRunOnBlurEventAgain,
+    runOnBlurEventAgain,
+  };
 }

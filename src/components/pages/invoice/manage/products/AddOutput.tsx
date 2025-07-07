@@ -107,38 +107,7 @@ export function AddOutputBase({
         return;
       }
 
-      setAmountInput(  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        console.log("typing in devo");
-        parseNumberInput(setLocalDevoInput, e, { min: 0 });
-      };
-    
-      const handleInputBlur = () => {
-        const amount = rawOutputs.reduce((acc, next) => acc + next.amount, 0);
-        const overflow = Number(localDevoInput) > amount + inventoryAmount;
-    
-        console.log("devo blur triggered", overflow, inventoryAmount, overflow);
-    
-        if (overflow) {
-          setOverflowWarning(true);
-          return;
-        }
-    
-        if (someHumanChangesDetected.current) {
-          someHumanChangesDetected.current.devolution = true;
-        } else {
-          console.error("someHumanChangesDetected is undefined");
-          console.error("Running the function again in 1000ms");
-    
-          setTimeout(() => {
-            handleInputBlur();
-          }, 1000);
-    
-          return;
-        }
-    
-        setDevoInput(localDevoInput);
-        setOverflowWarning(false); // Reset warning on blur
-      };);
+      setAmountInput(localInputAmount);
       setOverflowWarning(false); // Reset warning on blur
     }
   }, [

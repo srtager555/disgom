@@ -118,21 +118,13 @@ export function useManageOutputs({
     const priceToSave = customPriceInput;
 
     // Only trigger save if human interaction is detected AND there's an actual change
-    console.log(
-      `conditional AddOutputs: ${
-        humanInteractionDetectedRef.current.addOutput
-          ? "Human detected"
-          : "Human NO detected"
-      } ${
-        amountToSave === currentOutputsServerAmount
-          ? "NO CHANGE"
-          : `local (${amountToSave}) and server (${currentOutputsServerAmount})`
-      }`
-    );
-
     if (!humanInteractionDetectedRef.current.addOutput) {
       return;
     }
+    console.log(
+      "Human detected (consignment) " +
+        `local (${amountToSave}) and server (${currentOutputsServerAmount})`
+    );
     const productParentData = productParent?.data();
 
     if (amountToSave !== currentOutputsServerAmount) {

@@ -172,7 +172,6 @@ export function useInvoiceStatusRealtime(
     );
 
     return () => {
-      console.log(`Unsubscribing listener for ${currentDateStr}`);
       unsubscribe();
     };
   }, [sellers, currentDateStr]);

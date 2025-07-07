@@ -43,16 +43,12 @@ export function useManageDevolutions({
   const [localDevoInput, setLocalDevoInput] = useState<string>(""); // Nuevo estado para el valor del campo de entrada
   const {
     amount: currentDevolutionServerAmount,
-    outputs: currentDevolutionOutputs,
+    // outputs: currentDevolutionOutputs,
   } = useGetCurrentDevolutionByProduct(productDoc.id);
   const { checkHasNextInvoice } = useHasNextInvoice();
   const lastProcessedDevoAmount = useRef(0); // To track the amount that was last saved/synced
 
   const currentUid = getAuth(getFirestore().app).currentUser?.uid;
-
-  useEffect(() => {
-    console.log("devo in outputs", currentDevolutionOutputs);
-  }, [currentDevolutionOutputs]);
 
   // Effect to sync the verified amount with the server state.
   // This ensures that the initial load and changes from other users are correctly reflected.
@@ -110,22 +106,14 @@ export function useManageDevolutions({
     const amountToSave = Number(localDevoInput); // Usar localDevoInput para guardar
 
     // Only trigger save if human interaction is detected AND there's an actual change
-    console.log(
-      `conditional devo: ${
-        humanInteractionDetectedRef.current.devolution
-          ? "Human detected"
-          : "Human NO detected"
-      } ${
-        amountToSave === currentDevolutionServerAmount
-          ? "NO CHANGE"
-          : `local (${amountToSave}) and server (${currentDevolutionServerAmount})`
-      }`
-    );
-
     if (
       humanInteractionDetectedRef.current.devolution &&
       amountToSave !== (currentDevolutionServerAmount || 0)
     ) {
+      console.log(
+        "Human detected (devolution) " +
+          `local (${amountToSave}) and server (${currentDevolutionServerAmount})`
+      );
       console.log("Devolution: Saving changes...");
       // Assuming saveDevolution is now a direct, non-debounced function
       // and accepts a UID.

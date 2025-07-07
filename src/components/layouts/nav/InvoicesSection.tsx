@@ -97,14 +97,11 @@ export function InvoicesNavSection({ sellers, clients }: props) {
         return currentUrl;
       }
 
-      console.log("Updating invoice submenus ('create' and 'liquidate')...");
-
       // Crea una nueva copia del objeto children de invoice para la inmutabilidad
       const newInvoiceChildren = { ...currentInvoiceChildren };
 
       // Actualiza los children de 'create' y 'liquidate' con los nuevos Records
       const office = sellers.find((el) => !el.data().hasInventory);
-      console.log(clients, "THE OFFICE AAAAA");
       if (office) {
         newInvoiceChildren["create"] = {
           ...createChild,

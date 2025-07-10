@@ -193,51 +193,62 @@ function InvoiceManager() {
   // this effect is to update the seller when its changed
   useEffect(() => {
     async function updateSeller() {
+      const id = invoice?.id;
+      const data = invoice?.data();
+
       if (!id || !selectedSeller) return;
+      if (selectedSeller.id === data?.seller_ref?.id) return;
 
       let prev_invoice_ref = null;
 
+      if (!selectedSeller.data().hasInventory) return;
+
       // update the prev invoice
-      if (selectedSeller.data().hasInventory) {
-        const coll = collection(
-          Firestore(),
-          InvoiceCollection.root
-        ) as CollectionReference<invoiceType>;
+      const coll = collection(
+        Firestore(),
+        InvoiceCollection.root
+      ) as CollectionReference<invoiceType>;
 
-        const q = query(
-          coll,
-          where("seller_ref", "==", selectedSeller.ref),
-          where("disabled", "==", false),
-          limit(1),
-          orderBy("created_at", "desc")
-        );
+      const q = query(
+        coll,
+        where("seller_ref", "==", selectedSeller.ref),
+        where("disabled", "==", false),
+        limit(1),
+        orderBy("created_at", "desc")
+      );
 
-        // Get the previus invoice to add their devolution to the current invoice inventory
-        const snap = await getDocs(q);
-        if (snap.size > 0) {
-          if (snap.docs[0].id === id) return;
+      // Get the previus invoice to add their devolution
+      // to the current invoice inventory
+      const snap = await getDocs(q);
 
-          prev_invoice_ref = snap.docs[0].ref;
-        }
+      if (snap.size > 0) {
+        // if is the same invoice return
+        if (snap.docs[0].id === id) return;
+
+        prev_invoice_ref = snap.docs[0].ref;
       }
 
+      // if the prv invoice is diff
+      // refresh all products to recalculate the result with
+      // the new inventory
       let refresh_data: invoiceType["refresh_data"] = null;
-      if (prev_invoice_ref?.id != id) {
+      if (prev_invoice_ref?.id != data?.prev_invoice_ref) {
         refresh_data = await refreshAllProduct();
       }
 
+      // The invoice with the new seller, the new
+      // prev invoice and the data to refresh
       await updateInvoice(id, {
         seller_ref: selectedSeller.ref,
         prev_invoice_ref,
         refresh_data,
       });
 
-      if (prev_invoice_ref?.id === id) return;
       router.reload();
     }
 
     updateSeller();
-  }, [id, selectedSeller]);
+  }, [invoice, selectedSeller]);
 
   // Debounced function to process results and update the invoice
   // eslint-disable-next-line react-hooks/exhaustive-deps

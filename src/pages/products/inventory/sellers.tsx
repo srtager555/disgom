@@ -106,8 +106,10 @@ export default function Page() {
                 lastedInvoice.ref,
                 InvoiceCollection.inventory
               );
+              const q = query(inventoryColl, where("disabled", "==", false));
+
               // 4. Obtener TODOS los productos de esa subcolección
-              const productsSnapshot = await getDocs(inventoryColl);
+              const productsSnapshot = await getDocs(q);
 
               // 5. Mapear los documentos a nuestro tipo SellerInventoryProduct
               inventoriesData[sellerId] = productsSnapshot.docs.map((doc) => ({

@@ -95,11 +95,12 @@ const ColumnGrid = styled(Container)<{
     height: 100%;
     width: 100%;
     padding: 0 5px;
-    background-color: inherit;
+    background-color: ${globalCSSVars["--background"]};
     opacity: 0;
     transition: all 200ms ease;
     z-index: 1;
     box-shadow: 10px 10px 15px #0002;
+    cursor: none;
   }
 `;
 

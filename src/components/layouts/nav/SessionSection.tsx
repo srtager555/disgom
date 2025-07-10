@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { NavElement } from ".";
 import { Anchors } from "./Anchors";
-import { getAuth } from "firebase/auth";
+import { LoginContext } from "../login.layout";
 
 export function SessionNavSection() {
+  const { currentUserFirestore } = useContext(LoginContext);
   const [url, setUrl] = useState<Record<string, NavElement>>({
     session: {
       href: "/session",
@@ -23,22 +24,20 @@ export function SessionNavSection() {
   });
 
   useEffect(() => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (user) {
+    if (currentUserFirestore) {
+      const data = currentUserFirestore.data();
       setUrl((currentUrl) => ({
         ...currentUrl,
         session: {
           ...currentUrl.session,
-          name: "Sesión de " + user.displayName,
+          name: "Sesión de " + data?.username,
           children: {
             ...currentUrl.session.children,
           },
         },
       }));
     }
-  }, []);
+  }, [currentUserFirestore]);
 
   return Object.values(url).map((el, i) => (
     <Anchors key={i} {...el} child={false} />

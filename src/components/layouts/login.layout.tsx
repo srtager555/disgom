@@ -3,7 +3,9 @@ import {
   userLevelsType,
 } from "@/hooks/login/useCheckUserLevel";
 import { useInactivityLogout } from "@/hooks/login/useInactivityLogout";
+import { userDoc } from "@/tools/session/createUserDoc";
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
+import { DocumentSnapshot } from "firebase/firestore";
 import { useRouter } from "next/router";
 import { createContext, useEffect } from "react";
 
@@ -14,14 +16,17 @@ interface props {
 export const LoginContext = createContext<{
   currentUser: User | null;
   currentLevel: userLevelsType;
+  currentUserFirestore: DocumentSnapshot<userDoc> | undefined;
 }>({
   currentUser: null,
   currentLevel: "none",
+  currentUserFirestore: undefined,
 });
 
 export function LoginLayout({ children }: props) {
   const router = useRouter();
-  const { currentUser, currentLevel } = useCheckUserLevel();
+  const { currentUser, currentLevel, currentUserFirestore } =
+    useCheckUserLevel();
 
   // logout the user after 5 minutes
   useInactivityLogout();
@@ -44,7 +49,9 @@ export function LoginLayout({ children }: props) {
   }, []);
 
   return (
-    <LoginContext.Provider value={{ currentUser, currentLevel }}>
+    <LoginContext.Provider
+      value={{ currentUser, currentLevel, currentUserFirestore }}
+    >
       {children}
     </LoginContext.Provider>
   );

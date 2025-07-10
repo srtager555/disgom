@@ -163,6 +163,7 @@ export const SimpleAnchor = styled.a`
   display: flex;
   justify-content: flex-start;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 5px;
   padding: 10px;
 

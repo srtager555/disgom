@@ -8,7 +8,7 @@ export function SessionNavSection() {
   const [url, setUrl] = useState<Record<string, NavElement>>({
     session: {
       href: "/session",
-      icon: undefined,
+      icon: "user",
       name: "Sesión de usuario",
       children: {
         manage: {
@@ -30,7 +30,7 @@ export function SessionNavSection() {
         ...currentUrl,
         session: {
           ...currentUrl.session,
-          name: "Sesión de " + data?.username,
+          name: "" + data?.username,
           children: {
             ...currentUrl.session.children,
           },

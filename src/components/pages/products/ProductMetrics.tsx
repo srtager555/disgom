@@ -49,10 +49,17 @@ export function ProductMetrics() {
       outputs.forEach((output) => {
         const data = output.data();
         if (data?.created_at && typeof data.sale_value === "number") {
+          const date = data.created_at.toDate();
+
+          const onlyDate = new Date(
+            date.getFullYear(),
+            date.getMonth(),
+            date.getDate()
+          );
+
+          console.log("fecha de raiz", onlyDate);
           try {
-            const dateKey = new Date(data?.created_at.toDate())
-              .toISOString()
-              .split("T")[0];
+            const dateKey = onlyDate.toISOString().split("T")[0];
             dailyTotals[dateKey] =
               (dailyTotals[dateKey] || 0) + data.sale_value;
           } catch (error) {
@@ -70,8 +77,10 @@ export function ProductMetrics() {
       const chartDataFormatted: ChartData = Object.entries(dailyTotals)
         .map(([date, totalSales]) => {
           // fix the issue about parse local time to UTC
+          console.log("date", date);
           const localDate = new Date(date.replace(/-/g, "/"));
 
+          console.log("localDate", localDate);
           return {
             createdAt: localDate,
             amount: totalSales,

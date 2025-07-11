@@ -20,6 +20,11 @@ import {
 } from "firebase/firestore";
 import { debounce } from "lodash";
 import { useCallback, useEffect, useState } from "react";
+import styled from "styled-components";
+
+const DeleteButton = styled(Button)`
+  padding: 5px 10px;
+`;
 
 interface props {
   sellerDoc: DocumentSnapshot<SellersDoc> | undefined;
@@ -61,10 +66,12 @@ export function SellerDefaultPrices({ sellerDoc, clientDoc }: props) {
   }, [sellerDoc, clientDoc]);
 
   return (
-    <Container styles={{ flex: "1", maxWidth: "500px" }}>
+    <Container styles={{ flex: "1" }}>
       <h2 style={{ marginBottom: "0px" }}>Precios personalizados</h2>
       <p>Precio actual {"=>"} Precio personalizado</p>
-      <Container styles={{ marginTop: "20px" }}>
+      <FlexContainer
+        styles={{ marginTop: "20px", flexWrap: "wrap", gap: "1%" }}
+      >
         {prices.length > 0 ? (
           prices.map((el, i) => {
             return <DefaultPrice key={i} defaultPriceDoc={el} />;
@@ -72,7 +79,7 @@ export function SellerDefaultPrices({ sellerDoc, clientDoc }: props) {
         ) : (
           <p>No hay precios por defecto</p>
         )}
-      </Container>
+      </FlexContainer>
     </Container>
   );
 }
@@ -108,12 +115,18 @@ function DefaultPrice({ defaultPriceDoc }: DefaultPriceProps) {
   }, [defaultPriceDoc]);
 
   return (
-    <FlexContainer styles={{ justifyContent: "space-between" }}>
+    <FlexContainer
+      styles={{
+        justifyContent: "space-between",
+        border: "1px solid " + globalCSSVars["--detail"],
+        padding: "10px",
+        marginBottom: "10px",
+        width: "49%",
+      }}
+    >
       <FlexContainer
         styles={{
           alignItems: "center",
-          padding: "10px",
-          outline: "1px solid " + globalCSSVars["--detail"],
           flex: "1",
         }}
       >
@@ -122,24 +135,22 @@ function DefaultPrice({ defaultPriceDoc }: DefaultPriceProps) {
       <FlexContainer
         styles={{
           alignItems: "center",
-          padding: "10px",
-          outline: "1px solid " + globalCSSVars["--detail"],
         }}
       >
-        <span style={{ marginRight: "40px" }}>
+        <span style={{ marginRight: "10px" }}>
           {numberParser(productData?.stock[0]?.sale_price ?? 0)} {"=>"}{" "}
           {numberParser(defaultPriceDoc.data().price)}
         </span>
 
-        <Button
+        <DeleteButton
           $warn
           $hold
           onMouseDown={debounceRemove}
           onMouseLeave={debounceRemove.cancel}
           onMouseUp={debounceRemove.cancel}
         >
-          Eliminar
-        </Button>
+          X
+        </DeleteButton>
       </FlexContainer>
     </FlexContainer>
   );

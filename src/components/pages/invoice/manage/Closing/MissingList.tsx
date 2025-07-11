@@ -91,6 +91,7 @@ export function MissingList() {
     }, 0);
   }, [docs]);
 
+  // effect to get all invoices with missing money
   useEffect(() => {
     const db = Firestore();
     const coll = collection(
@@ -98,12 +99,18 @@ export function MissingList() {
       InvoiceCollection.root
     ) as CollectionReference<invoiceType>;
 
+    const seller = invoice?.data().seller_ref;
+    if (!seller) {
+      console.log("waiting the seller ref");
+      return;
+    }
+
     const q = query(
       coll,
       where("diff.amount", "<", 0),
       where("diff.paid", "==", false),
       where("disabled", "==", false),
-      where("seller_ref", "==", invoice?.data().seller_ref)
+      where("seller_ref", "==", seller)
     );
 
     const unsubcribe = onSnapshot(q, (snap) => {

@@ -53,6 +53,10 @@ export function SellerCredit({ seller_doc }: props) {
     }
 
     getContainer();
+
+    return () => {
+      setContainer(undefined);
+    };
   }, [bundleCreditsToShow]);
 
   // effect to get the credits in the selected bundle
@@ -95,6 +99,10 @@ export function SellerCredit({ seller_doc }: props) {
     }
 
     getClients();
+
+    return () => {
+      setClients([]);
+    };
   }, [container]);
 
   // effect to analyze the credits btw, I hate this project
@@ -103,10 +111,15 @@ export function SellerCredit({ seller_doc }: props) {
 
     setAnalyzedCredits(result.credits_list);
     setTotalCreditAmount(result.total_current_bundle_credit);
+
+    return () => {
+      setAnalyzedCredits([]);
+      setTotalCreditAmount(0);
+    };
   }, [clients, rawCredits]);
 
   return (
-    <Container>
+    <Container styles={{ flex: "1" }}>
       <FlexContainer
         styles={{
           justifyContent: "space-between",

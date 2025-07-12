@@ -4,10 +4,38 @@ import { Input } from "../../invoice/Product";
 import { globalCSSVars } from "@/styles/colors";
 import { Button } from "@/styles/Form.styles";
 import { numberParser } from "@/tools/numberPaser";
-import { debounce } from "lodash";
-import { useCallback, useMemo, useState } from "react";
-import { Timestamp, updateDoc } from "firebase/firestore";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { updateDoc } from "firebase/firestore";
 import { clientCreditBundleDocType } from "@/tools/sellers/credits/createClientForABundle";
+import styled, { css } from "styled-components";
+
+const CreditAmount = styled.span`
+  display: inline-block;
+  width: 30%;
+  font-weight: bold;
+  font-size: 1.1rem;
+  text-align: right;
+`;
+
+const HiddenButtonContainer = styled(Container)<{ $show: boolean }>`
+  position: absolute;
+  transform: translateY(-50%);
+  top: 50%;
+
+  ${({ $show }) => {
+    if ($show) {
+      return css`
+        right: -20px;
+        opacity: 1;
+      `;
+    } else {
+      return css`
+        right: -100%;
+        opacity: 0;
+      `;
+    }
+  }}
+`;
 
 interface props {
   data: AnalyzedCreditItem;
@@ -17,14 +45,16 @@ export function ClientCredit({ data }: props) {
   const initialData = useMemo(() => data.client.data(), [data]);
   const [clientName, setClientName] = useState(initialData.name);
   const [clientAddress] = useState(initialData.address);
+  const [showButtonToEditTheName, setShowButtonToEditTheName] = useState(false);
   const [succesufully, setSuccesufully] = useState(false);
   const [error, setError] = useState(false);
   const [noChanges, setNoChanges] = useState(false);
+  const lastClienteNameRef = useRef(clientName);
 
   const handleUpdateClientDetails = useCallback(async () => {
     const updatedFields: Partial<clientCreditBundleDocType> = {};
-    if (clientName !== initialData.name) {
-      updatedFields.name = clientName;
+    if (clientName.trim() !== initialData.name) {
+      updatedFields.name = clientName.trim();
     }
     if (
       clientAddress !== initialData.address &&
@@ -38,7 +68,9 @@ export function ClientCredit({ data }: props) {
       try {
         await updateDoc(data.client.ref, updatedFields);
         console.log("Client details updated successfully.");
+        lastClienteNameRef.current = clientName;
         setSuccesufully(true);
+        setShowButtonToEditTheName(false);
 
         setTimeout(() => {
           setSuccesufully(false);
@@ -64,36 +96,40 @@ export function ClientCredit({ data }: props) {
     data.client.ref,
   ]);
 
+  // effect to listen the changes in clientName
+  // to show the button to update the name
+  useEffect(() => {
+    if (lastClienteNameRef.current === clientName.trim()) {
+      setShowButtonToEditTheName(false);
+    } else {
+      setShowButtonToEditTheName(true);
+    }
+  }, [clientName]);
+
   // const handleAddressChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
   //   setClientAddress(e.target.value);
   // };
 
-  const handleDeleteClientCredit = useCallback(async () => {
-    try {
-      await updateDoc(data.client.ref, {
-        disabled: true,
-        disabled_at: Timestamp.now(),
-      });
-      console.log("Client credit marked as disabled.");
-      // Optionally, trigger a re-fetch or update local state
-    } catch (error) {
-      console.error("Error disabling client credit:", error);
-    }
-  }, [data.client.ref]);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedDelete = useCallback(
-    debounce(handleDeleteClientCredit, 5000),
-    [handleDeleteClientCredit]
-  );
+  // const handleDeleteClientCredit = useCallback(async () => {
+  //   try {
+  //     await updateDoc(data.client.ref, {
+  //       disabled: true,
+  //       disabled_at: Timestamp.now(),
+  //     });
+  //     console.log("Client credit marked as disabled.");
+  //     // Optionally, trigger a re-fetch or update local state
+  //   } catch (error) {
+  //     console.error("Error disabling client credit:", error);
+  //   }
+  // }, [data.client.ref]);
 
   return (
     <FlexContainer
       styles={{
         justifyContent: "space-between",
-        gap: "20px",
-        width: "300px",
-        paddingBottom: "10px",
+        gap: "10px",
+        width: "100%",
+        padding: "10px 5px",
         marginBottom: "10px",
         borderBottom: "1px solid " + globalCSSVars["--detail"],
       }}
@@ -108,38 +144,16 @@ export function ClientCredit({ data }: props) {
             type="text"
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
-            style={{ padding: "5px" }} // Style to look like h3
+            style={{ padding: "5px", textAlign: "start" }} // Style to look like h3
           />
         </Container>
-
-        {/* <textarea
-            value={clientAddress === "not provided" ? "" : clientAddress} // Handle "not provided" for placeholder effect
-            onChange={handleAddressChange}
-            placeholder="Dirección"
-            rows={2}
-            style={{
-              fontSize: "1rem",
-              marginTop: "5px",
-              width: "100%",
-              padding: "5px",
-            }} // Style to look like small
-          /> */}
-        <FlexContainer
-          styles={{ justifyContent: "space-between", marginTop: "10px" }}
-        >
-          <Button onClick={handleUpdateClientDetails}>Actualizar Nombre</Button>
-          {/* <Button
-            $warn
-            $hold
-            onPointerDown={debouncedDelete}
-            onPointerUp={debouncedDelete.cancel}
-            onMouseLeave={debouncedDelete.cancel} // Also cancel if mouse leaves while pressed
-          >
-            Eliminar
-          </Button> */}
-        </FlexContainer>
       </FlexContainer>
-      <span>{numberParser(data.current_credit ?? 0)}</span>
+      <CreditAmount>{numberParser(data.current_credit ?? 0)}</CreditAmount>
+      <HiddenButtonContainer $show={showButtonToEditTheName}>
+        <Button $primary onClick={handleUpdateClientDetails}>
+          Actualizar
+        </Button>
+      </HiddenButtonContainer>
     </FlexContainer>
   );
 }

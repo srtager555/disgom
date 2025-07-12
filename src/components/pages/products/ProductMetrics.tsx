@@ -4,6 +4,7 @@ import { useGetEntries } from "@/hooks/products/getEntries";
 import { useGetProductOutputs } from "@/hooks/products/getOutputs";
 import { globalCSSVars } from "@/styles/colors";
 import { Container, FlexContainer } from "@/styles/index.styles";
+import { numberParser } from "@/tools/numberPaser";
 import { entryDoc } from "@/tools/products/addEntry";
 import { outputType } from "@/tools/products/addOutputs";
 import { QueryDocumentSnapshot } from "firebase/firestore";
@@ -34,6 +35,11 @@ const DataParentContainer = styled(FlexContainer)`
 const DataContainer = styled(FlexContainer)`
   gap: 5px;
   flex-direction: column;
+`;
+
+const Anchor = styled.a`
+  color: ${globalCSSVars["--highlight"]};
+  text-decoration: underline;
 `;
 
 export function ProductMetrics() {
@@ -129,18 +135,22 @@ function EntryElement({ entry }: { entry: QueryDocumentSnapshot<entryDoc> }) {
 
   return (
     <DataParentContainer>
+      <DataContainer>{data.created_at.toDate().toLocaleString()}</DataContainer>
       <DataContainer>
-        <span>Creación</span>
-        <span>{data.created_at.toDate().toLocaleString()}</span>
+        <span>Cant. {numberParser(data.amount)}</span>
       </DataContainer>
-      <DataContainer>
-        <span>Cantidad</span>
-        <span>{data.amount}</span>
-      </DataContainer>
-      <DataContainer>
-        <span>P. Costo</span>
-        <span>
-          {data.purchase_price} / {data.purchase_price * data.amount}
+      <DataContainer
+        styles={{
+          width: "100%",
+          justifyContent: "space-between",
+          flexDirection: "row !important",
+        }}
+      >
+        <span style={{ flex: 1 }}>
+          P. Costo {numberParser(data.purchase_price)}
+        </span>
+        <span style={{ flex: 1 }}>
+          Costo {numberParser(data.purchase_price * data.amount)}
         </span>
       </DataContainer>
     </DataParentContainer>
@@ -156,18 +166,29 @@ function OutputElement({
 
   return (
     <DataParentContainer>
-      <DataContainer styles={{ width: "100%" }}>
-        <span>Creación</span>
-        <span>{data.created_at.toDate().toLocaleString()}</span>
+      <DataContainer>
+        <Anchor
+          href={"/invoices/manage?id=" + data.invoice_ref.id}
+          target="_blank"
+        >
+          {data.created_at.toDate().toLocaleString()}
+        </Anchor>
       </DataContainer>
       <DataContainer>
-        <span>Cantidad</span>
-        <span>{data.amount}</span>
+        <span>Cant. {numberParser(data.amount)}</span>
       </DataContainer>
-      <DataContainer>
-        <span>P. Costo</span>
-        <span>
-          {data.purchase_price} / {data.purchase_price * data.amount}
+      <DataContainer
+        styles={{
+          width: "100%",
+          justifyContent: "space-between",
+          flexDirection: "row !important",
+        }}
+      >
+        <span style={{ flex: 1 }}>
+          P. Venta {numberParser(data.sale_price)}
+        </span>
+        <span style={{ flex: 1 }}>
+          Valor {numberParser(data.sale_price * data.amount)}
         </span>
       </DataContainer>
     </DataParentContainer>

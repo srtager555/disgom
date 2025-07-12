@@ -47,11 +47,13 @@ export const CreditClient = ({ credit, bundleSnap }: CreditClientProps) => {
 
       console.log(`Guardando crédito para ${credit.client.id}: ${newAmount}`);
       try {
-        createOrUpdateCreditInBundle({
-          bundle_ref: bundleSnap.ref,
-          client_ref: credit.client.ref,
-          amount: newAmount,
-        });
+        checkHasNextInvoiceCreditSection(bundleSnap, () =>
+          createOrUpdateCreditInBundle({
+            bundle_ref: bundleSnap.ref,
+            client_ref: credit.client.ref,
+            amount: newAmount,
+          })
+        );
         // await updateCredits(currentCredit.ref, { amount: newAmount });
         console.log(
           `Crédito actualizado correctamente para ${credit.client.id}`
@@ -79,20 +81,10 @@ export const CreditClient = ({ credit, bundleSnap }: CreditClientProps) => {
     if (currentCredit !== undefined) {
       const numericAmount = Number(amount);
       if (!isNaN(numericAmount)) {
-        checkHasNextInvoiceCreditSection(
-          bundleSnap,
-
-          () => saveCredit(numericAmount)
-        );
+        saveCredit(numericAmount);
       }
     }
-  }, [
-    amount,
-    currentCredit,
-    saveCredit,
-    checkHasNextInvoiceCreditSection,
-    bundleSnap,
-  ]);
+  }, [amount, currentCredit, saveCredit]);
 
   // Handler para el input
   const handleOnBlurAmount = async (e: React.ChangeEvent<HTMLInputElement>) => {

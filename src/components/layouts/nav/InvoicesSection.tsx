@@ -37,10 +37,12 @@ export function InvoicesNavSection({ sellers, clients }: props) {
             donations: {
               name: "Donaciones",
               href: "/invoices/manage?invoice_type=donation",
+              mustBeAnchor: true,
             },
             damagedProduct: {
               name: "Producto en mal estado",
               href: "/invoices/manage?invoice_type=damaged",
+              mustBeAnchor: true,
             },
           },
         },

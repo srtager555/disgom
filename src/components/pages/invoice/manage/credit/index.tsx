@@ -48,7 +48,7 @@ export function Credit({ setCreditResult, creditResult }: props) {
     <Container styles={{ width: "50%", marginBottom: "20px" }}>
       <h2 style={{ textAlign: "center" }}>Creditos</h2>
 
-      <Route bundle_container_ref={bundleContainer?.ref} />
+      <Route />
       {bundleContainer && creditBundle && (
         <FlexContainer
           className="hide-print"

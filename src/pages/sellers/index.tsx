@@ -56,7 +56,7 @@ const Page: NextPageWithLayout = () => {
   if (!id && !clientID) return <></>;
 
   return (
-    <Container>
+    <Container styles={{ marginBottom: "100px" }}>
       <SellerChart sellerDoc={sellerDoc} clientDoc={clientDoc} />
       <FlexContainer styles={{ gap: "20px" }}>
         {sellerDoc?.data()?.hasInventory && (

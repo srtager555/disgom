@@ -11,7 +11,14 @@ import { Button } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { disableProduct } from "@/tools/products/disable";
 import { updateDoc } from "firebase/firestore";
-import { FormEvent, ReactElement, useContext, useMemo, useState } from "react";
+import {
+  FormEvent,
+  ReactElement,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 const Page: NextPageWithLayout = () => {
   const { selectedProduct, setSelectedProduct } = useContext(ProductContext);
@@ -35,6 +42,10 @@ const Page: NextPageWithLayout = () => {
 
     setTimeOut(timeout);
   }
+
+  useEffect(() => {
+    setChangeChartMode(false);
+  }, [selectedProduct]);
 
   return (
     <Container>

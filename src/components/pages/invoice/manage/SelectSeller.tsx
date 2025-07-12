@@ -248,7 +248,7 @@ export function SelectSeller({
         alignItems: "flex-start", // Alinea los items arriba
       }}
     >
-      {!queryId && (
+      {/* {!queryId && (
         <Fieldset>
           <legend>Seleccione el tipo de factura:</legend>
           <div>
@@ -293,7 +293,7 @@ export function SelectSeller({
             </label>
           </div>
         </Fieldset>
-      )}
+      )} */}
 
       {/* Contenedor para el Select o el Título */}
       <SelectContainer

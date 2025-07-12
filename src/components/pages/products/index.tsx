@@ -32,7 +32,10 @@ const ProductsContainer = styled.div`
   }
 `;
 
-const Product = styled.button<{ $removeBottomPadding: boolean }>`
+const Product = styled.button<{
+  $removeBottomPadding: boolean;
+  $selected: boolean;
+}>`
   text-align: start;
   display: flex;
   flex-direction: row;
@@ -53,11 +56,21 @@ const Product = styled.button<{ $removeBottomPadding: boolean }>`
     transform: scale(0.95);
   }
 
-  ${(props) =>
-    props.$removeBottomPadding &&
-    css`
-      padding-bottom: 0px;
-    `}
+  ${({ $removeBottomPadding }) => {
+    if ($removeBottomPadding) {
+      return css`
+        padding-bottom: 0px;
+      `;
+    }
+  }}
+
+  ${({ $selected }) => {
+    if ($selected) {
+      return css`
+        background-color: ${globalCSSVars["--highlight"]};
+      `;
+    }
+  }}
 
   @media print {
     grid-column: 1 / -1;
@@ -72,7 +85,7 @@ const RemoveOnPrint = styled(Container)`
 `;
 
 export function Products() {
-  const { setSelectedProduct } = useContext(ProductContext);
+  const { selectedProduct, setSelectedProduct } = useContext(ProductContext);
   const [order, setOrder] = useState<keyof productDoc>("position");
   const [orderByName, setOrderByName] = useState(false);
   const products = useGetProducts(order);
@@ -151,6 +164,7 @@ export function Products() {
               <Product
                 key={i}
                 onClick={() => handlerOnClik(_)}
+                $selected={selectedProduct?.ref.id === _.ref.id}
                 $removeBottomPadding={bottomPadding.length > 0}
               >
                 <span>{data.name}</span>{" "}
@@ -188,6 +202,7 @@ export function Products() {
                     <Product
                       onClick={() => handlerOnClik(_)}
                       $removeBottomPadding={bottomPadding.length > 0}
+                      $selected={selectedProduct?.ref.id === _.ref.id}
                     >
                       <h4 style={{ marginBottom: "10px" }}>
                         {data.name} - {numberParser(stock)} {data.units}

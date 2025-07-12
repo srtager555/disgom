@@ -1,6 +1,7 @@
 import {
   DocumentSnapshot,
   Timestamp,
+  WriteBatch,
   getFirestore,
   writeBatch,
 } from "firebase/firestore";
@@ -14,6 +15,7 @@ import { stockType } from "./addToStock";
 import { getAuth } from "firebase/auth"; // Import getAuth
 
 async function saveNewOutputs(
+  exportedBatch: WriteBatch | undefined,
   parentStockIsReal: stockType[] | null,
   productParent: productDoc | undefined,
   outputs: DocumentSnapshot<outputType>[],
@@ -25,7 +27,8 @@ async function saveNewOutputs(
 ) {
   try {
     const data = productDoc.data();
-    const batch = writeBatch(productDoc.ref.firestore);
+    console.log("exported batch:", exportedBatch);
+    const batch = exportedBatch || writeBatch(productDoc.ref.firestore);
 
     const persistentPrices = data?.product_parent
       ? productParent?.last_sales_amounts
@@ -83,9 +86,12 @@ async function saveNewOutputs(
       remplaceOutputs: true,
     }); // Pass currentUid
 
-    await batch.commit();
+    if (!exportedBatch) {
+      console.log("Committing batch", exportedBatch);
+      await batch.commit();
 
-    console.log("Proceso de resta completado");
+      console.log("Proceso de resta completado");
+    }
   } catch (error) {
     console.error(
       "ocurrio un error al guardar la consignacion (resta), se cancelo la operacion atomica"
@@ -103,6 +109,7 @@ export function restaOutputs(
   currentAmount: number,
   productParent: productDoc | undefined,
   setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>,
+  exportedBatch: WriteBatch | undefined,
   customPrice?: number
 ) {
   const data = productDoc.data();
@@ -139,6 +146,7 @@ export function restaOutputs(
   }
 
   saveNewOutputs(
+    exportedBatch,
     // Call directly, no debounce
     parentStockIsReal,
     productParent,

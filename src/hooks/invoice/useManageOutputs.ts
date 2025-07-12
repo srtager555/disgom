@@ -157,6 +157,7 @@ export function useManageOutputs({
           currentOutputsServerAmount,
           productParentData,
           setRawOutputs, // Pass setRawOutputs to update UI immediately
+          undefined,
           priceToSave
         ); // Increase amount
       } else if (amountToSave > currentOutputsServerAmount) {

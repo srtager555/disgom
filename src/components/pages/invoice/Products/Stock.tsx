@@ -78,14 +78,18 @@ export function ProductStock({ stock, entryToEdit, setEntryToEdit }: props) {
                   >
                     {_.created_at.toDate().toLocaleDateString()} - hay{" "}
                     {_.amount.toFixed(2)} {product.data?.units}
-                    <FlexContainer>
-                      <Container styles={{ marginRight: "10px" }}>
-                        Costo {_.purchase_price} -
+                    <FlexContainer
+                      styles={{ justifyContent: "space-between", gap: "20px" }}
+                    >
+                      <Container styles={{ whiteSpace: "nowrap" }}>
+                        Costo {_.purchase_price}
                       </Container>
-                      <Container styles={{ marginRight: "10px" }}>
-                        Precio {_.sale_price} -
+                      <Container styles={{ whiteSpace: "nowrap" }}>
+                        Precio {_.sale_price}
                       </Container>
-                      <Container>Vendedor {_.seller_commission}</Container>
+                      <Container styles={{ whiteSpace: "nowrap" }}>
+                        Vendedor {_.seller_commission}
+                      </Container>
                     </FlexContainer>
                   </StockButton>
                 </Container>

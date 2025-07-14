@@ -42,6 +42,11 @@ export function Credit({ setCreditResult, creditResult }: props) {
       results.total_previous_bundle_credit - results.total_current_bundle_credit
     );
     setCredits(results.credits_list);
+
+    return () => {
+      setCreditResult(0);
+      setCredits([]);
+    };
   }, [clients, currentBundleCredits, previusBundleCredits, setCreditResult]);
 
   return (

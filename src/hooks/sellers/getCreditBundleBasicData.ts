@@ -41,7 +41,12 @@ export function useGetCreditBundleBasicData() {
     async function getBundle() {
       if (!invoice) return;
       const bundle_ref = invoice?.data().credit_bundle_ref;
-      if (!bundle_ref) return;
+      if (!bundle_ref) {
+        setCreditBundle(undefined);
+        setBundleContainer(undefined);
+
+        return;
+      }
 
       await getDoc(bundle_ref).then(async (doc) => {
         setCreditBundle(doc);

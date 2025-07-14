@@ -100,7 +100,7 @@ const ColumnGrid = styled(Container)<{
     transition: all 200ms ease;
     z-index: 1;
     box-shadow: 10px 10px 15px #0002;
-    cursor: none;
+    cursor: help;
   }
 `;
 

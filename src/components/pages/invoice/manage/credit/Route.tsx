@@ -10,6 +10,7 @@ import {
   DocumentReference,
   DocumentSnapshot,
   CollectionReference,
+  Timestamp,
 } from "firebase/firestore";
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -188,7 +189,7 @@ export function Route() {
     [selectedPreviousBundleId]
   );
 
-  const selectOptions = useMemo(() => {
+  const selectOptions = useMemo(async () => {
     if (isSelectDisabled && lockedBundleSnapshot) {
       const bundleData = lockedBundleSnapshot.data();
       const bundleDate = bundleData?.created_at.toDate().toLocaleDateString();
@@ -210,22 +211,37 @@ export function Route() {
       ];
     }
 
-    const bundleOptions = availableBundles.map((bundleDoc) => {
-      const bundleData = bundleDoc.data() as creditBundle;
-      const bundleDate = bundleData.created_at.toDate().toLocaleDateString();
-      const bundleDay = Days[bundleData.created_at.toDate().getDay()];
+    const bundleOptions = await Promise.all(
+      availableBundles.map(async (bundleDoc) => {
+        const bundleData = bundleDoc.data() as creditBundle;
+        const invoiceQuery = await getDoc(bundleData.invoice_ref);
+        const invoiceData = invoiceQuery.data();
+        let bundleDate = "";
+        let bundleDay = "";
 
-      const displayName = `Lista del ${bundleDay} ${bundleDate}${
-        process.env.NODE_ENV === "development"
-          ? ` (${bundleDoc.id.substring(0, 5)})`
-          : ""
-      }`;
-      return {
-        name: displayName,
-        value: bundleDoc.id,
-        selected: pendingPreviousBundleId === bundleDoc.id, // Usar pending para reflejar la selección del UI
-      };
-    });
+        if (invoiceData) {
+          bundleDate = (invoiceData.created_at as Timestamp)
+            .toDate()
+            .toLocaleDateString();
+          bundleDay =
+            Days[(invoiceData.created_at as Timestamp).toDate().getDay()];
+        } else {
+          bundleDate = bundleData.created_at.toDate().toLocaleDateString();
+          bundleDay = Days[bundleData.created_at.toDate().getDay()];
+        }
+
+        const displayName = `Lista del ${bundleDay} ${bundleDate}${
+          process.env.NODE_ENV === "development"
+            ? ` (${bundleDoc.id.substring(0, 5)})`
+            : ""
+        }`;
+        return {
+          name: displayName,
+          value: bundleDoc.id,
+          selected: pendingPreviousBundleId === bundleDoc.id, // Usar pending para reflejar la selección del UI
+        };
+      })
+    );
 
     return [
       {

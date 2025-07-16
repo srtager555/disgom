@@ -70,9 +70,10 @@ const AnchorBro = styled.a`
 type props = {
   doc: QueryDocumentSnapshot<invoiceType>;
   inSeller?: boolean;
+  showDate?: boolean;
 };
 
-export function InvoicePreview({ doc, inSeller, onlyTime }: props) {
+export function InvoicePreview({ doc, inSeller, showDate }: props) {
   const [seller, setSeller] = useState<DocumentSnapshot<SellersDoc>>();
   const [client, setClient] = useState<DocumentSnapshot<client>>();
   const data = useMemo(() => doc.data(), [doc]);
@@ -123,6 +124,7 @@ export function InvoicePreview({ doc, inSeller, onlyTime }: props) {
           }}
         >
           <small style={{ textOverflow: "ellipsis" }}>
+            {showDate && data.created_at?.toDate().toLocaleDateString()}{" "}
             {time12HrsParser(data.created_at?.toDate())}
           </small>
           <small style={{ textOverflow: "ellipsis", textWrap: "nowrap" }}>
@@ -143,6 +145,8 @@ export function InvoicePreview({ doc, inSeller, onlyTime }: props) {
           }}
         >
           <small style={{ textOverflow: "ellipsis" }}>
+            {" "}
+            {showDate && data.created_at?.toDate().toLocaleDateString()}{" "}
             {time12HrsParser(data.created_at?.toDate())}
           </small>
           <p style={{ textOverflow: "ellipsis" }}>{primaryDisplay}</p>

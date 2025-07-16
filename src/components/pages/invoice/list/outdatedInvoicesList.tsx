@@ -48,7 +48,7 @@ export function OutdatedInvoicesList() {
           <h2>Facturas que necesitan revisión</h2>
           <InvoiceContainer unlimited>
             {outdatedInvoices.map((doc, i) => {
-              return <InvoicePreview key={i} doc={doc} />;
+              return <InvoicePreview key={i} doc={doc} showDate />;
             })}
           </InvoiceContainer>
         </>

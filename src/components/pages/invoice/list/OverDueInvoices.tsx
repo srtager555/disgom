@@ -53,7 +53,7 @@ export function OverDueInvoicesList() {
           <InvoiceContainer unlimited>
             {overdueInvoices.length > 0 ? (
               overdueInvoices.map((doc, i) => {
-                return <InvoicePreview key={i} doc={doc} />;
+                return <InvoicePreview key={i} doc={doc} showDate />;
               })
             ) : (
               <p>Todo en orden</p>

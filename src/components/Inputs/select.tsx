@@ -1,11 +1,23 @@
 import { Container } from "@/styles/index.styles";
-import { DetailedHTMLProps, SelectHTMLAttributes } from "react";
+import {
+  DetailedHTMLProps,
+  SelectHTMLAttributes,
+  useEffect,
+  useState,
+} from "react";
 import styled from "styled-components";
 
 const SelectStyles = styled.select`
   padding: 5px;
   font-size: 1rem;
 `;
+
+type optionsFields = {
+  name: string;
+  value: string;
+  selected?: boolean;
+  disabled?: boolean;
+};
 
 interface props
   extends DetailedHTMLProps<
@@ -15,12 +27,7 @@ interface props
   children?: children;
   inline?: boolean;
   marginBottom?: string;
-  options: Array<{
-    name: string;
-    value: string;
-    selected?: boolean;
-    disabled?: boolean;
-  }>;
+  options: Array<optionsFields> | Promise<Array<optionsFields>>;
 }
 
 export function Select({
@@ -30,6 +37,21 @@ export function Select({
   options,
   ...props
 }: props) {
+  const [optionsWaited, setOptionsWaited] = useState<Array<optionsFields>>([]);
+
+  useEffect(() => {
+    async function waitOptions() {
+      if (options instanceof Promise) {
+        const result = await options;
+        setOptionsWaited(result);
+      } else {
+        setOptionsWaited(options);
+      }
+    }
+
+    waitOptions();
+  }, [options]);
+
   return (
     <Container
       styles={{
@@ -40,7 +62,7 @@ export function Select({
     >
       {children && <p>{children}</p>}
       <SelectStyles {...props}>
-        {options.map((el, i) => {
+        {optionsWaited.map((el, i) => {
           return (
             <option
               key={i}

@@ -173,7 +173,7 @@ export function InvoicesList() {
               <GreenSpan>{numberParser(median, true)}</GreenSpan>
             </span>
           </InvoicesListInfo>
-          <InvoiceContainer>
+          <InvoiceContainer unlimited>
             {docsInvoices.map((el, i) => {
               return <InvoicePreview key={i} doc={el} />;
             })}

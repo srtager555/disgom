@@ -50,7 +50,7 @@ export function OverDueInvoicesList() {
       ) : (
         <>
           <h2>Facturas vencidas</h2>
-          <InvoiceContainer>
+          <InvoiceContainer unlimited>
             {overdueInvoices.length > 0 ? (
               overdueInvoices.map((doc, i) => {
                 return <InvoicePreview key={i} doc={doc} />;

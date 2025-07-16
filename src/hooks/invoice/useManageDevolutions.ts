@@ -16,6 +16,8 @@ import { saveDevolution } from "@/tools/products/saveDevolution"; // Assuming sa
 import { useGetCurrentDevolutionByProduct } from "./getCurrentDevolution";
 import { someHumanChangesDetected } from "@/components/pages/invoice/manage/products/Product";
 import { useHasNextInvoice } from "./useHasNextInvoice";
+import { getParentStock } from "@/tools/products/getParentStock";
+import { stockType } from "@/tools/products/addToStock";
 
 interface UseManageDevolutionsProps {
   invoice: DocumentSnapshot<invoiceType> | undefined;
@@ -75,23 +77,31 @@ export function useManageDevolutions({
 
   // Effect to calculate remainStock based on rawOutputs and currentDevolutionServerAmount
   useEffect(() => {
-    const soldStocks = rawOutputs.map(rawOutputToStock);
-    const inventoryStocks = inventoryOutputs.map((invDoc) =>
-      createStockFromOutputType(invDoc.data() as outputType)
-    );
-    const combinedStocks = [...soldStocks, ...inventoryStocks];
+    async function calculateRemainStock() {
+      const soldStocks = rawOutputs.map(rawOutputToStock);
+      const inventoryStocks = inventoryOutputs.map((invDoc) =>
+        createStockFromOutputType(invDoc.data() as outputType)
+      );
+      const combinedStocks = [...soldStocks, ...inventoryStocks];
+      const parsedCombinedStocks = await parseCombinedStocks({
+        productDoc,
+        combinedStocks,
+      });
 
-    const { remainingStocks } = amountListener(
-      Number(localDevoInput), // Siempre usar localDevoInput para el cálculo
-      combinedStocks,
-      undefined,
-      productDoc,
-      customPriceInput
-    );
+      const { remainingStocks } = amountListener(
+        Number(localDevoInput), // Siempre usar localDevoInput para el cálculo
+        parsedCombinedStocks,
+        undefined,
+        productDoc,
+        customPriceInput
+      );
 
-    if (!isEqual(remainingStocks, remainStock)) {
-      setRemainStock(remainingStocks);
+      if (!isEqual(remainingStocks, remainStock)) {
+        setRemainStock(remainingStocks);
+      }
     }
+
+    calculateRemainStock();
   }, [
     rawOutputs,
     localDevoInput, // Usar localDevoInput aquí
@@ -178,4 +188,42 @@ export function useManageDevolutions({
     runAgainOnBlurEvent,
     setRunAgainOnBlurEvent,
   };
+}
+
+async function parseCombinedStocks({
+  productDoc,
+  combinedStocks,
+}: {
+  productDoc: DocumentSnapshot<productDoc>;
+  combinedStocks: stockType[];
+}) {
+  // Add the lasted commision to combinedStocks from the product
+  const productData = productDoc.data();
+  if (!productData) return combinedStocks;
+
+  const hasParent = productData.product_parent;
+  let parent = null;
+  if (hasParent) {
+    parent = await getParentStock(hasParent);
+  }
+
+  let commission = 0;
+
+  if (parent) {
+    commission = parent[0]?.seller_commission || 0;
+  } else {
+    commission =
+      productData.last_sales_amounts?.seller_commission ||
+      productData.stock[0]?.seller_commission ||
+      0;
+  }
+
+  if (commission > 0) {
+    return combinedStocks.map((stock) => ({
+      ...stock,
+      seller_commission: commission,
+    }));
+  } else {
+    return combinedStocks;
+  }
 }

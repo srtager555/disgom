@@ -3,7 +3,7 @@ import { InputText } from "@/components/Inputs/text";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { useHasNextInvoice } from "@/hooks/invoice/useHasNextInvoice";
 import { Form, Button } from "@/styles/Form.styles";
-import { FlexContainer } from "@/styles/index.styles";
+import { Container, FlexContainer } from "@/styles/index.styles";
 import {
   creditBundle,
   creditBundleContainerDoc,
@@ -12,14 +12,12 @@ import {
 import { createAClientForABundle } from "@/tools/sellers/credits/createClientForABundle";
 import { createOrUpdateCreditInBundle } from "@/tools/sellers/credits/createOrUpdateCreditInBundle";
 import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
-import { Dispatch, SetStateAction, useRef } from "react";
+import { useRef } from "react";
 
 export const CreditForm = ({
-  setShowForm,
   bundleContainerRef,
   bundleSnap,
 }: {
-  setShowForm: Dispatch<SetStateAction<boolean>>;
   bundleContainerRef: DocumentReference<creditBundleContainerDoc>;
   bundleSnap: DocumentSnapshot<creditBundle>;
 }) => {
@@ -37,14 +35,14 @@ export const CreditForm = ({
       creditName: HTMLInputElement;
       amount: HTMLInputElement;
     };
-    const creditName = target.creditName.value;
+    // const creditName = target.creditName.value;
     const amount = target.amount.value;
     const bundle_ref = invoice.data().credit_bundle_ref;
 
     if (!bundle_ref) return;
 
     const client_ref = await createAClientForABundle(bundleContainerRef, {
-      name: creditName,
+      // name: creditName,
       address: "not provided",
     });
 
@@ -69,7 +67,6 @@ export const CreditForm = ({
     // );
 
     formRef.current?.reset();
-    setShowForm(false);
   };
 
   if (!invoice?.data().credit_bundle_ref) {
@@ -82,23 +79,27 @@ export const CreditForm = ({
       style={{ marginBottom: "30px" }}
       onSubmit={handleSubmit}
     >
-      <h3>Agregar nuevo credito</h3>
-      <p>Agregue un nuevo credito</p>
-      <FlexContainer styles={{ gap: "10px", marginBottom: "10px" }}>
-        <InputText
+      <FlexContainer styles={{ justifyContent: "center" }}>
+        <Container>
+          <h3>Agregue un nuevo credito</h3>
+          {/* <p>Agregue un nuevo credito</p> */}
+          <FlexContainer styles={{ gap: "10px", marginBottom: "10px" }}>
+            {/* <InputText
           type="text"
           placeholder="Nombre"
           marginBottom="0px"
           name="creditName"
-        />
-        <InputNumber
-          typeText
-          placeholder="Credito previo"
-          marginBottom="0px"
-          name="amount"
-        />
+        /> */}
+            <InputNumber
+              typeText
+              placeholder="Credito previo"
+              marginBottom="0px"
+              name="amount"
+            />
+          </FlexContainer>
+          <Button>Agregar</Button>
+        </Container>
       </FlexContainer>
-      <Button>Agregar</Button>
     </Form>
   );
 };

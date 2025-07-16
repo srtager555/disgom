@@ -100,9 +100,9 @@ export const CreditClient = ({ credit, bundleSnap }: CreditClientProps) => {
   // Renderizado
   return (
     <>
-      <Column gridColumn="1 / 3">
+      {/* <Column gridColumn="1 / 3">
         {credit.client.data()?.name ?? "Nombre no disponible"}
-      </Column>
+      </Column> */}
       <Column>{numberParser(credit.last_credit ?? 0)}</Column>
       <Column>
         <Input

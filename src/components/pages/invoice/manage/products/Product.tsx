@@ -269,6 +269,7 @@ export function BaseProduct({
         amountInput={amountInput}
         devoInput={devoInput}
         setAmountInput={setAmountInput}
+        invAmount={inventory.totalAmount}
         productDoc={rtDoc}
         currentStock={currentStock}
         someHumanChangesDetected={someHumanChangesDetected}

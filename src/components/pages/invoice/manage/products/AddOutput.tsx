@@ -20,6 +20,8 @@ import { someHumanChangesDetected } from "./Product";
 type AddOutputBaseProps = {
   amountInput: string;
   setAmountInput: React.Dispatch<React.SetStateAction<string>>;
+  devoInput: string;
+  invAmount: number;
   currentStock: number;
   productDoc: DocumentSnapshot<productDoc>;
   someHumanChangesDetected: RefObject<someHumanChangesDetected>;
@@ -57,6 +59,8 @@ export const MemoAddOutput = React.memo(AddOutputBase, (prev, next) => {
   if (prev.currentStock !== next.currentStock) return false;
   if (prev.amountInput !== next.amountInput) return false;
   if (prev.currentServerAmount !== next.currentServerAmount) return false;
+  if (prev.devoInput !== next.devoInput) return false;
+  if (prev.invAmount !== next.invAmount) return false;
 
   return true;
 });
@@ -68,6 +72,8 @@ export function AddOutputBase({
   setOverflowWarning,
   amountInput,
   setAmountInput,
+  devoInput,
+  invAmount,
   currentServerAmount,
   runOnBlurEventAgain,
   setRunOnBlurEventAgain,
@@ -82,15 +88,33 @@ export function AddOutputBase({
   };
 
   const handleInputBlur = useCallback(() => {
+    const localInput = Number(localInputAmount);
     const diff = Number(localInputAmount) - Number(amountInput);
     const overflow = diff > currentStock;
-    console.log("Add blur triggered", diff, currentStock, overflow);
+    const totalAmount = localInput + invAmount;
 
-    if (overflow) {
+    const totalAmountIsMoreOrEqualThanDevoAmount =
+      totalAmount >= Number(devoInput);
+
+    console.log(
+      "Add blur triggered",
+      diff,
+      currentStock,
+      overflow,
+      devoInput,
+      totalAmountIsMoreOrEqualThanDevoAmount,
+      totalAmount
+    );
+
+    if (overflow || !totalAmountIsMoreOrEqualThanDevoAmount) {
       setOverflowWarning(true);
       if (someHumanChangesDetected?.current) {
         someHumanChangesDetected.current.addOutput = false;
       }
+
+      setLocalInputAmount(amountInput);
+
+      return;
     } else {
       // When the input loses focus, trigger the save logic.
       // This is where we mark the human interaction for saving.

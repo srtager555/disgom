@@ -45,15 +45,11 @@ export function CreateNewDefaultCustomPrices() {
             >
               Guardar todos
             </Button>
-            <Container>
+            <Container styles={{ marginTop: "20px" }}>
               {Object.entries(newDefaultCustomPrices).map((el, i) => {
                 const name = docs?.find((_) => _.id === el[0])?.data().name;
                 return (
-                  <GridContainer
-                    key={i}
-                    $gridTemplateColumns="250px 1fr"
-                    styles={{ marginTop: "10px" }}
-                  >
+                  <GridContainer key={i} $gridTemplateColumns="250px 1fr">
                     <Column>{name}</Column>
                     <Column>
                       <FlexContainer

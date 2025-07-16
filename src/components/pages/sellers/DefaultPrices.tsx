@@ -70,7 +70,7 @@ export function SellerDefaultPrices({ sellerDoc, clientDoc }: props) {
       <h2 style={{ marginBottom: "0px" }}>Precios personalizados</h2>
       <p>Precio actual {"=>"} Precio personalizado</p>
       <FlexContainer
-        styles={{ marginTop: "20px", flexWrap: "wrap", gap: "1%" }}
+        styles={{ marginTop: "20px", flexWrap: "wrap", gap: "10px" }}
       >
         {prices.length > 0 ? (
           prices.map((el, i) => {
@@ -121,7 +121,7 @@ function DefaultPrice({ defaultPriceDoc }: DefaultPriceProps) {
         border: "1px solid " + globalCSSVars["--detail"],
         padding: "10px",
         marginBottom: "10px",
-        width: "49%",
+        minWidth: "33%",
       }}
     >
       <FlexContainer

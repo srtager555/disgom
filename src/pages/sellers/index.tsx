@@ -59,9 +59,9 @@ const Page: NextPageWithLayout = () => {
     <Container styles={{ marginBottom: "100px" }}>
       <SellerChart sellerDoc={sellerDoc} clientDoc={clientDoc} />
       <FlexContainer styles={{ gap: "20px" }}>
-        {sellerDoc?.data()?.hasInventory && (
+        {/* {sellerDoc?.data()?.hasInventory && (
           <SellerCredit seller_doc={sellerDoc} />
-        )}
+        )} */}
         <SellerDefaultPrices sellerDoc={sellerDoc} clientDoc={clientDoc} />
       </FlexContainer>
     </Container>

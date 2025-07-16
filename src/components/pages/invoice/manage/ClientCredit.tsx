@@ -4,6 +4,7 @@ import { Container } from "@/styles/index.styles";
 import { Timestamp, updateDoc } from "firebase/firestore";
 import { oneWeekAfter } from "@/tools/time/weeks";
 import { invoiceType } from "@/tools/invoices/createInvoice";
+import { Button } from "@/styles/Form.styles";
 
 export function ClientCredit() {
   const { invoice } = useInvoice();
@@ -13,6 +14,14 @@ export function ClientCredit() {
     paid_at: isCash ? Timestamp.fromDate(new Date()) : null,
     due_date: Timestamp.fromDate(new Date()),
   });
+
+  async function isAlreadyPaid() {
+    setIsCash(true);
+  }
+
+  async function isNotPaidYet() {
+    setIsCash(false);
+  }
 
   useEffect(() => {
     if (!invoice) return;
@@ -52,16 +61,30 @@ export function ClientCredit() {
 
   return (
     <Container styles={{ width: "100%" }}>
-      <label>
-        <input type="checkbox" checked={isCash} onChange={handleCashChange} />{" "}
-        ¿Esta factura es al contado?
-      </label>
-      {!isCash && (
-        <p style={{ margin: "10px 0" }}>
-          La factura se vencerá dentro de una semana:{" "}
-          {creditData?.due_date.toDate().toLocaleDateString()}
-        </p>
-      )}
+      <h2>Credito</h2>
+
+      <Container>
+        {isCash ? (
+          <p style={{ margin: "10px 0" }}>
+            La factura fue pagada el{" "}
+            {creditData?.paid_at?.toDate().toLocaleDateString()}
+          </p>
+        ) : (
+          <p style={{ margin: "10px 0" }}>
+            La factura se vencerá dentro de una semana:{" "}
+            {creditData?.due_date.toDate().toLocaleDateString()}
+          </p>
+        )}
+        {creditData?.paid ? (
+          <Button $warn onClick={isNotPaidYet}>
+            Marcar como <b>NO</b> pagada
+          </Button>
+        ) : (
+          <Button $primary onClick={isAlreadyPaid}>
+            Marcar como pagada
+          </Button>
+        )}
+      </Container>
     </Container>
   );
 }

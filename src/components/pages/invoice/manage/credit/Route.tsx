@@ -174,7 +174,7 @@ export function Route() {
       // Limpiar el timeout si el componente se desmonta o invoice cambia
       if (confirmTimeoutRef.current) clearTimeout(confirmTimeoutRef.current);
     };
-  }, [invoice]);
+  }, [invoice?.id]);
 
   // Lógica para mostrar confirmación, envuelta en debounce
   const showConfirmationLogic = useCallback(

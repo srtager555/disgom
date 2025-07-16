@@ -121,7 +121,7 @@ export function MissingList() {
     return () => {
       unsubcribe();
     };
-  }, [invoice]);
+  }, [invoice?.id]);
 
   if (!invoice)
     return (

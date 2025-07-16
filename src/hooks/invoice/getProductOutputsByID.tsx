@@ -45,7 +45,7 @@ export function useGetProductOutputByID(id: string) {
 
     return () => unsubscribe();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invoice]);
+  }, [invoice?.id]);
 
   return outputs;
 }

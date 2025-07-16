@@ -57,7 +57,7 @@ export function useGetCurrentDevolutionByProduct(product_id: string) {
     return () => {
       unsubcribe();
     };
-  }, [invoice, product_id]);
+  }, [invoice?.id, product_id]);
 
   return { amount, outputs: devolutionOutputs, docsChanges };
 }

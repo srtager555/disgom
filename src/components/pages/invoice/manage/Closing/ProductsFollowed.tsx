@@ -59,7 +59,7 @@ export function ProductsFollowed() {
     return () => {
       unsubcribe();
     };
-  }, [invoice]);
+  }, [invoice?.id]);
 
   return (
     <Container styles={{ width: "177px" }}>
@@ -119,7 +119,7 @@ function ProductFolledTotalAmount({
     return () => {
       unsubcribe();
     };
-  }, []);
+  }, [invoice.id]);
 
   return (
     <GridContainer $gridTemplateColumns={GridSizes}>

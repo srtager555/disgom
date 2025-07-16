@@ -197,7 +197,7 @@ export function BaseProduct({
     });
 
     return () => unsubcribe();
-  }, [doc.ref]);
+  }, [doc.ref.id]);
 
   // Effect to update the parent component with the calculated totals
   useEffect(() => {
@@ -267,6 +267,7 @@ export function BaseProduct({
       )}
       <AddOutput
         amountInput={amountInput}
+        devoInput={devoInput}
         setAmountInput={setAmountInput}
         productDoc={rtDoc}
         currentStock={currentStock}

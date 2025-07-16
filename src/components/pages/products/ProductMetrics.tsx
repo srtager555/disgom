@@ -89,7 +89,7 @@ export function ProductMetrics() {
           console.log("localDate", localDate);
           return {
             createdAt: localDate,
-            amount: totalSales,
+            amount: Number(totalSales.toFixed(2)),
           };
         })
         .sort(

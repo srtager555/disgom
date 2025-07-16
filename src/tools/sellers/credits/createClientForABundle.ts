@@ -14,14 +14,14 @@ export type clientCreditBundleDocType = Omit<clientCredit, "route">;
 
 export async function createAClientForABundle(
   bundle_container_ref: DocumentReference<creditBundleContainerDoc>,
-  data: clientCreditBundleType
+  data: Omit<clientCreditBundleType, "name">
 ) {
   const coll = collection(
     bundle_container_ref,
     SellersCollection.creditBundles.clients
   ) as CollectionReference<clientCreditBundleDocType>;
 
-  const dataToAdd: clientCreditBundleDocType = {
+  const dataToAdd: Omit<clientCreditBundleDocType, "name"> = {
     ...data,
     created_at: Timestamp.fromDate(new Date()),
   };

@@ -29,6 +29,8 @@ export function Credit({ setCreditResult, creditResult }: props) {
   } = useGetCreditBundleBasicData();
   const [showForm, setShowForm] = useState(false);
   const [credits, setCredits] = useState<AnalyzedCreditItem[]>([]);
+  const [cobros, setCobros] = useState(0);
+  const [newCredits, setNewCredits] = useState(0);
 
   // effect to get analize the credits
   useEffect(() => {
@@ -41,6 +43,8 @@ export function Credit({ setCreditResult, creditResult }: props) {
     setCreditResult(
       results.total_previous_bundle_credit - results.total_current_bundle_credit
     );
+    setCobros(results.total_previous_bundle_credit);
+    setNewCredits(results.total_current_bundle_credit);
     setCredits(results.credits_list);
 
     return () => {
@@ -67,23 +71,30 @@ export function Credit({ setCreditResult, creditResult }: props) {
       {showForm && bundleContainer && creditBundle && (
         <CreditForm
           bundleContainerRef={bundleContainer.ref}
-          setShowForm={setShowForm}
           bundleSnap={creditBundle}
         />
       )}
-      <Container>
+      <FlexContainer styles={{ flexDirection: "column", alignItems: "center" }}>
         <CreditHeader />
         {creditBundle &&
-          credits.map((credit, i) => (
-            <GridContainer key={i} $gridTemplateColumns="repeat(4, 75px) 1fr">
-              <CreditClient credit={credit} bundleSnap={creditBundle} />
-            </GridContainer>
-          ))}
-        <GridContainer $gridTemplateColumns="repeat(4, 75px) 1fr">
-          <Column gridColumn="-2 / -3">Total</Column>
+          credits
+            .sort((a, b) =>
+              a.client.data().created_at.toDate() >
+              b.client.data().created_at.toDate()
+                ? -1
+                : 1
+            )
+            .map((credit, i) => (
+              <GridContainer key={i} $gridTemplateColumns="repeat(3, 95px)">
+                <CreditClient credit={credit} bundleSnap={creditBundle} />
+              </GridContainer>
+            ))}
+        <GridContainer $gridTemplateColumns="repeat(3, 95px)">
+          <Column>{numberParser(cobros)}</Column>
+          <Column>{numberParser(newCredits)}</Column>
           <Column gridColumn="-1 / -2">{numberParser(creditResult)}</Column>
         </GridContainer>
-      </Container>
+      </FlexContainer>
     </Container>
   );
 }

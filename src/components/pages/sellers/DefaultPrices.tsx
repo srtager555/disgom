@@ -120,8 +120,7 @@ function DefaultPrice({ defaultPriceDoc }: DefaultPriceProps) {
         justifyContent: "space-between",
         border: "1px solid " + globalCSSVars["--detail"],
         padding: "10px",
-        marginBottom: "10px",
-        minWidth: "33%",
+        minWidth: "32%",
       }}
     >
       <FlexContainer

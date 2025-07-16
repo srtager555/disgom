@@ -36,6 +36,13 @@ async function saveNewOutputs(
 
     const sale_price = persistentPrices?.sale_price;
     const purchase_price = persistentPrices?.purchase_price;
+    const commission = persistentPrices?.seller_commission;
+
+    const lastStockAdded = data?.stock[0];
+
+    const salePriceFromCurrentStock = lastStockAdded?.sale_price;
+    const purchasePriceFromCurrentStock = lastStockAdded?.purchase_price;
+    const commissionFromCurrentStock = lastStockAdded?.seller_commission;
 
     // 6. Deshabilitar outputs anteriores
     outputs.forEach((doc) => {
@@ -47,11 +54,17 @@ async function saveNewOutputs(
     const consolidatedStocks = [...currentProductStock];
 
     for (const newStock of newStockToSave) {
-      const existingStockIndex = consolidatedStocks.findIndex(
-        (stock) =>
+      const existingStockIndex = consolidatedStocks.findIndex((stock) => {
+        const currentPrice = sale_price || salePriceFromCurrentStock;
+
+        console.log("=======", stock.entry_ref.path, newStock.entry_ref.path);
+        console.log("=======", stock.sale_price, currentPrice);
+
+        return (
           stock.entry_ref.path === newStock.entry_ref.path &&
-          stock.sale_price === newStock.sale_price
-      );
+          stock.sale_price === currentPrice
+        );
+      });
 
       if (existingStockIndex !== -1) {
         // Si encontramos un stock con el mismo entry_ref y precio de venta, sumamos la cantidad
@@ -63,9 +76,14 @@ async function saveNewOutputs(
           amount: newStock.amount,
           product_ref: newStock.product_ref,
           entry_ref: newStock.entry_ref,
-          purchase_price: purchase_price || newStock.purchase_price,
-          sale_price: sale_price || newStock.sale_price,
-          seller_commission: newStock.commission,
+          purchase_price:
+            purchase_price ||
+            purchasePriceFromCurrentStock ||
+            newStock.purchase_price,
+          sale_price:
+            sale_price || salePriceFromCurrentStock || newStock.sale_price,
+          seller_commission:
+            commission || commissionFromCurrentStock || newStock.commission,
         });
       }
     }
@@ -109,8 +127,7 @@ export function restaOutputs(
   currentAmount: number,
   productParent: productDoc | undefined,
   setRawOutputs: React.Dispatch<React.SetStateAction<rawOutput[]>>,
-  exportedBatch: WriteBatch | undefined,
-  customPrice?: number
+  exportedBatch: WriteBatch | undefined
 ) {
   const data = productDoc.data();
   const parentStock = data?.product_parent ? productParent?.stock || [] : null;
@@ -132,7 +149,7 @@ export function restaOutputs(
       stocks,
       defaultCustomPrice,
       productDoc,
-      customPrice
+      undefined
     );
 
   // Update the rawOutputs state immediately for UI responsiveness

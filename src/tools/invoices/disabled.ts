@@ -104,62 +104,21 @@ export async function disabled() {
       // await DisableCredits(invoice);
     }
 
-    // remove the inventory
-    if (invoiceData?.devolution) {
-      // await updateDoc(invoiceData.devolution, {
-      //   disabled: true,
-      // });
-
-      let last_invoice;
-      // update the devolution of the prev and next invoices
-      if (invoiceData.prev_invoice_ref) {
-        // update the next invoice from the last_invoice
-        last_invoice = await getDoc(invoiceData.prev_invoice_ref);
-
-        batch.update(last_invoice.ref, {
-          next_invoice_ref: invoiceData.next_invoice_ref,
-        }) as PartialWithFieldValue<invoiceType>;
-
-        // await updateDoc(last_invoice.ref, {
-        //   next_invoice_ref: invoiceData.next_invoice_ref,
-        // } as PartialWithFieldValue<invoiceType>);
-      }
-
-      if (!invoiceData.next_invoice_ref) return;
-      // update the last_inventory_ref and the prev invoice from the next_invoice
-      const next_invoice = await getDoc(invoiceData.next_invoice_ref);
-
-      batch.update(next_invoice.ref, {
-        last_inventory_ref: last_invoice?.data()?.devolution || null,
-        prev_invoice_ref: invoiceData.prev_invoice_ref,
-      } as PartialWithFieldValue<invoiceType>);
-
-      // await updateDoc(next_invoice.ref, {
-      //   last_inventory_ref: last_invoice?.data()?.devolution || null,
-      //   prev_invoice_ref: invoiceData.prev_invoice_ref,
-      // } as PartialWithFieldValue<invoiceType>);
-    }
-
-    // Alert the next invoice
-    if (invoiceData.next_invoice_ref) {
-      batch.update(invoiceData.next_invoice_ref, {
-        refresh_data: "deleted",
-      } as PartialWithFieldValue<invoiceType>);
-
-      // await updateDoc(invoiceData.next_invoice_ref, {
-      //   refresh_data: "deleted",
-      // } as PartialWithFieldValue<invoiceType>);
-    }
-
-    // check if there is a prev invoice to update
-    if (invoiceData.prev_invoice_ref && invoiceData.next_invoice_ref) {
+    // update the prev and next invoice
+    // first update the prev invoice with the next in the current invoice
+    if (invoiceData?.prev_invoice_ref) {
       batch.update(invoiceData.prev_invoice_ref, {
-        next_invoice_ref: invoiceData.next_invoice_ref,
-      } as PartialWithFieldValue<invoiceType>);
+        next_invoice_ref: invoiceData.prev_invoice_ref,
+      }) as PartialWithFieldValue<invoiceType>;
+    }
 
-      // await updateDoc(invoiceData.prev_invoice_ref, {
-      //   next_invoice_ref: invoiceData.next_invoice_ref,
-      // } as PartialWithFieldValue<invoiceType>);
+    // second, update the next invoice with the prev current invoice
+    if (invoiceData?.next_invoice_ref) {
+      batch.update(invoiceData.next_invoice_ref, {
+        prev_invoice_ref: invoiceData.prev_invoice_ref,
+        // Alert the next invoice about the deletion
+        refresh_data: "deleted",
+      }) as PartialWithFieldValue<invoiceType>;
     }
   } catch (error) {
     console.error(error);

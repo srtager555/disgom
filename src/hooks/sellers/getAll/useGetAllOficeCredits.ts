@@ -49,7 +49,9 @@ export function useGetAllOficeCredits() {
         SellersCollection.clients
       ) as CollectionReference<client>;
 
-      const clients = await getDocs(coll);
+      const q = query(coll, where("disabled", "==", false));
+
+      const clients = await getDocs(q);
       setClients(clients.docs);
     }
 

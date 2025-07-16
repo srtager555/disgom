@@ -26,7 +26,7 @@ export function useGetAllSellersCreditsTotals() {
       sellers?.docs.filter((seller) => {
         const data = seller.data();
 
-        return data.hasInventory && !data.exclude;
+        return data.hasInventory && !data.exclude && data.disabled === false;
       }) || [];
 
     sellersFilteredByInventory.map(async (seller) => {

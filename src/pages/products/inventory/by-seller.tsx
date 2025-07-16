@@ -123,24 +123,22 @@ export default function Page() {
           const latestInvoice = invoiceSnapshot.docs[0];
           setInvoiceID(latestInvoice.id);
 
-          // Get the devolution reference from this invoice
-          const devoRef = latestInvoice.data().devolution;
-          if (!devoRef) {
+          // inv coll path
+          const coll = collection(
+            latestInvoice.ref,
+            InvoiceCollection.inventory
+          );
+
+          // query to get only the product with the field disabled in false
+          const inventoryQuery = query(coll, where("disabled", "==", false));
+          const inventorySnapshot = await getDocs(inventoryQuery);
+          if (inventorySnapshot.empty) {
             setInventoryProducts([]);
             return;
           }
 
-          // 3. Reference to the 'products' subcollection of the latest inventory
-          const productsColRef = collection(
-            db,
-            devoRef.path,
-            SellersCollection.inventories.products
-          );
-          // 4. Fetch all product documents from that subcollection
-          const productsSnapshot = await getDocs(productsColRef);
-
-          // 5. Map documents to SellerInventoryProduct type
-          const inventoryData = productsSnapshot.docs.map((doc) => ({
+          // Map the product to will be readed by the component
+          const inventoryData = inventorySnapshot.docs.map((doc) => ({
             product_ref: doc.data()
               .product_ref as DocumentReference<DocumentData>,
             amount: (doc.data().amount as number) || 0,

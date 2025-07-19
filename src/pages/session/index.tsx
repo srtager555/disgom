@@ -45,7 +45,13 @@ export default function Page() {
       <FlexContainer>
         <Container styles={{ flex: 1 }}>
           <h2>Lista de Usuarios</h2>
-          <FlexContainer>
+          <FlexContainer
+            styles={{
+              flexDirection: "column",
+              gap: "20px",
+              alignItems: "flex-start",
+            }}
+          >
             {usersList.map((el, i) => {
               return (
                 <Button

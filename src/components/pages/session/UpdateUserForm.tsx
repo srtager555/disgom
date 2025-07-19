@@ -2,11 +2,12 @@ import { Button, Form } from "@/styles/Form.styles";
 import { Container, FlexContainer } from "@/styles/index.styles";
 import { userDoc } from "@/tools/session/createUserDoc";
 import { QueryDocumentSnapshot } from "firebase/firestore";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "../invoice/Product";
 import { Select } from "@/components/Inputs/select";
 import { userLevels, userLevelsType } from "@/hooks/login/useCheckUserLevel";
 import { updateUserBasicData } from "@/tools/session/updateUserBasicData";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export function UpdateUserForm({
   selectedUser,
@@ -14,6 +15,7 @@ export function UpdateUserForm({
   selectedUser: QueryDocumentSnapshot<userDoc>;
 }) {
   const [username, setUsername] = useState(selectedUser.data().username);
+  const [showFormToUpdateTheUser, setShowFormToUpdateTheUser] = useState(true);
   const data = useMemo(() => selectedUser.data(), [selectedUser]);
 
   const handlerUpdateBasicData = async (
@@ -73,45 +75,66 @@ export function UpdateUserForm({
       });
   };
 
+  useEffect(() => {
+    const auth = getAuth();
+
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (selectedUser.id === user?.uid) {
+        setShowFormToUpdateTheUser(false);
+      } else {
+        setShowFormToUpdateTheUser(true);
+      }
+    });
+
+    return unsub;
+  }, [selectedUser.id]);
+
   return (
     <Container>
       <h1>Actualizar Usuario</h1>
       <FlexContainer styles={{ gap: "20px", flexDirection: "column" }}>
         <Container>
-          <Form onSubmit={handlerUpdateBasicData}>
-            <FlexContainer styles={{ gap: "20px", marginBottom: "20px" }}>
-              <Container>
-                <h3>Identificador</h3>
-                <FlexContainer
-                  styles={{ flexDirection: "column", alignItems: "flex-start" }}
-                >
-                  <Input
-                    placeholder="Identificador"
-                    type="text"
-                    name="username"
-                    onChange={(e) => setUsername(e.target.value)}
-                    value={username}
+          {!showFormToUpdateTheUser ? (
+            <p>No puede cambiar su propio usuario</p>
+          ) : (
+            <Form onSubmit={handlerUpdateBasicData}>
+              <FlexContainer styles={{ gap: "20px", marginBottom: "20px" }}>
+                <Container>
+                  <h3>Identificador</h3>
+                  <FlexContainer
+                    styles={{
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <Input
+                      placeholder="Identificador"
+                      type="text"
+                      name="username"
+                      onChange={(e) => setUsername(e.target.value)}
+                      value={username}
+                    />
+                  </FlexContainer>
+                </Container>
+                <Container>
+                  <h3>Nivel de Acceso</h3>
+                  <Select
+                    marginBottom="0px"
+                    name="level"
+                    options={Object.keys(userLevels).map((el) => {
+                      return {
+                        name: el,
+                        value: el,
+                        selected: data.level === el,
+                      };
+                    })}
                   />
-                </FlexContainer>
-              </Container>
-              <Container>
-                <h3>Nivel de Acceso</h3>
-                <Select
-                  marginBottom="0px"
-                  name="level"
-                  options={Object.keys(userLevels).map((el) => {
-                    return {
-                      name: el,
-                      value: el,
-                      selected: data.level === el,
-                    };
-                  })}
-                />
-              </Container>
-            </FlexContainer>
+                </Container>
+              </FlexContainer>
 
-            <Button>Actualizar datos</Button>
-          </Form>
+              <Button>Actualizar datos</Button>
+            </Form>
+          )}
         </Container>
         <Container>
           <h3>Cambio de Contraseña</h3>

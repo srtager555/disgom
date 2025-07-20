@@ -1,11 +1,11 @@
 import { InvoiceCollection } from "@/tools/firestore/CollectionTyping";
+import { getQueryFromCacheOnce } from "@/tools/firestore/fetch/getQueryFromCacheOnce";
 import { invoiceType } from "@/tools/invoices/createInvoice";
 import { outputType } from "@/tools/products/addOutputs";
 import {
   collection,
   CollectionReference,
   DocumentReference,
-  getDocs,
   query,
   QueryDocumentSnapshot,
   where,
@@ -40,7 +40,8 @@ export function useGetAllInventory(
       console.log(coll.path);
 
       const q = query(coll, where("disabled", "==", false));
-      const invent_products = await getDocs(q);
+      const invent_products = await getQueryFromCacheOnce(q);
+      console.log("is from cache?", invent_products.metadata.fromCache);
 
       setInventoriesProducts(invent_products.docs);
     }

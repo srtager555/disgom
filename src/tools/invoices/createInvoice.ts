@@ -3,8 +3,6 @@ import {
   collection,
   CollectionReference,
   DocumentReference,
-  getDoc,
-  getDocs,
   limit,
   orderBy,
   query,
@@ -24,6 +22,8 @@ import { inventory } from "../sellers/invetory/create";
 import { rawMoneyType } from "@/components/pages/invoice/manage/Closing/Money";
 import { createAnormalInvoice } from "./createAnormalInvoice";
 import { creditBundle } from "../sellers/credits/createBundle";
+import { getDocFromCacheOnce } from "../firestore/fetch/getDocFromCacheOnce";
+import { getQueryFromCacheOnce } from "../firestore/fetch/getQueryFromCacheOnce";
 
 export type invoiceType = {
   created_at?: Timestamp;
@@ -76,7 +76,7 @@ export async function createInvoice(
     if (invoice_type !== "normal" && invoice_type !== undefined) {
       return createAnormalInvoice(invoice_type);
     } else if (seller_ref) {
-      const sellerDoc = await getDoc(seller_ref);
+      const sellerDoc = await getDocFromCacheOnce(seller_ref);
 
       if (sellerDoc.data()?.hasInventory) {
         const coll = collection(
@@ -84,7 +84,7 @@ export async function createInvoice(
           SellersCollection.inventories.root
         ) as CollectionReference<inventory>;
         const q = query(coll, orderBy("created_at", "desc"), limit(1));
-        const inventories = await getDocs(q);
+        const inventories = await getQueryFromCacheOnce(q);
 
         last_inventory = inventories.docs[0];
       }
@@ -102,7 +102,7 @@ export async function createInvoice(
       where("seller_ref", "==", seller_ref),
       limit(1)
     );
-    lastInvoice = await getDocs(queryLastInvoice);
+    lastInvoice = await getQueryFromCacheOnce(queryLastInvoice);
   }
 
   const newInvoice = await addDoc(coll, {

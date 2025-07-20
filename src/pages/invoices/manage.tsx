@@ -14,7 +14,6 @@ import {
   CollectionReference,
   doc,
   DocumentReference,
-  getDocs,
   limit,
   orderBy,
   PartialWithFieldValue,
@@ -53,6 +52,7 @@ import { disabled } from "../../tools/invoices/disabled";
 import { PrintInvoiceHeader } from "@/components/print/InvoiceHeader";
 import { client } from "@/tools/sellers/createClient";
 import { refreshAllProduct } from "@/tools/invoices/refreshAllProduct";
+import { getQueryFromCacheOnce } from "@/tools/firestore/fetch/getQueryFromCacheOnce";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -150,7 +150,12 @@ function InvoiceManager() {
           seller_ref: selectedSeller.ref,
         });
 
-        if (!result) return;
+        if (!result) {
+          console.log("the invoice has been not created");
+          return;
+        }
+
+        console.log("Invoice create successfully");
         invoiceCreated = result;
       } else {
         // if the seller is setted by a query
@@ -183,7 +188,7 @@ function InvoiceManager() {
         invoiceCreated = result;
       }
 
-      router.push(`/invoices/manage?id=${invoiceCreated.id}`);
+      await router.push(`/invoices/manage?id=${invoiceCreated.id}`);
     }
 
     createInvo();
@@ -219,7 +224,7 @@ function InvoiceManager() {
 
       // Get the previus invoice to add their devolution
       // to the current invoice inventory
-      const snap = await getDocs(q);
+      const snap = await getQueryFromCacheOnce(q);
 
       if (snap.size > 0) {
         // if is the same invoice return
@@ -425,4 +430,13 @@ export default function Page() {
       <InvoiceManager />
     </InvoiceProvider>
   );
+}
+
+// 👇 IMPORTANTE: Usa getStaticProps en lugar de getServerSideProps
+// Esto crea el "cascarón" estático de la página para que el Service Worker lo pueda cachear.
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
 }

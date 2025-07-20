@@ -1,9 +1,5 @@
 import { MutableRefObject, useEffect, useRef, useState } from "react";
-import {
-  DocumentReference,
-  DocumentSnapshot,
-  getDoc,
-} from "firebase/firestore";
+import { DocumentReference, DocumentSnapshot } from "firebase/firestore";
 import { productDoc } from "@/tools/products/create";
 import { useInvoice } from "@/contexts/InvoiceContext";
 import { useNewDefaultCustomPricesContext } from "@/hooks/invoice/useNewDefaultCustomPricesContext";
@@ -11,6 +7,7 @@ import { parseNumberInput } from "@/tools/parseNumericInput";
 import { getTheOutputsSoldByID } from "@/tools/invoices/getTheOutputsSoldByID";
 import { someHumanChangesDetected } from "@/components/pages/invoice/manage/products/Product";
 import { getParentStock } from "@/tools/products/getParentStock";
+import { getDocFromCacheOnce } from "@/tools/firestore/fetch/getDocFromCacheOnce";
 
 type props = {
   product_doc: DocumentSnapshot<productDoc>;
@@ -48,7 +45,10 @@ export function useManagePrice({
         let price: number;
 
         if (productData.product_parent) {
-          const parentProduct = await getDoc(productData.product_parent);
+          const parentProduct = await getDocFromCacheOnce(
+            productData.product_parent
+          );
+
           const data = parentProduct.data();
 
           // if the persistent price arent available check the stock

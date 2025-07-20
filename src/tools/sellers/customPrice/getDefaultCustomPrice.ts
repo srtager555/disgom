@@ -2,7 +2,6 @@ import {
   collection,
   CollectionReference,
   DocumentReference,
-  getDocs,
   limit,
   orderBy,
   query,
@@ -13,6 +12,7 @@ import { productDoc } from "@/tools/products/create";
 import { SellersCollection } from "@/tools/firestore/CollectionTyping";
 import { defaultCustomPrice } from "./createDefaultCustomPrice";
 import { client } from "../createClient";
+import { getQueryFromCacheOnce } from "@/tools/firestore/fetch/getQueryFromCacheOnce";
 
 export async function getDefaultCustomPrice(
   seller_ref: DocumentReference<SellersDoc>,
@@ -37,7 +37,7 @@ export async function getDefaultCustomPrice(
     orderBy("created_at", "desc"),
     limit(1)
   );
-  const querySnapshot = await getDocs(q);
+  const querySnapshot = await getQueryFromCacheOnce(q);
 
   return querySnapshot.docs[0];
 }

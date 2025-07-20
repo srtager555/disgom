@@ -1,33 +1,49 @@
 import {
   collection,
+  CollectionReference,
   DocumentReference,
-  getDocs,
   query,
+  QuerySnapshot,
   where,
 } from "firebase/firestore";
 import { invoiceType } from "./createInvoice";
 import { productDoc } from "../products/create";
 
-export async function getTheOutputsSoldByID(
+import { onSnapshot } from "firebase/firestore";
+import { outputType } from "../products/addOutputs";
+
+export function getTheOutputsSoldByID(
   product_ref: DocumentReference<productDoc>,
   invoice_ref: DocumentReference<invoiceType>
-) {
-  try {
-    const coll = collection(invoice_ref, "outputs_sold");
+): Promise<QuerySnapshot<outputType> | undefined> {
+  return new Promise((resolve, reject) => {
+    try {
+      const coll = collection(
+        invoice_ref,
+        "outputs_sold"
+      ) as CollectionReference<outputType>;
 
-    const q = query(
-      coll,
-      where("product_ref", "==", product_ref),
-      where("disabled", "==", false)
-    );
+      const q = query(
+        coll,
+        where("product_ref", "==", product_ref),
+        where("disabled", "==", false)
+      );
 
-    const outputs = await getDocs(q);
-
-    return outputs;
-  } catch (error) {
-    console.error("error getting the outputs sold by id");
-    console.error(error);
-
-    return undefined;
-  }
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          resolve(snapshot);
+          unsubscribe(); // Solo una vez
+        },
+        (error) => {
+          console.error("onSnapshot error in getTheOutputsSoldByID", error);
+          reject(error);
+        }
+      );
+    } catch (error) {
+      console.error("error getting the outputs sold by id");
+      console.error(error);
+      return Promise.resolve(undefined);
+    }
+  });
 }

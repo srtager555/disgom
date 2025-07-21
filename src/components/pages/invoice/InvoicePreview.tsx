@@ -10,6 +10,7 @@ import {
   getDoc,
   QueryDocumentSnapshot,
 } from "firebase/firestore";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import styled, { css } from "styled-components";
 
@@ -54,7 +55,7 @@ const InvoiceComponent = styled.div`
   overflow: hidden;
 `;
 
-const AnchorBro = styled.a`
+const AnchorBro = styled(Link)`
   display: inline-flex;
   align-items: center;
   background-color: ${globalCSSVars["--highlight"]};

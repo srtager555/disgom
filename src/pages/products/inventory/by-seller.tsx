@@ -40,6 +40,13 @@ export type SellerInventoryProduct = {
   amount: number;
 };
 
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}
+
 export default function Page() {
   const { id: sellerId } = useQueryParams(); // Get seller ID from query params
   const [order, setOrder] = useState<keyof productDoc>("position");

@@ -76,3 +76,10 @@ export default function Page() {
     </Container>
   );
 }
+
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}

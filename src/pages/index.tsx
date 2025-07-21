@@ -18,3 +18,10 @@ export default function Home() {
     </FlexContainer>
   );
 }
+
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}

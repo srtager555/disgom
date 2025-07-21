@@ -5,6 +5,13 @@ import { OverDueInvoicesList } from "@/components/pages/invoice/list/OverDueInvo
 import { NextPageWithLayout } from "@/pages/_app";
 import { FlexContainer } from "@/styles/index.styles";
 
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}
+
 const Page: NextPageWithLayout = () => {
   return (
     <FlexContainer styles={{ flexDirection: "column", gap: "20px" }}>

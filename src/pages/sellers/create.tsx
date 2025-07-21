@@ -19,6 +19,13 @@ import {
   useState,
 } from "react";
 
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}
+
 const Page: NextPageWithLayout = () => {
   const { sellerSelected, setSellerSelected } = useContext(SellerContext);
   const [defaultName, setDefaultName] = useState<string | undefined>(undefined);

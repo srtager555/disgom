@@ -39,6 +39,13 @@ const CreditPreview = styled(Container)`
   align-items: center;
 `;
 
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}
+
 export default function Page() {
   const sellerCreditsTotals = useGetAllSellersCreditsTotals();
   const clientsCreditsTotals = useGetAllOficeCredits();

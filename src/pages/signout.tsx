@@ -9,3 +9,10 @@ export default function Page() {
 
   return "Cerrando Sesión";
 }
+
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}

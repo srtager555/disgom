@@ -20,6 +20,13 @@ import {
   useState,
 } from "react";
 
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}
+
 const Page: NextPageWithLayout = () => {
   const { selectedProduct, setSelectedProduct } = useContext(ProductContext);
   const productData = useMemo(() => selectedProduct?.data(), [selectedProduct]);

@@ -5,6 +5,13 @@ import { SellersDoc } from "@/tools/sellers/create";
 import { QueryDocumentSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}
+
 export default function Page() {
   const [office, setOffice] = useState<
     QueryDocumentSnapshot<SellersDoc> | undefined

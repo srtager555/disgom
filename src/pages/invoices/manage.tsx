@@ -248,8 +248,6 @@ function InvoiceManager() {
         prev_invoice_ref,
         refresh_data,
       });
-
-      router.reload();
     }
 
     updateSeller();
@@ -425,15 +423,15 @@ function InvoiceManager() {
 }
 
 export default function Page() {
+  const router = useRouter(); // Necesitas el router aquí para acceder al query
+
   return (
     <InvoiceProvider>
-      <InvoiceManager />
+      <InvoiceManager key={(router.query.id as string) || "new-invoice"} />
     </InvoiceProvider>
   );
 }
 
-// 👇 IMPORTANTE: Usa getStaticProps en lugar de getServerSideProps
-// Esto crea el "cascarón" estático de la página para que el Service Worker lo pueda cachear.
 export async function getStaticProps() {
   // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
   return {

@@ -38,6 +38,13 @@ type SellerInventoryProduct = {
   // ... otros campos si los necesitas
 };
 
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}
+
 export default function Page() {
   const [order, setOrder] = useState<keyof productDoc>("position");
   const [orderByName, setOrderByName] = useState(false);

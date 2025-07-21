@@ -12,7 +12,13 @@ import { SellerChart } from "@/components/pages/sellers/SellerChart";
 import { SellerDefaultPrices } from "@/components/pages/sellers/DefaultPrices";
 import { useGetSellers } from "@/hooks/sellers/getSellers";
 import { client } from "@/tools/sellers/createClient";
-import { SellerCredit } from "@/components/pages/sellers/credits";
+
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}
 
 const Page: NextPageWithLayout = () => {
   const { id, clientID } = useQueryParams();

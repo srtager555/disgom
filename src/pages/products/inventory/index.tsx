@@ -9,6 +9,13 @@ import { Button } from "@/styles/Form.styles";
 import { useMemo } from "react";
 import { productDoc } from "@/tools/products/create";
 
+export async function getStaticProps() {
+  // No necesitas pasar props, solo asegurar que la página se genere estáticamente.
+  return {
+    props: {},
+  };
+}
+
 const Page: NextPageWithLayout = () => {
   const productsContext = useContext(ProductContext);
   const [order, setOrder] = useState<keyof productDoc>("position");

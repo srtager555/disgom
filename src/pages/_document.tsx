@@ -11,6 +11,23 @@ export default function Document() {
       <body>
         <Main />
         <NextScript />
+        {process.env.NODE_ENV === "production" && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('/sw.js').then(function (registration) {
+                      console.log('Service Worker registrado con éxito:', registration);
+                    }).catch(function (err) {
+                      console.log('Fallo el registro del Service Worker:', err);
+                    });
+                  });
+                }
+              `,
+            }}
+          />
+        )}
       </body>
     </Html>
   );

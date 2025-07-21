@@ -37,12 +37,12 @@ export function InvoicesNavSection({ sellers, clients }: props) {
             donations: {
               name: "Donaciones",
               href: "/invoices/manage?invoice_type=donation",
-              mustBeAnchor: true,
+              // mustBeAnchor: true,
             },
             damagedProduct: {
               name: "Producto en mal estado",
               href: "/invoices/manage?invoice_type=damaged",
-              mustBeAnchor: true,
+              // mustBeAnchor: true,
             },
           },
         },
@@ -112,7 +112,7 @@ export function InvoicesNavSection({ sellers, clients }: props) {
             none: {
               href: "/invoices/manage?sellerId=" + office.id,
               name: office.data().name,
-              mustBeAnchor: true,
+              // mustBeAnchor: true,
               children: Object.fromEntries(
                 clients.map((el) => {
                   return [
@@ -124,7 +124,7 @@ export function InvoicesNavSection({ sellers, clients }: props) {
                         "&clientId=" +
                         el.id,
                       name: el.data().name,
-                      mustBeAnchor: true,
+                      // mustBeAnchor: true,
                     },
                   ];
                 })

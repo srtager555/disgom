@@ -35,6 +35,12 @@ export function SellerDefaultPrices({ sellerDoc, clientDoc }: props) {
   const [prices, setPrices] = useState<
     QueryDocumentSnapshot<defaultCustomPrice>[]
   >([]);
+  const [pricesSorted, setPricesSorted] = useState<
+    Array<{
+      product: DocumentSnapshot<productDoc>;
+      defaultPrice: QueryDocumentSnapshot<defaultCustomPrice>;
+    }>
+  >([]);
 
   // effect to get the default prices
   useEffect(() => {
@@ -65,6 +71,32 @@ export function SellerDefaultPrices({ sellerDoc, clientDoc }: props) {
     };
   }, [sellerDoc, clientDoc]);
 
+  // effect to sort the prices by product position
+  useEffect(() => {
+    async function sortPrices() {
+      const products = await Promise.all(
+        prices.map(async (el) => {
+          const productRef = el.data().product_ref;
+          const product = await getDoc(productRef);
+          return {
+            product,
+            defaultPrice: el,
+          };
+        })
+      );
+
+      const sorted = products.sort((a, b) => {
+        return (
+          (a.product.data()?.position || 0) - (b.product.data()?.position || 0)
+        );
+      });
+
+      setPricesSorted(sorted);
+    }
+
+    sortPrices();
+  }, [prices]);
+
   return (
     <Container styles={{ flex: "1" }}>
       <h2 style={{ marginBottom: "0px" }}>Precios personalizados</h2>
@@ -72,9 +104,15 @@ export function SellerDefaultPrices({ sellerDoc, clientDoc }: props) {
       <FlexContainer
         styles={{ marginTop: "20px", flexWrap: "wrap", gap: "10px" }}
       >
-        {prices.length > 0 ? (
-          prices.map((el, i) => {
-            return <DefaultPrice key={i} defaultPriceDoc={el} />;
+        {pricesSorted.length > 0 ? (
+          pricesSorted.map((el, i) => {
+            return (
+              <DefaultPrice
+                key={i}
+                defaultPriceDoc={el.defaultPrice}
+                productDoc={el.product}
+              />
+            );
           })
         ) : (
           <p>No hay precios por defecto</p>
@@ -86,10 +124,10 @@ export function SellerDefaultPrices({ sellerDoc, clientDoc }: props) {
 
 interface DefaultPriceProps {
   defaultPriceDoc: QueryDocumentSnapshot<defaultCustomPrice>;
+  productDoc: DocumentSnapshot<productDoc>;
 }
 
-function DefaultPrice({ defaultPriceDoc }: DefaultPriceProps) {
-  const [productDoc, setProductDoc] = useState<DocumentSnapshot<productDoc>>();
+function DefaultPrice({ defaultPriceDoc, productDoc }: DefaultPriceProps) {
   const productData = productDoc?.data();
 
   const removeDefaultPrice = useCallback(async () => {
@@ -102,17 +140,6 @@ function DefaultPrice({ defaultPriceDoc }: DefaultPriceProps) {
   const debounceRemove = useCallback(debounce(removeDefaultPrice, 5000), [
     removeDefaultPrice,
   ]);
-
-  // effect to get the product
-  useEffect(() => {
-    async function getProduct() {
-      const productRef = defaultPriceDoc.data().product_ref;
-      const fetch = await getDoc(productRef);
-      setProductDoc(fetch);
-    }
-
-    getProduct();
-  }, [defaultPriceDoc]);
 
   return (
     <FlexContainer

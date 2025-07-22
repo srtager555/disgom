@@ -16,6 +16,8 @@ import { Input } from "../Product";
 import { Firestore } from "@/tools/firestore";
 import styled from "styled-components";
 import { numberParser } from "@/tools/numberPaser";
+import { useRouter } from "next/router";
+import { useInvoiceIDManager } from "@/hooks/offline/InvoiceIDManager";
 
 const InvoicesListInfo = styled(FlexContainer)`
   font-size: 1.2rem;
@@ -41,6 +43,9 @@ export function InvoicesList() {
   const [totalSold, setTotalSold] = useState(0);
   const [totalProfit, setTotalProfit] = useState(0);
   const [median, setMedian] = useState(0);
+  const router = useRouter();
+  const { openTheNewestInvoice, setOpenTheNewestInvoice, setInvoiceID } =
+    useInvoiceIDManager();
 
   useEffect(() => {
     const db = Firestore();
@@ -117,6 +122,20 @@ export function InvoicesList() {
       setMedian(0);
     };
   }, [date]);
+
+  // effect to open the newest invoice from docsInvoices
+  useEffect(() => {
+    if (docsInvoices.length === 0) return;
+
+    const newestInvoice = docsInvoices[0];
+
+    if (newestInvoice && openTheNewestInvoice) {
+      setInvoiceID(newestInvoice.id);
+      setOpenTheNewestInvoice(false);
+
+      router.push(`/invoices/manage`);
+    }
+  }, [docsInvoices]);
 
   return (
     <Container>

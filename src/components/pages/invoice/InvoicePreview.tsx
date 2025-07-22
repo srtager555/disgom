@@ -1,3 +1,4 @@
+import { useInvoiceIDManager } from "@/hooks/offline/InvoiceIDManager";
 import { globalCSSVars } from "@/styles/colors";
 import { FlexContainer } from "@/styles/index.styles";
 import { invoiceType } from "@/tools/invoices/createInvoice";
@@ -11,6 +12,7 @@ import {
   QueryDocumentSnapshot,
 } from "firebase/firestore";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import styled, { css } from "styled-components";
 
@@ -78,7 +80,9 @@ export function InvoicePreview({ doc, inSeller, showDate }: props) {
   const [seller, setSeller] = useState<DocumentSnapshot<SellersDoc>>();
   const [client, setClient] = useState<DocumentSnapshot<client>>();
   const data = useMemo(() => doc.data(), [doc]);
+  const { setInvoiceID } = useInvoiceIDManager();
   const sellerData = useMemo(() => seller?.data(), [seller]);
+  const router = useRouter();
 
   // effect to get the seller
   useEffect(() => {
@@ -166,7 +170,25 @@ export function InvoicePreview({ doc, inSeller, showDate }: props) {
           </span>
         </FlexContainer>
 
-        <AnchorBro href={"/invoices/manage?id=" + doc.id}>Ver más</AnchorBro>
+        <AnchorBro
+          onClick={async (e) => {
+            e.preventDefault();
+
+            setInvoiceID(doc.id);
+            await router.push(
+              navigator.onLine
+                ? "/invoices/manage?id=" + doc.id
+                : "/invoices/manage"
+            );
+          }}
+          href={
+            navigator.onLine
+              ? "/invoices/manage?id=" + doc.id
+              : "/invoices/manage"
+          }
+        >
+          Ver más
+        </AnchorBro>
       </FlexContainer>
     </InvoiceComponent>
   );

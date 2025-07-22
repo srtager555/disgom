@@ -179,6 +179,7 @@ const FirestoreSalesChart: React.FC<FirestoreSalesChartProps> = ({
             type="checkbox"
             checked={compare}
             onChange={(e) => setCompare(e.target.checked)}
+            style={{ marginRight: "0.5rem" }}
           />
           Comparar con período anterior
         </label>

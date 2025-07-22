@@ -53,6 +53,7 @@ import { PrintInvoiceHeader } from "@/components/print/InvoiceHeader";
 import { client } from "@/tools/sellers/createClient";
 import { refreshAllProduct } from "@/tools/invoices/refreshAllProduct";
 import { getQueryFromCacheOnce } from "@/tools/firestore/fetch/getQueryFromCacheOnce";
+import { useInvoiceIDManager } from "@/hooks/offline/InvoiceIDManager";
 
 const MainContainer = styled(FlexContainer)`
   justify-content: flex-start;
@@ -103,6 +104,7 @@ function InvoiceManager() {
   const { id, sellerId, clientId } = useQueryParams();
   const router = useRouter();
   const { invoice } = useInvoice();
+  const { setOpenTheNewestInvoice } = useInvoiceIDManager();
   const [selectedSeller, setSelectedSeller] = useState<
     QueryDocumentSnapshot<SellersDoc> | undefined
   >(undefined);
@@ -142,52 +144,75 @@ function InvoiceManager() {
     async function createInvo() {
       console.log(sellerId, id, selectedSeller?.data().name);
 
-      let invoiceCreated: DocumentReference<invoiceType>;
-      if (!sellerId) {
-        if (id || !selectedSeller) return;
+      if (id) return;
 
-        const result = await createInvoice({
-          seller_ref: selectedSeller.ref,
-        });
+      let sellerRef: DocumentReference<SellersDoc> | undefined;
 
-        if (!result) {
-          console.log("the invoice has been not created");
-          return;
-        }
-
-        console.log("Invoice create successfully");
-        invoiceCreated = result;
-      } else {
-        // if the seller is setted by a query
+      // Determina la referencia del vendedor (sellerRef)
+      if (sellerId) {
+        console.log("the sellerId is a string");
         const db = Firestore();
         const sellerColl = collection(
           db,
           SellersCollection.root
         ) as CollectionReference<SellersDoc>;
-        const sellerRef = doc(
-          sellerColl,
-          sellerId
-        ) as DocumentReference<SellersDoc>;
-
-        let client_ref = null;
-
-        if (clientId) {
-          client_ref = doc(
-            sellerRef,
-            SellersCollection.clients,
-            clientId
-          ) as DocumentReference<client>;
-        }
-
-        const result = await createInvoice({
-          seller_ref: sellerRef,
-          client_ref,
-        });
-
-        if (!result) return;
-        invoiceCreated = result;
+        sellerRef = doc(sellerColl, sellerId) as DocumentReference<SellersDoc>;
+      } else if (selectedSeller) {
+        console.log("the sellerId is undefined, using selectedSeller");
+        sellerRef = selectedSeller.ref;
+      } else {
+        console.log("the seller is not set");
+        return;
       }
 
+      // Prepara los datos para la factura
+      const invoiceData: {
+        seller_ref: DocumentReference<SellersDoc>;
+        client_ref?: DocumentReference<client>;
+      } = {
+        seller_ref: sellerRef,
+      };
+
+      // Añade la referencia del cliente si existe
+      if (clientId && sellerId) {
+        invoiceData.client_ref = doc(
+          sellerRef,
+          SellersCollection.clients,
+          clientId
+        ) as DocumentReference<client>;
+      }
+
+      // Comprueba el estado de la conexión ANTES de crear la factura
+      if (!navigator.onLine) {
+        console.log("Offline mode: Creating invoice in the background.");
+        // No se usa 'await' para no bloquear la ejecución
+        createInvoice(invoiceData);
+
+        // Inicia un temporizador de 3 segundos y luego redirige
+        setTimeout(() => {
+          console.log("Redirecting to invoices list after 3 seconds...");
+
+          setOpenTheNewestInvoice(true);
+
+          router.push("/invoices/");
+        }, 2000);
+
+        return; // Termina la ejecución de la función aquí
+      }
+
+      // --- Lógica para el modo Online ---
+      console.log("Online mode: Awaiting invoice creation...");
+      const invoiceCreated = await createInvoice(invoiceData);
+
+      if (!invoiceCreated) {
+        console.log("the invoice has not been created");
+        return;
+      }
+
+      console.log("Invoice created successfully");
+      console.log("Pushing to the invoice page...");
+
+      // Redirige al usuario inmediatamente a la factura creada
       await router.push(`/invoices/manage?id=${invoiceCreated.id}`);
     }
 
@@ -404,9 +429,10 @@ function InvoiceManager() {
                       <Button
                         $warn
                         $hold
-                        onPointerDown={debouncedDeleteInvoice}
-                        onPointerUp={debouncedDeleteInvoice.cancel}
-                        onMouseLeave={debouncedDeleteInvoice.cancel} // Cancela si el cursor sale mientras está presionado>
+                        onClick={executeDeleteInvoice}
+                        // onPointerDown={debouncedDeleteInvoice}
+                        // onPointerUp={debouncedDeleteInvoice.cancel}
+                        // onMouseLeave={debouncedDeleteInvoice.cancel} // Cancela si el cursor sale mientras está presionado>
                       >
                         Eliminar factura
                       </Button>
